@@ -3078,7 +3078,7 @@
         radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,0.4) 50%, transparent 50%);
     background-size: 400px 400px, 500px 500px, 600px 600px, 450px 450px, 700px 700px, 550px 550px;
     pointer-events: none;
-    opacity: 0.9;
+    opacity: 0.35;
     z-index: 0;
 }
 
@@ -3353,10 +3353,12 @@
 /* --- Reset menu overlay --- */
 #menu-overlay {
     background:
-        radial-gradient(ellipse at 30% 20%, rgba(107, 63, 160, 0.55) 0%, transparent 55%),
-        radial-gradient(ellipse at 70% 80%, rgba(212, 175, 55, 0.12) 0%, transparent 50%),
-        linear-gradient(180deg, #0a0620 0%, #180c33 40%, #080412 100%) !important;
+        radial-gradient(ellipse at 30% 20%, rgba(107, 63, 160, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 70% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(10, 6, 32, 0.35) 0%, rgba(24, 12, 51, 0.5) 40%, rgba(8, 4, 18, 0.55) 100%) !important;
     font-family: 'Inter', sans-serif !important;
+    backdrop-filter: blur(3px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(3px) saturate(120%) !important;
 }
 
 /* --- Bigger, more dramatic player-data card --- */
