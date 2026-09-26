@@ -3045,6 +3045,212 @@
             gtag('config', 'UA-140821828-1');
         </script>
         <link type="image/x-icon" rel="shortcut icon" href="https://www.google.com/s2/favicons?domain=3rb.io">
+        <style id="crest-theme">
+/* ============================================================
+   CREST — Phase 1 cosmic theme
+   Gold (#d4af37) + Deep Purple (#2a1a4a)
+   Overrides existing styles only. All element IDs unchanged.
+   ============================================================ */
+
+/* --- Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* --- Global cosmic background on menu overlay --- */
+#menu-overlay {
+    background:
+        radial-gradient(ellipse at 50% 40%, rgba(107, 63, 160, 0.45) 0%, rgba(42, 26, 74, 0.75) 35%, rgba(8, 4, 18, 0.98) 75%),
+        radial-gradient(ellipse at 20% 80%, rgba(212, 175, 55, 0.12) 0%, transparent 50%),
+        #080412 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Cosmic starfield — pure CSS, no images needed */
+#menu-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.55) 50%, transparent 50%),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.4) 50%, transparent 50%),
+        radial-gradient(1px 1px at 80% 20%, rgba(212,175,55,0.5) 50%, transparent 50%),
+        radial-gradient(1px 1px at 35% 85%, rgba(255,255,255,0.35) 50%, transparent 50%),
+        radial-gradient(2px 2px at 90% 60%, rgba(212,175,55,0.35) 50%, transparent 50%),
+        radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,0.4) 50%, transparent 50%);
+    background-size: 400px 400px, 500px 500px, 600px 600px, 450px 450px, 700px 700px, 550px 550px;
+    pointer-events: none;
+    opacity: 0.9;
+    z-index: 0;
+}
+
+/* --- Player data panel (main menu card) --- */
+#player-data {
+    background: linear-gradient(160deg, rgba(42, 26, 74, 0.92) 0%, rgba(20, 12, 36, 0.96) 100%) !important;
+    border: 1px solid rgba(212, 175, 55, 0.35) !important;
+    border-radius: 4px !important;
+    box-shadow:
+        0 0 40px rgba(107, 63, 160, 0.4),
+        0 0 80px rgba(212, 175, 55, 0.08),
+        inset 0 0 30px rgba(107, 63, 160, 0.15) !important;
+    position: relative;
+    z-index: 2;
+}
+
+/* --- Nav menu bar at top of card --- */
+#nav-menu {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2) !important;
+}
+
+.nav-buttons {
+    background: transparent !important;
+    color: #d4af37 !important;
+    transition: all 0.25s ease !important;
+}
+.nav-buttons:hover {
+    color: #fff !important;
+    text-shadow: 0 0 12px #d4af37, 0 0 24px rgba(212, 175, 55, 0.5) !important;
+    transform: scale(1.15) !important;
+}
+.nav-buttons i {
+    color: inherit !important;
+}
+
+/* --- Skin wheel circle --- */
+.bar-circle-outer {
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.25) 0%, rgba(42, 26, 74, 0.4) 70%) !important;
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.35), inset 0 0 15px rgba(107, 63, 160, 0.4) !important;
+}
+.bar-circle {
+    background: linear-gradient(145deg, #f6e7b4 0%, #d4af37 45%, #8b6f1a 100%) !important;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.4) !important;
+}
+
+/* --- Input fields --- */
+.menu-inputs {
+    background: rgba(20, 12, 36, 0.8) !important;
+    border: 1px solid rgba(212, 175, 55, 0.25) !important;
+    color: #f6e7b4 !important;
+    border-radius: 3px !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.25s ease !important;
+}
+.menu-inputs:focus {
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.5) !important;
+    background: rgba(20, 12, 36, 0.95) !important;
+}
+.menu-inputs::placeholder {
+    color: rgba(212, 175, 55, 0.4) !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+}
+
+/* --- Buttons (Play, Spectate, Create, Join) --- */
+#button-play, #button-spectate {
+    background: linear-gradient(145deg, rgba(42, 26, 74, 0.9) 0%, rgba(20, 12, 36, 0.9) 100%) !important;
+    border: 1px solid #d4af37 !important;
+    color: #f6e7b4 !important;
+    font-family: 'Cinzel', serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 3px !important;
+    text-transform: uppercase !important;
+    border-radius: 3px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 0 0 rgba(212, 175, 55, 0);
+}
+#button-play:hover, #button-spectate:hover {
+    background: linear-gradient(145deg, #d4af37 0%, #8b6f1a 100%) !important;
+    color: #140c24 !important;
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.7) !important;
+    text-shadow: none !important;
+}
+#button-play:disabled, #button-spectate:disabled {
+    background: rgba(20, 12, 36, 0.5) !important;
+    border-color: rgba(212, 175, 55, 0.2) !important;
+    color: rgba(212, 175, 55, 0.3) !important;
+}
+
+#create-party, #join-party, #leave-party {
+    background: rgba(20, 12, 36, 0.85) !important;
+    border: 1px solid rgba(212, 175, 55, 0.5) !important;
+    color: #d4af37 !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 1px !important;
+    transition: all 0.25s ease !important;
+}
+#create-party:hover, #join-party:hover, #leave-party:hover {
+    background: rgba(212, 175, 55, 0.15) !important;
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4) !important;
+}
+
+/* --- Account login buttons (Google, Discord) --- */
+.account-btn {
+    background: rgba(20, 12, 36, 0.85) !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+    color: #d4af37 !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 1px !important;
+    transition: all 0.25s ease !important;
+}
+.account-btn:hover {
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.5) !important;
+}
+.account-btn.google { background: rgba(20, 12, 36, 0.85) !important; }
+.account-btn.discord { background: rgba(20, 12, 36, 0.85) !important; }
+
+/* --- Server dropdown --- */
+#servers {
+    background: rgba(20, 12, 36, 0.9) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    color: #f6e7b4 !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.5px !important;
+}
+#servers option {
+    background: #140c24 !important;
+    color: #f6e7b4 !important;
+}
+
+/* --- Skin wheel (rotating selector) --- */
+.skin-wheel-bg {
+    border-color: rgba(212, 175, 55, 0.25) !important;
+}
+.skin-selector {
+    border-color: rgba(212, 175, 55, 0.6) !important;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4) !important;
+}
+.skin-selector:hover {
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.8) !important;
+}
+
+/* --- Loading screen --- */
+#loading-screen {
+    background: radial-gradient(ellipse at center, #2a1a4a 0%, #080412 70%) !important;
+}
+.ls-title {
+    font-family: 'Cinzel', serif !important;
+    color: #d4af37 !important;
+    letter-spacing: 8px !important;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.8) !important;
+}
+.ls-spinner {
+    color: #d4af37 !important;
+}
+
+/* --- Scrollbars (purple/gold) --- */
+.ps > .ps__scrollbar-y-rail > .ps__scrollbar-y {
+    background-color: rgba(212, 175, 55, 0.5) !important;
+}
+.ps > .ps__scrollbar-y-rail:hover > .ps__scrollbar-y {
+    background-color: #d4af37 !important;
+}
+
+</style>
     </head>
     <body>
         <style type="text/css">
