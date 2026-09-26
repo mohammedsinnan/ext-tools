@@ -3758,6 +3758,16 @@
     right: 24px !important;
 }
 
+            /* CREST — Step 2f: force-hide the last three tabs */
+#crest-tabs > .crest-tab:nth-child(n+4) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
             /* CREST — Step 2c: hide original top-bar tabs that now have dedicated buttons */
 #crest-tabs .crest-tab:nth-child(5),
 #crest-tabs .crest-tab:nth-child(6) {
