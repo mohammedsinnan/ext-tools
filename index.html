@@ -3745,6 +3745,19 @@
     color: inherit;
 }
 
+            /* CREST — Step 2d: hide tabs that have their own buttons */
+#crest-tabs .crest-tab:nth-of-type(4),
+#crest-tabs .crest-tab:nth-of-type(5),
+#crest-tabs .crest-tab:nth-of-type(6) {
+    display: none !important;
+}
+
+/* CREST — Step 2e: nudge top-right buttons so they do not overlap tabs */
+#crest-topright {
+    top: 24px !important;
+    right: 24px !important;
+}
+
             /* CREST — Step 2c: hide original top-bar tabs that now have dedicated buttons */
 #crest-tabs .crest-tab:nth-child(5),
 #crest-tabs .crest-tab:nth-child(6) {
