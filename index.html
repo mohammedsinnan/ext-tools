@@ -3745,6 +3745,12 @@
     color: inherit;
 }
 
+            /* CREST — Step 2c: hide original top-bar tabs that now have dedicated buttons */
+#crest-tabs .crest-tab:nth-child(5),
+#crest-tabs .crest-tab:nth-child(6) {
+    display: none !important;
+}
+
             /* CREST — Step 2b: hide old nav icon row (kept in DOM for JS) */
 #nav-menu {
     display: none !important;
