@@ -3345,6 +3345,347 @@
     0%   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
     100% { background-position: 400px 400px, -500px 500px, 600px -600px, -450px 450px, 700px 700px, -550px -550px; }
 }
+            /* ============================================================
+   CREST — Commit 1: Fortnite-style lobby CSS
+   Safe: no HTML change yet. Only overrides existing classes.
+   ============================================================ */
+
+/* --- Reset menu overlay --- */
+#menu-overlay {
+    background:
+        radial-gradient(ellipse at 30% 20%, rgba(107, 63, 160, 0.55) 0%, transparent 55%),
+        radial-gradient(ellipse at 70% 80%, rgba(212, 175, 55, 0.12) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0620 0%, #180c33 40%, #080412 100%) !important;
+    font-family: 'Inter', sans-serif !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 40px !important;
+    box-sizing: border-box !important;
+}
+
+/* --- Bigger, more dramatic player-data card --- */
+#player-data {
+    background: linear-gradient(160deg, rgba(30, 18, 55, 0.88) 0%, rgba(12, 6, 24, 0.95) 100%) !important;
+    border: 1px solid rgba(212, 175, 55, 0.5) !important;
+    border-radius: 6px !important;
+    box-shadow:
+        0 0 80px rgba(107, 63, 160, 0.55),
+        0 0 200px rgba(212, 175, 55, 0.08),
+        inset 0 0 60px rgba(107, 63, 160, 0.15) !important;
+    backdrop-filter: blur(18px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+    padding: 24px 20px 20px 20px !important;
+    width: 320px !important;
+}
+
+/* --- Top nav bar (the icon row) --- */
+#nav-menu {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 14px !important;
+}
+
+.nav-buttons {
+    background: rgba(20, 12, 36, 0.6) !important;
+    border: 1px solid rgba(212, 175, 55, 0.25) !important;
+    border-radius: 3px !important;
+    color: #d4af37 !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 2px !important;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+.nav-buttons::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 0;
+    height: 2px;
+    background: #d4af37;
+    box-shadow: 0 0 10px #d4af37;
+    transform: translateX(-50%);
+    transition: width 0.3s ease !important;
+}
+.nav-buttons:hover::after {
+    width: 70%;
+}
+.nav-buttons:hover {
+    background: rgba(212, 175, 55, 0.18) !important;
+    border-color: #d4af37 !important;
+    color: #fff !important;
+    transform: translateY(-2px) scale(1.08) !important;
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
+}
+.nav-buttons:active {
+    transform: translateY(0) scale(0.96) !important;
+}
+.nav-buttons i, .nav-buttons .material-icons {
+    font-size: 18px !important;
+    color: inherit !important;
+    transition: transform 0.3s ease !important;
+}
+.nav-buttons:hover i {
+    transform: scale(1.15);
+}
+
+/* --- Skin wheel — bigger, more dramatic --- */
+.bar-circle-outer {
+    width: 120px !important;
+    height: 120px !important;
+    margin: 20px auto !important;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, rgba(42, 26, 74, 0.5) 70%) !important;
+    box-shadow:
+        0 0 30px rgba(212, 175, 55, 0.4),
+        inset 0 0 20px rgba(107, 63, 160, 0.5) !important;
+    animation: crestPulse 3s ease-in-out infinite !important;
+    cursor: pointer !important;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.bar-circle-outer:hover {
+    transform: scale(1.06) !important;
+}
+.bar-circle {
+    width: 100px !important;
+    height: 100px !important;
+    margin: 10px !important;
+    background: linear-gradient(145deg, #f6e7b4 0%, #d4af37 45%, #8b6f1a 100%) !important;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.4), 0 0 15px rgba(212, 175, 55, 0.5) !important;
+}
+.skin-preview {
+    width: 84px !important;
+    height: 84px !important;
+    margin: 8px !important;
+}
+
+@keyframes crestPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 30px rgba(212, 175, 55, 0.4),
+            inset 0 0 20px rgba(107, 63, 160, 0.5);
+    }
+    50% {
+        box-shadow:
+            0 0 50px rgba(212, 175, 55, 0.8),
+            0 0 80px rgba(107, 63, 160, 0.5),
+            inset 0 0 30px rgba(107, 63, 160, 0.7);
+    }
+}
+
+/* --- Inputs — flatter, more modern, gold focus --- */
+.menu-inputs {
+    background: rgba(14, 8, 26, 0.85) !important;
+    border: 1px solid rgba(212, 175, 55, 0.22) !important;
+    color: #f6e7b4 !important;
+    border-radius: 3px !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.25s ease !important;
+    padding: 8px 10px !important;
+    margin: 4px 0 !important;
+    font-size: 12px !important;
+}
+.menu-inputs:focus {
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.55), inset 0 0 8px rgba(212, 175, 55, 0.1) !important;
+    background: rgba(20, 12, 36, 0.95) !important;
+    outline: none !important;
+}
+.menu-inputs::placeholder {
+    color: rgba(212, 175, 55, 0.35) !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 10px;
+}
+
+/* --- Play / Spectate buttons — bigger, royal --- */
+#button-play, #button-spectate {
+    background: linear-gradient(145deg, rgba(42, 26, 74, 0.95) 0%, rgba(20, 12, 36, 0.95) 100%) !important;
+    border: 1px solid #d4af37 !important;
+    color: #f6e7b4 !important;
+    font-family: 'Cinzel', serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 4px !important;
+    text-transform: uppercase !important;
+    border-radius: 4px !important;
+    height: 48px !important;
+    font-size: 15px !important;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 0 0 rgba(212, 175, 55, 0) !important;
+    margin: 4px 0 !important;
+}
+#button-play::before, #button-spectate::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(212, 175, 55, 0.6) 50%, transparent 80%);
+    transform: translateX(-110%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+}
+#button-play:hover::before, #button-spectate:hover::before {
+    transform: translateX(110%);
+}
+#button-play:hover, #button-spectate:hover {
+    background: linear-gradient(145deg, #d4af37 0%, #b8941f 100%) !important;
+    color: #140c24 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.6), 0 0 40px rgba(212, 175, 55, 0.3) !important;
+    letter-spacing: 6px !important;
+}
+#button-play:active, #button-spectate:active {
+    transform: translateY(0) scale(0.98) !important;
+}
+#button-play:disabled, #button-spectate:disabled {
+    background: rgba(20, 12, 36, 0.5) !important;
+    border-color: rgba(212, 175, 55, 0.15) !important;
+    color: rgba(212, 175, 55, 0.3) !important;
+    cursor: not-allowed !important;
+}
+
+/* --- Party buttons --- */
+#create-party, #join-party, #leave-party {
+    background: rgba(20, 12, 36, 0.9) !important;
+    border: 1px solid rgba(212, 175, 55, 0.5) !important;
+    color: #d4af37 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    font-size: 11px !important;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    border-radius: 3px !important;
+}
+#create-party:hover, #join-party:hover, #leave-party:hover {
+    background: rgba(212, 175, 55, 0.15) !important;
+    border-color: #d4af37 !important;
+    color: #fff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35) !important;
+}
+
+/* --- Account buttons --- */
+.account-btn {
+    background: rgba(20, 12, 36, 0.9) !important;
+    border: 1px solid rgba(212, 175, 55, 0.35) !important;
+    color: #d4af37 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 1.5px !important;
+    transition: all 0.3s ease !important;
+    border-radius: 3px !important;
+}
+.account-btn:hover {
+    border-color: #d4af37 !important;
+    color: #fff !important;
+    background: rgba(212, 175, 55, 0.12) !important;
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35) !important;
+}
+
+/* --- Server dropdown --- */
+#servers {
+    background: rgba(14, 8, 26, 0.9) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    color: #f6e7b4 !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.5px !important;
+    border-radius: 3px !important;
+    transition: all 0.3s ease !important;
+}
+#servers:hover, #servers:focus {
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.4) !important;
+}
+#servers option {
+    background: #140c24 !important;
+    color: #f6e7b4 !important;
+}
+
+/* --- Settings / Inputs / Theme panels — match CREST --- */
+#settings, #inputs, #theme {
+    background: linear-gradient(160deg, rgba(30, 18, 55, 0.96) 0%, rgba(12, 6, 24, 0.98) 100%) !important;
+    border: 1px solid rgba(212, 175, 55, 0.45) !important;
+    border-radius: 6px !important;
+    box-shadow:
+        0 0 80px rgba(107, 63, 160, 0.5),
+        0 0 200px rgba(212, 175, 55, 0.08) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+}
+.settings-container .row, .theme-container .row, #hotkeys .row, #mouse .row, #commands .row {
+    background: rgba(20, 12, 36, 0.6) !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1) !important;
+    transition: background 0.25s ease !important;
+}
+.settings-container .row:hover, .theme-container .row:hover {
+    background: rgba(212, 175, 55, 0.06) !important;
+}
+.settings-container .row .title, .theme-container .row .title,
+#hotkeys .row .title, #mouse .row .title {
+    color: #d4af37 !important;
+    letter-spacing: 1.5px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+.settings-options b, .theme-options b, .mouse-options b {
+    color: #f6e7b4 !important;
+}
+.settings-options b.active, .theme-options b.active, .mouse-options b.active {
+    color: #d4af37 !important;
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+}
+.settings-options span.inner, .theme-options span.inner {
+    background: #d4af37 !important;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+}
+.settings-options span.outer, .theme-options span.outer {
+    background: rgba(212, 175, 55, 0.15) !important;
+}
+.inputs-tab {
+    background: rgba(20, 12, 36, 0.6) !important;
+    color: #d4af37 !important;
+    transition: all 0.25s ease !important;
+}
+.inputs-tab.active {
+    background: rgba(212, 175, 55, 0.15) !important;
+    color: #fff !important;
+    border-bottom: 2px solid #d4af37 !important;
+}
+#hotkeys .row .key {
+    background: rgba(14, 8, 26, 0.9) !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+    color: #d4af37 !important;
+}
+
+/* --- Settings close button --- */
+.settings-close, .theme-close {
+    color: #d4af37 !important;
+    transition: all 0.25s ease !important;
+}
+.settings-close:hover, .theme-close:hover {
+    color: #fff !important;
+    text-shadow: 0 0 10px #d4af37 !important;
+    transform: scale(1.15) !important;
+}
+
+/* --- Scrollbars --- */
+.ps > .ps__scrollbar-y-rail > .ps__scrollbar-y {
+    background-color: rgba(212, 175, 55, 0.55) !important;
+    border-radius: 6px !important;
+}
+.ps > .ps__scrollbar-y-rail:hover > .ps__scrollbar-y {
+    background-color: #d4af37 !important;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.8) !important;
+}
 </style>
     </head>
     <body>
