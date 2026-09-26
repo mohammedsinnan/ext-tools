@@ -3703,6 +3703,10 @@
     text-shadow: 0 0 12px rgba(212, 175, 55, 0.9);
 }
 .crest-tab:hover::after, .crest-tab.active::after { width: 100%; }
+            /* CREST — Step 1b: hide game HUD while menu is open */
+body:has(#menu-overlay:not([style*="display: none"])) #huds {
+    display: none !important;
+}
 .settings-options span.outer, .theme-options span.outer {
     background: rgba(212, 175, 55, 0.15) !important;
 }
