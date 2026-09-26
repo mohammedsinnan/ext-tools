@@ -3703,6 +3703,47 @@
     text-shadow: 0 0 12px rgba(212, 175, 55, 0.9);
 }
 .crest-tab:hover::after, .crest-tab.active::after { width: 100%; }
+            /* CREST — Step 2: Top-right buttons (Spectate + Settings) */
+#crest-topright {
+    position: fixed;
+    top: 20px;
+    right: 32px;
+    display: flex;
+    gap: 16px;
+    z-index: 25;
+}
+.crest-topright-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(20, 12, 36, 0.7);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 3px;
+    color: #d4af37;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-transform: uppercase;
+    user-select: none;
+}
+.crest-topright-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+}
+.crest-topright-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+.crest-topright-btn i, .crest-topright-btn .material-icons {
+    font-size: 16px;
+    color: inherit;
+}
             /* CREST — Step 1b: hide game HUD while menu is open */
 body:has(#menu-overlay:not([style*="display: none"])) #huds {
     display: none !important;
