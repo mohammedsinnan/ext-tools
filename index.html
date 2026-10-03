@@ -5034,6 +5034,25 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
         <i class="material-icons fa-fw">tune</i> <span>SETTINGS</span>
     </div>
 </div>
+        <script>
+document.addEventListener("DOMContentLoaded", function () {
+    var settingsBtn = document.getElementById("crest-settings-btn");
+    var spectateBtn = document.getElementById("crest-spectate-btn");
+    var originalSettings = document.getElementById("button-settings");
+    var originalSpectate = document.getElementById("button-spectate");
+
+    if (settingsBtn && originalSettings) {
+        settingsBtn.addEventListener("click", function () {
+            originalSettings.click();
+        });
+    }
+    if (spectateBtn && originalSpectate) {
+        spectateBtn.addEventListener("click", function () {
+            originalSpectate.click();
+        });
+    }
+});
+</script>
 </div>
         <div id="cf-turnstile-1" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:9999999;display:block;visibility:visible !important;"></div>
         <div id="cf-turnstile-2" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:9999999;display:block;visibility:visible !important;"></div>
