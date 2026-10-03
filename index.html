@@ -3821,6 +3821,133 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
     background-color: #d4af37 !important;
     box-shadow: 0 0 10px rgba(212, 175, 55, 0.8) !important;
 }
+
+            /* CREST — Chunk 1: unified settings shell */
+#crest-settings {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 460px;
+    max-height: 78vh;
+    background: linear-gradient(160deg, rgba(30, 18, 55, 0.97) 0%, rgba(12, 6, 24, 0.99) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    border-radius: 8px;
+    box-shadow:
+        0 0 40px rgba(107, 63, 160, 0.6),
+        0 0 120px rgba(212, 175, 55, 0.12),
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    z-index: 100;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#crest-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.08) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+    color: #d4af37;
+}
+.crest-settings-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 14px rgba(212, 175, 55, 0.6);
+}
+.crest-settings-title .material-icons {
+    font-size: 18px;
+    color: #d4af37;
+}
+#crest-settings-close {
+    cursor: pointer;
+    color: rgba(212, 175, 55, 0.7);
+    font-size: 18px;
+    transition: all 0.25s ease;
+    padding: 4px 8px;
+    border-radius: 3px;
+}
+#crest-settings-close:hover {
+    color: #fff;
+    text-shadow: 0 0 12px #d4af37;
+    background: rgba(212, 175, 55, 0.12);
+}
+
+#crest-settings-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 14px;
+    background: rgba(14, 8, 26, 0.5);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+.crest-settings-tab {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    color: rgba(212, 175, 55, 0.45);
+    cursor: pointer;
+    position: relative;
+    text-transform: uppercase;
+    transition: color 0.3s ease;
+    user-select: none;
+}
+.crest-settings-tab::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background: #d4af37;
+    box-shadow: 0 0 12px #d4af37;
+    transform: translateX(-50%);
+    transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.crest-settings-tab:hover { color: #fff; }
+.crest-settings-tab:hover::after { width: 70%; }
+.crest-settings-tab.active {
+    color: #fff;
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.9);
+}
+.crest-settings-tab.active::after { width: 100%; }
+
+#crest-settings-body {
+    padding: 12px 14px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: calc(78vh - 110px);
+}
+#crest-settings-body::-webkit-scrollbar { width: 8px; }
+#crest-settings-body::-webkit-scrollbar-track { background: rgba(20, 12, 36, 0.4); border-radius: 6px; }
+#crest-settings-body::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.55);
+    border-radius: 6px;
+}
+#crest-settings-body::-webkit-scrollbar-thumb:hover {
+    background: #d4af37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+}
+.crest-settings-tab-content { display: none; }
+.crest-settings-tab-content.active { display: block; }
+.crest-settings-tab-content p {
+    color: rgba(212, 175, 55, 0.4);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
 </style>
     </head>
     <body>
@@ -5096,5 +5223,71 @@ document.addEventListener("DOMContentLoaded", function () {
             )();
         </script>
         <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"2626e7892f8141219f2a73abf265c8a4","r":1}' crossorigin="anonymous"></script>
+    <!-- CREST — Chunk 1: unified settings shell -->
+<div id="crest-settings" style="display: none;">
+    <div id="crest-settings-header">
+        <span class="crest-settings-title">
+            <i class="material-icons">tune</i>
+            SETTINGS
+        </span>
+        <span id="crest-settings-close">✕</span>
+    </div>
+    <div id="crest-settings-tabs">
+        <span class="crest-settings-tab active" data-tab="settings">SETTINGS</span>
+        <span class="crest-settings-tab" data-tab="controls">CONTROLS</span>
+        <span class="crest-settings-tab" data-tab="theme">THEME</span>
+        <span class="crest-settings-tab" data-tab="chat">CHAT</span>
+    </div>
+    <div id="crest-settings-body">
+        <div class="crest-settings-tab-content active" data-tab="settings">
+            <p style="opacity:0.5;text-align:center;padding:40px;">Settings rows will appear here.</p>
+        </div>
+        <div class="crest-settings-tab-content" data-tab="controls">
+            <p style="opacity:0.5;text-align:center;padding:40px;">Control rows will appear here.</p>
+        </div>
+        <div class="crest-settings-tab-content" data-tab="theme">
+            <p style="opacity:0.5;text-align:center;padding:40px;">Theme rows will appear here.</p>
+        </div>
+        <div class="crest-settings-tab-content" data-tab="chat">
+            <p style="opacity:0.5;text-align:center;padding:40px;">Chat rows will appear here.</p>
+        </div>
+    </div>
+</div>
+    <script>
+(function () {
+    function init() {
+        var panel = document.getElementById("crest-settings");
+        var closeBtn = document.getElementById("crest-settings-close");
+        var settingsBtn = document.getElementById("crest-settings-btn");
+        var tabs = document.querySelectorAll("#crest-settings-tabs .crest-settings-tab");
+        var contents = document.querySelectorAll("#crest-settings-body .crest-settings-tab-content");
+        if (!panel || !settingsBtn) return;
+
+        settingsBtn.addEventListener("click", function () {
+            panel.style.display = (panel.style.display === "none" || !panel.style.display) ? "flex" : "none";
+        });
+        if (closeBtn) {
+            closeBtn.addEventListener("click", function () {
+                panel.style.display = "none";
+            });
+        }
+        tabs.forEach(function (tab) {
+            tab.addEventListener("click", function () {
+                var name = tab.getAttribute("data-tab");
+                tabs.forEach(function (t) { t.classList.remove("active"); });
+                contents.forEach(function (c) {
+                    c.classList.toggle("active", c.getAttribute("data-tab") === name);
+                });
+                tab.classList.add("active");
+            });
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () { setTimeout(init, 500); });
+    } else {
+        setTimeout(init, 500);
+    }
+})();
+</script>
     </body>
 </html>
