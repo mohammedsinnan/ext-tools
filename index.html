@@ -5511,7 +5511,136 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>    
         </div>
         <div class="crest-settings-tab-content" data-tab="controls">
-            <p style="opacity:0.5;text-align:center;padding:40px;">Control rows will appear here.</p>
+            <div id="hotkeys" class="inputs-menu active">
+                        <div class="row" name="toggleMenuKey">
+                            <span class="title" data="html.hkMenu.toggleMenuKey">Show / hide menu</span>
+                            <input class="key" value="ESC">
+                        </div>
+                        <div class="row" name="respawnKey">
+                            <span class="title" data="html.hkMenu.respawnKey">Quick respawn</span>
+                            <input class="key" type="text" value="K">
+                        </div>
+                        <div class="row" name="multiboxTab">
+                            <span class="title" data="html.hkMenu.multiboxTab">Multibox switch</span>
+                            <input class="key" value="TAB">
+                        </div>
+                        <div class="row" name="togglemultiboxRing">
+                            <span class="title" data="html.hkMenu.togglemultiboxRing">Toggle Multibox ring</span>
+                            <input class="key" value="L">
+                        </div>
+                        <div class="row" name="feedKey">
+                            <span class="title" data="html.hkMenu.feedKey">Feed</span>
+                            <input class="key" value="W">
+                        </div>
+                        <div class="row" name="macroFeedKey">
+                            <span class="title" data="html.hkMenu.macroFeedKey">Macro feed</span>
+                            <input class="key" value="Q">
+                        </div>
+                        <div class="row" name="splitKey">
+                            <span class="title" data="html.hkMenu.splitKey">Split</span>
+                            <input class="key" value="SPACE">
+                        </div>
+                        <div class="row" name="doubleSplitKey">
+                            <span class="title" data="html.hkMenu.doubleSplitKey">Double split</span>
+                            <input class="key" value="E">
+                        </div>
+                        <div class="row" name="split16Key">
+                            <span class="title" data="html.hkMenu.split16Key">Split 16</span>
+                            <input class="key" value="R">
+                        </div>
+                        <div class="row" name="stopKey">
+                            <span class="title" data="html.hkMenu.stopKey">Cell pause</span>
+                            <input class="key" value="S">
+                        </div>
+                        <div class="row" name="chatKey">
+                            <span class="title" data="html.hkMenu.chatKey">Chat key</span>
+                            <input class="key" value="Enter">
+                        </div>
+                        <div class="row" name="freeSpectateKey">
+                            <span class="title" data="html.hkMenu.freeSpectateKey">Toggle spectate mode</span>
+                            <input class="key" value="Y">
+                        </div>
+                        <div class="row" name="toggleNick">
+                            <span class="title" data="html.hkMenu.toggleNick">Toggle Cell nick</span>
+                            <input class="key" value="N">
+                        </div>
+                        <div class="row" name="toggleMass">
+                            <span class="title" data="html.hkMenu.toggleMass">Toggle cell mass</span>
+                            <input class="key" value="M">
+                        </div>
+                        <div class="row" name="toggleSkin">
+                            <span class="title" data="html.hkMenu.toggleSkin">Toggle Skin</span>
+                            <input class="key" value="A">
+                        </div>
+                        <div class="row" name="toggleCustomSkin">
+                            <span class="title" data="html.hkMenu.toggleCustomSkin">Toggle Custom Skin</span>
+                            <input class="key" value="X">
+                        </div>
+                        <div class="row" name="toggleFood">
+                            <span class="title" data="html.hkMenu.toggleFood">Toggle food</span>
+                            <input class="key" value="F">
+                        </div>
+                        <div class="row" name="command0Key">
+                            <span class="title" data="html.hkMenu.command0Key">Command 0</span>
+                            <input class="key" value="0">
+                        </div>
+                        <div class="row" name="command1Key">
+                            <span class="title" data="html.hkMenu.command1Key">Command 1</span>
+                            <input class="key" value="1">
+                        </div>
+                        <div class="row" name="command2Key">
+                            <span class="title" data="html.hkMenu.command2Key">Command 2</span>
+                            <input class="key" value="2">
+                        </div>
+                        <div class="row" name="command3Key">
+                            <span class="title" data="html.hkMenu.command3Key">Command 3</span>
+                            <input class="key" value="3">
+                        </div>
+                        <div class="row" name="command4Key">
+                            <span class="title" data="html.hkMenu.command4Key">Command 4</span>
+                            <input class="key" value="4">
+                        </div>
+                        <div class="row" name="command5Key">
+                            <span class="title" data="html.hkMenu.command5Key">Command 5</span>
+                            <input class="key" value="5">
+                        </div>
+                        <div class="row" name="command6Key">
+                            <span class="title" data="html.hkMenu.command6Key">Command 6</span>
+                            <input class="key" value="6">
+                        </div>
+                        <div class="row" name="command7Key">
+                            <span class="title" data="html.hkMenu.command7Key">Command 7</span>
+                            <input class="key" value="7">
+                        </div>
+                        <div class="row" name="command8Key">
+                            <span class="title" data="html.hkMenu.command8Key">Command 8</span>
+                            <input class="key" value="8">
+                        </div>
+                        <div class="row" name="command9Key">
+                            <span class="title" data="html.hkMenu.command9Key">Command 9</span>
+                            <input class="key" value="9">
+                        </div>
+                        <div class="row" name="zoom1key">
+                            <span class="title" data="html.hkMenu.zoom1key">Zoom level 1</span>
+                            <input class="key" value="ALT+1">
+                        </div>
+                        <div class="row" name="zoom2key">
+                            <span class="title" data="html.hkMenu.zoom2key">Zoom level 2</span>
+                            <input class="key" value="ALT+2">
+                        </div>
+                        <div class="row" name="zoom3key">
+                            <span class="title" data="html.hkMenu.zoom3key">Zoom level 3</span>
+                            <input class="key" value="ALT+3">
+                        </div>
+                        <div class="row" name="zoom4key">
+                            <span class="title" data="html.hkMenu.zoom4key">Zoom level 4</span>
+                            <input class="key" value="ALT+4">
+                        </div>
+                        <div class="row" name="zoom5key">
+                            <span class="title" data="html.hkMenu.zoom5key">Zoom level 5</span>
+                            <input class="key" value="ALT+5">
+                        </div>
+                    </div>
         </div>
         <div class="crest-settings-tab-content" data-tab="theme">
             <p style="opacity:0.5;text-align:center;padding:40px;">Theme rows will appear here.</p>
