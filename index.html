@@ -3829,7 +3829,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 460px;
-    max-height: 78vh;
+    max-height: 80vh;
     background: linear-gradient(160deg, rgba(30, 18, 55, 0.97) 0%, rgba(12, 6, 24, 0.99) 100%);
     border: 1px solid rgba(212, 175, 55, 0.55);
     border-radius: 8px;
@@ -3927,8 +3927,11 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
 #crest-settings-body {
     padding: 12px 14px;
     overflow-y: auto;
-    flex: 1;
-    max-height: calc(78vh - 110px);
+    overflow-x: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    height: 100%;
 }
 #crest-settings-body::-webkit-scrollbar { width: 8px; }
 #crest-settings-body::-webkit-scrollbar-track { background: rgba(20, 12, 36, 0.4); border-radius: 6px; }
