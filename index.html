@@ -3948,6 +3948,10 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
     letter-spacing: 1.5px;
     text-transform: uppercase;
 }
+
+            #settings {
+    display: none !important;
+}
 </style>
     </head>
     <body>
@@ -5240,7 +5244,271 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
     <div id="crest-settings-body">
         <div class="crest-settings-tab-content active" data-tab="settings">
-            <p style="opacity:0.5;text-align:center;padding:40px;">Settings rows will appear here.</p>
+        <div class="settings-container">
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.language">Language</span>
+                        <span class="settings-options" type="options" name="language">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="EN" class="active">English</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.CellAnimation">Animation delay</span>
+                        <span class="settings-options" type="range" name="CellAnimation">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <span value="120" step="10" min="100" max="500" class="outer">
+                                <span class="inner"></span>
+                            </span>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                            <span class="range-value">[0]</span>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.eatAnimation">Cell eat [sucking] animation</span>
+                        <span class="settings-options" type="options" name="eatAnimation">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.cellTextAnimation">Cell text animation</span>
+                        <span class="settings-options" type="options" name="cellTextAnimation">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="stepped" data="html.settingMenu.opt_stepped">Stepped</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_linear">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.zoomSpeed">Zoom speed</span>
+                        <span class="settings-options" type="range" name="zoomSpeed">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <span value="92" step="2" min="70" max="96" class="outer">
+                                <span class="inner"></span>
+                            </span>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                            <span class="range-value">[0]</span>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.cameraSpeed">Camera speed [2 default]</span>
+                        <span class="settings-options" type="range" name="cameraSpeed">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <span value="2" step="1" min="1" max="20" class="outer">
+                                <span class="inner"></span>
+                            </span>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                            <span class="range-value">[0]</span>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.autoZoom">Auto zoom</span>
+                        <span class="settings-options" type="options" name="autoZoom">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.pairCamera">Pair camera (close/far)</span>
+                        <span class="settings-options" type="options" name="pairCamera">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.autoHideText">Auto hide text</span>
+                        <span class="settings-options" type="options" name="autoHideText">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.hideOwnNick">Hide own nick</span>
+                        <span class="settings-options" type="options" name="hideOwnNick">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.hideOwnMass">Hide own mass</span>
+                        <span class="settings-options" type="options" name="hideOwnMass">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" class="active" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.cellNick">Cell Nick</span>
+                        <span class="settings-options" type="options" name="cellNick">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.nickShadow">Nick shadow</span>
+                        <span class="settings-options" type="options" name="nickShadow">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" class="active" data="html.settingMenu.opt_off">Off</b>
+                            <b value="performance" data="html.settingMenu.opt_perf">Performance</b>
+                            <b value="normal" data="html.settingMenu.opt_normal">Normal</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.cellMass">Cell Mass</span>
+                        <span class="settings-options" type="options" name="cellMass">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="shortened" class="active" data="html.settingMenu.opt_shortened">Shortened</b>
+                            <b value="full" data="html.settingMenu.opt_full">Full</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.massShadow">Mass shadow</span>
+                        <span class="settings-options" type="options" name="massShadow">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" class="active" data="html.settingMenu.opt_off">Off</b>
+                            <b value="performance" data="html.settingMenu.opt_perf">Performance</b>
+                            <b value="normal" data="html.settingMenu.opt_normal">Normal</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.urlSkins">Skins</span>
+                        <span class="settings-options" type="options" name="urlSkins">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.arbSkins">3rb.io Skins</span>
+                        <span class="settings-options" type="options" name="arbSkins">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.vanillaGrid">Vanilla grid</span>
+                        <span class="settings-options" type="options" name="vanillaGrid">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.bgSectors">Background sectors</span>
+                        <span class="settings-options" type="options" name="bgSectors">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="onlyLines" data="html.settingMenu.opt_onlyLines">Only lines</b>
+                            <b value="snowflakes" class="active" data="html.settingMenu.opt_snowflakes">Snowflakes</b>
+                            <b value="stars" data="html.settingMenu.opt_stars">Stars</b>
+                            <b value="hearts" data="html.settingMenu.opt_hearts">Hearts</b>
+                            <b value="diamonds" data="html.settingMenu.opt_diamonds">Diamonds</b>
+                            <b value="normal" data="html.settingMenu.opt_normal">Normal</b>
+                            <b value="image" data="html.settingMenu.opt_image">Image</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.bgImageUrl">Background image URL</span>
+                        <input id="bgImageUrl" class="menu-inputs" style="width:100%;background-color:#000;margin-top:5px;margin-bottom:0px;" type="text" placeholder="https://example.com/image.png">
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.food">Food</span>
+                        <span class="settings-options" type="options" name="food">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="monoColored" data="html.settingMenu.opt_singleClr">Mono colored</b>
+                            <b value="rainbow" class="active" data="html.settingMenu.opt_rainbow">rainbow</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.cursorLine">Cursor lines</span>
+                        <span class="settings-options" type="options" name="cursorLine">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" class="active" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.multiboxRing">Multibox Ring</span>
+                        <span class="settings-options" type="options" name="multiboxRing">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.multiboxCellColor">Multibox Cell Color</span>
+                        <span class="settings-options" type="options" name="multiboxCellColor">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.teamIndicator">Teammate indicator</span>
+                        <span class="settings-options" type="options" name="teamIndicator">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.commander">Commander</span>
+                        <span class="settings-options" type="options" name="commander">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="off" data="html.settingMenu.opt_off">Off</b>
+                            <b value="on" class="active" data="html.settingMenu.opt_on">On</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="row divider"></div>
+                    <div class="row">
+                        <span class="title" data="html.settingMenu.chatType">Chat type</span>
+                        <span class="settings-options" type="options" name="chatType">
+                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                            <b value="chatroom" data="html.settingMenu.opt_chatroom">Chatroom</b>
+                            <b value="popup" class="active" data="html.settingMenu.opt_popup">Pop up</b>
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>    
         </div>
         <div class="crest-settings-tab-content" data-tab="controls">
             <p style="opacity:0.5;text-align:center;padding:40px;">Control rows will appear here.</p>
