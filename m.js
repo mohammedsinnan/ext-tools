@@ -3202,7 +3202,7 @@
     }
     static report() {
       const W = WsConnection, A = Account;
-      const lines = ["MO connection report 3", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
+      const lines = ["MO connection report 4", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
       for (const slot of [1, 2]) {
         const socket = slot === 1 ? W.ws : W.ws2;
         const entry = slot === 1 ? A.slot1 : A.slot2;
@@ -5543,10 +5543,6 @@
         }
         this.flushShieldQueue(slot);
         console.log("[Drag+] shield established (tab " + slot + ")");
-        if (1 === slot) {
-          this.tab1Authed = true;
-          this.queueTab2();
-        }
         return true;
       }
       if (210 === first) {
@@ -5696,6 +5692,27 @@
         }
       });
     }
+    static serverReady(slot) {
+      slot = Number(slot);
+      if (slot !== 1 && slot !== 2) return false;
+      const socket = slot === 1 ? this.ws : this.ws2;
+      if (!socket || socket.readyState !== socket.OPEN || this.intentionalDisconnect) return false;
+      if (slot === 1 ? this.connected : this.connected2) return true;
+      MoDiagnostics.note("Player " + slot, "Server confirmed ready (254)");
+      if (slot === 1) {
+        this.connected = true;
+        this.tab1Authed = true;
+        this.queueTab2();
+      } else {
+        this.connected2 = true;
+        if (Player._isAlive) setTimeout(() => {
+          if (this.ws2 === socket && this.connected2 && this.ws2Open) PacketSender.spawnTab(2);
+        }, 400);
+      }
+      PacketSender.handleDisabledProperty(!this.connected);
+      this.connectionStatus();
+      return true;
+    }
     static ["queueTab2"]() {
       // The 2026 game server now kicks every other connection from the same
       // IP ("New connection from this browser") unless the existing
@@ -5778,8 +5795,9 @@
     }
     static ["bindSocket"](socket, slot) {
       socket.binaryType = "arraybuffer";
-      socket.onopen = () => this.onOpen(slot);
-      socket.onmessage = (ev) => this.onMessage(ev, slot);
+      const current = () => socket === (slot === 1 ? this.ws : slot === 2 ? this.ws2 : this.ws3);
+      socket.onopen = () => { if (current()) this.onOpen(slot); };
+      socket.onmessage = (ev) => { if (current()) this.onMessage(ev, slot); };
       socket.onclose = (ev) => this.onClose(slot, socket, ev);
       socket.onerror = () => this.onError(slot);
     }
@@ -6165,7 +6183,10 @@
       if (WsConnection._protoRecv && WsConnection._protoRecv[ii]) {
         ahy = WsConnection._protoRecv[ii][ahy];
       }
-      if (16 === ahy) {
+      if (254 === ahy) {
+        // The original client marks verification accepted on server Restart (254).
+        WsConnection.serverReady(ii);
+      } else if (16 === ahy) {
         this.worldUpdate(aam, ii);
       } else if (17 === ahy) {
         this.getSpectateData(aam);
@@ -6552,24 +6573,12 @@
         } catch (e) {}
         return;
       }
-      MoDiagnostics.note("Player " + adx, "Client handshake completed");
+      MoDiagnostics.note("Player " + adx, "Verification submitted; waiting for server ready (254)");
       this.initPingLoop(adx);
       this.accountPacketSent = false;
       Camera.isSpectating = false;
       Camera.freeSpectate = false;
       console.log("Connected to: " + WsConnection.ip);
-      if (1 === adx) {
-        WsConnection.connected = true;
-        WsConnection.tab1Authed = true;
-        WsConnection.queueTab2();
-      } else if (2 === adx) {
-        WsConnection.connected2 = true;
-        // Tab 2 just became playable: if Tab 1 already has a cell, bring
-        // Tab 2's cell back automatically so the pair stays together.
-        if (Player._isAlive) {
-          setTimeout(() => this.spawnTab(2), 400);
-        }
-      }
       this.handleDisabledProperty(!WsConnection.connected);
     }
     static ["handleDisabledProperty"](du) {
