@@ -7736,6 +7736,108 @@
     pink: "https://i.imgur.com/19Yl3H3.png",
     rainbow: "https://i.imgur.com/e8OLq9q.png",
   };
+  class MoEmotes {
+    static init() {
+      this.choices = ["😂", "😎", "❤️", "🔥", "👑"];
+      this.labels = ["Laugh", "Cool", "Love", "Fire", "Crown"];
+      this.states = new Map(); this.sprites = new Map();
+      this.root = document.createElement("div");
+      this.root.id = "mo-emotes"; this.root.hidden = true;
+      this.toggle = document.createElement("button");
+      this.toggle.type = "button"; this.toggle.className = "mo-emote-toggle";
+      this.toggle.textContent = "☺ Emotes";
+      this.toggle.setAttribute("aria-expanded", "false");
+      this.toggle.setAttribute("aria-controls", "mo-emote-picker");
+      this.panel = document.createElement("div");
+      this.panel.id = "mo-emote-picker"; this.panel.hidden = true;
+      this.panel.setAttribute("role", "group");
+      this.panel.setAttribute("aria-label", "Choose an emote");
+      this.buttons = this.choices.map((emoji, index) => {
+        const button = document.createElement("button");
+        button.type = "button"; button.className = "mo-emote-choice";
+        button.textContent = emoji; button.setAttribute("aria-label", this.labels[index]);
+        button.title = this.labels[index];
+        button.addEventListener("click", () => { if (this.choose(index)) this.setOpen(false); });
+        this.panel.appendChild(button); return button;
+      });
+      const hint = document.createElement("small");
+      hint.textContent = "Visible to you · lasts 4 seconds"; this.panel.appendChild(hint);
+      this.root.appendChild(this.panel); this.root.appendChild(this.toggle);
+      document.body.appendChild(this.root);
+      this.toggle.addEventListener("click", () => this.setOpen(this.panel.hidden));
+      this.root.addEventListener("pointerdown", event => event.stopPropagation());
+      this.root.addEventListener("keydown", event => {
+        event.stopPropagation();
+        if (event.key === "Escape") { event.preventDefault(); this.setOpen(false); }
+      });
+      document.addEventListener("pointerdown", event => { if (!this.root.contains(event.target)) this.setOpen(false); });
+    }
+    static setOpen(open) {
+      if (!this.panel) return;
+      this.panel.hidden = !open;
+      this.toggle.setAttribute("aria-expanded", String(open));
+      if (open) this.buttons[0].focus();
+      else if (this.root.contains(document.activeElement)) document.activeElement.blur();
+    }
+    static biggest(type) {
+      let biggest = null;
+      for (const cell of CellData.sortedCells) {
+        if (!cell.isMine || cell.cellType !== type || cell.isVirus || cell.isFood || cell.isEjected || cell.fadeStartTime) continue;
+        if (!biggest || cell.radius > biggest.radius) biggest = cell;
+      }
+      return biggest;
+    }
+    static sync() {
+      if (!this.root) return;
+      const available = !MainMenu.isOpened && !!this.biggest(Player.typeID);
+      this.root.hidden = !available;
+      if (!available) this.setOpen(false);
+      for (const [type, state] of this.states) {
+        if (performance.now() >= state.until || !this.biggest(type)) this.states.delete(type);
+      }
+    }
+    static choose(index) {
+      if (!Number.isInteger(index) || !this.choices[index] || MainMenu.isOpened || !this.biggest(Player.typeID)) return false;
+      this.states.set(Player.typeID, { index, started: performance.now(), until: performance.now() + 4000 });
+      return true;
+    }
+    static target() {
+      const state = this.states && this.states.get(Player.typeID);
+      if (!state || performance.now() >= state.until) return null;
+      return this.biggest(Player.typeID);
+    }
+    static cache(index) {
+      const sprite = document.createElement("canvas"); sprite.width = sprite.height = 128;
+      const ctx = sprite.getContext("2d");
+      ctx.fillStyle = "rgba(12,18,32,0.9)";
+      ctx.beginPath(); ctx.arc(64,64,59,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = "rgba(220,237,255,0.65)"; ctx.lineWidth = 3; ctx.stroke();
+      ctx.font = '76px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff"; ctx.fillText(this.choices[index],64,68);
+      return sprite;
+    }
+    static draw(cell, origin, opacity) {
+      const state = this.states.get(Player.typeID), zoom = Camera.viewport;
+      if (!state || performance.now() >= state.until || !(zoom > 0) || !Number.isFinite(zoom) || cell.animRadius * zoom < 20) return;
+      const radius = cell.animRadius, x = cell.animX - origin.x, y = cell.animY - origin.y;
+      if (!(radius > 0) || !Number.isFinite(radius) || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      let sprite = this.sprites.get(state.index);
+      if (!sprite) { sprite = this.cache(state.index); this.sprites.set(state.index, sprite); }
+      const now = performance.now();
+      const reduced = Renderer.moReducedMotion;
+      const progress = Math.min(1, (now - state.started) / 180);
+      const pop = reduced ? 1 : 0.82 + 0.18 * (1 - Math.pow(1 - progress, 3));
+      const size = Math.min(radius * 0.62, 56 / zoom) * pop;
+      const cx = x + radius * 0.37, cy = y - radius * 0.37;
+      const ctx = Renderer.ctx;
+      ctx.save();
+      try {
+        ctx.globalAlpha = Math.max(0, Math.min(1, opacity)) * Math.min(1, (state.until - now) / 350);
+        ctx.drawImage(sprite, cx - size / 2, cy - size / 2, size, size);
+      } finally { ctx.restore(); }
+    }
+  }
   class Renderer {
     static ["init"]() {
       this.canvas = document.getElementById("canvas");
@@ -7753,6 +7855,7 @@
       this.getKnownSkins();
       BgRender.init();
       RgbCycle.init();
+      MoEmotes.init();
       this.resizeCanvas();
       window.onresize = () => {
         this.resizeCanvas();
@@ -7763,6 +7866,7 @@
       this.canvas.height = 0 | window.innerHeight;
     }
     static ["run"]() {
+      MoEmotes.sync();
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.save();
       try {
@@ -7911,6 +8015,7 @@
       const bm = Theme.multiboxInactive;
       const iv = Theme.multiboxRingWidth;
       const no = Theme.lightenCellColor / 100;
+      const moEmoteCell = MoEmotes.target();
       amh.strokeStyle = Theme.virusBorderColor;
       amh.lineWidth = Theme.virusBorderWidth;
       for (const aeq of CellData.sortedCells) {
@@ -8013,6 +8118,7 @@
           amh.lineWidth = Theme.virusBorderWidth;
         }
         if (moDeformed) amh.restore();
+        if (aeq === moEmoteCell && gu === 1) MoEmotes.draw(aeq, w, afc);
         if (gu === 1 && ((aeq.isMine && !ajs) || (!aeq.isMine && acv))) {
           const ax = TextRenderer.nick(aeq);
           if (ax) {

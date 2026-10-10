@@ -4048,6 +4048,17 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
             #server-restart-countdown.warning {
                 color: #ff5c5c;
             }
+
+            #mo-emotes { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 102; font-family: Ubuntu, sans-serif; }
+            #mo-emotes[hidden], #mo-emote-picker[hidden] { display: none !important; }
+            #mo-emotes button { border: 1px solid rgba(190,213,255,.25); color: #ecf4ff; background: rgba(15,22,37,.94); cursor: pointer; }
+            #mo-emotes button:hover { background: #293a54; border-color: #a4cfff; }
+            #mo-emotes button:focus-visible { outline: 2px solid #a4cfff; outline-offset: 3px; }
+            #mo-emotes .mo-emote-toggle { display: block; margin: 0 auto; border-radius: 24px; padding: 11px 19px; font: 600 13px Ubuntu, sans-serif; box-shadow: 0 4px 20px #0005; }
+            #mo-emote-picker { display: grid; grid-template-columns: repeat(5, 46px); gap: 6px; margin-bottom: 12px; padding: 12px; border-radius: 18px; border: 1px solid #90baff40; background: rgba(11,17,30,.96); box-shadow: 0 8px 24px #0006; }
+            #mo-emote-picker .mo-emote-choice { width: 46px; height: 46px; border-radius: 12px; font: 25px "Segoe UI Emoji", sans-serif; }
+            #mo-emote-picker small { grid-column: 1 / -1; text-align: center; color: #a9bad0; font-size: 10px; padding-top: 5px; }
+            @media (max-width: 480px) { #mo-emotes { bottom: 16px; } }
         </style>
         <div id="loading-screen"></div>
         <div id="huds">
