@@ -366,6 +366,8 @@
       this.div = $("#settings");
       this.language = Storage.get("settings", "language") || Language.browser;
       this.CellAnimation = ~~Storage.get("settings", "CellAnimation") || 160;
+      const motionStyle = Storage.get("settings", "moMotionStyle");
+      this.moMotionStyle = ["classic", "smooth", "cinematic"].includes(motionStyle) ? motionStyle : "cinematic";
       this.eatAnimation = Storage.get("settings", "eatAnimation") || "on";
       this.zoomSpeed = ~~Storage.get("settings", "zoomSpeed") || 92;
       this.cameraSpeed = ~~Storage.get("settings", "cameraSpeed") || 20;
@@ -3639,12 +3641,45 @@
       this.colorHex = "#" + (16777216 + (jp << 16) + (aci << 8) + je).toString(16).slice(1);
     }
     ["animate"]() {
-      let aah = (GameLoop.time - this.lastUpdateTime) / Settings.CellAnimation;
-      aah = 0 > aah ? 0 : 1 < aah ? 1 : aah;
-      this.animX = aah * (this.x - this.animX) + this.animX;
-      this.animY = aah * (this.y - this.animY) + this.animY;
-      this.animRadius = aah * (this.radius - this.animRadius) + this.animRadius;
-      this.lastUpdateTime = GameLoop.time;
+      if (Settings.moMotionStyle === "classic" || this.isVirus || this.isFood || this.isEjected) {
+        let aah = (GameLoop.time - this.lastUpdateTime) / Settings.CellAnimation;
+        aah = 0 > aah ? 0 : 1 < aah ? 1 : aah;
+        this.animX = aah * (this.x - this.animX) + this.animX;
+        this.animY = aah * (this.y - this.animY) + this.animY;
+        this.animRadius = aah * (this.radius - this.animRadius) + this.animRadius;
+        this.lastUpdateTime = GameLoop.time;
+        this._moMotionTime = undefined;
+        this._moStretch = 0;
+        this._moVX = this._moVY = 0;
+        return;
+      }
+      // Render timing is independent of packet timing. Multiple passes in
+      // one frame (pair camera, packet handling, drawing) advance only once.
+      const now = GameLoop.time;
+      const previous = this._moMotionTime === undefined ? this.lastUpdateTime : this._moMotionTime;
+      const dt = Math.max(0, now - previous);
+      if (!Number.isFinite(dt)) return;
+      this._moMotionTime = now;
+      this.lastUpdateTime = now;
+      if (dt === 0) return;
+      const delay = Math.max(40, Number(Settings.CellAnimation) || 160);
+      const resumed = dt > 250;
+      const moveBlend = resumed ? 1 : -Math.expm1(-dt / (delay * 0.75));
+      const sizeBlend = resumed ? 1 : -Math.expm1(-dt / (delay * 0.55));
+      const dx = (this.x - this.animX) * moveBlend;
+      const dy = (this.y - this.animY) * moveBlend;
+      this.animX += dx;
+      this.animY += dy;
+      this.animRadius += (this.radius - this.animRadius) * sizeBlend;
+      const velocityBlend = -Math.expm1(-dt / 65);
+      const vx = resumed ? 0 : dx / dt;
+      const vy = resumed ? 0 : dy / dt;
+      this._moVX = (this._moVX || 0) + (vx - (this._moVX || 0)) * velocityBlend;
+      this._moVY = (this._moVY || 0) + (vy - (this._moVY || 0)) * velocityBlend;
+      const speed = Math.hypot(this._moVX, this._moVY);
+      const target = resumed ? 0 : Math.min(0.035, speed * 2 / Math.max(20, this.animRadius));
+      this._moStretch = (this._moStretch || 0) + (target - (this._moStretch || 0)) * velocityBlend;
+      if (resumed) this._moVX = this._moVY = this._moStretch = 0;
     }
     get ["worldID"]() {
       let on = this._nick.substring(this._nick.indexOf("}") + 1);
@@ -7584,6 +7619,8 @@
       this.canvas = document.getElementById("canvas");
       this.ctx = this.canvas.getContext("2d");
       this.pi2 = 2 * Math.PI;
+      this.moReducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      this.moCellLight = this.cacheMoCellLight();
       this.skinMap = new Map();
       this.downloadedSkins = new Map();
       this.knownSkins = {};
@@ -7767,6 +7804,9 @@
           gu = 1 - (GameLoop.time - aeq.fadeStartTime) / Settings.CellAnimation;
           gu = Math.max(0, Math.min(1, gu));
         }
+        // Only the cell body, skin and active-player ring follow the visual
+        // deformation. Labels stay upright and server coordinates stay intact.
+        const moDeformed = this.beginMoCellMotion(aeq, w);
         amh.beginPath();
         amh.arc(aeq.animX - w.x, aeq.animY - w.y, aeq.animRadius + 5, 0, this.pi2, true);
         amh.closePath();
@@ -7833,6 +7873,9 @@
             2 * (aeq.animRadius + 5),
           );
         }
+        if (!aeq.isVirus && !dk && !akw && Settings.moMotionStyle === "cinematic") {
+          this.drawMoCellLight(aeq, w, afc * gu);
+        }
         if (aeq.isMine && nl) {
           const jm = (aeq.animRadius * iv) / 100;
           amh.beginPath();
@@ -7844,6 +7887,7 @@
           amh.strokeStyle = Theme.virusBorderColor;
           amh.lineWidth = Theme.virusBorderWidth;
         }
+        if (moDeformed) amh.restore();
         if (gu === 1 && ((aeq.isMine && !ajs) || (!aeq.isMine && acv))) {
           const ax = TextRenderer.nick(aeq);
           if (ax) {
@@ -7885,6 +7929,41 @@
           }
         }
       }
+    }
+    static ["beginMoCellMotion"](cell, origin) {
+      if (Settings.moMotionStyle !== "cinematic" || this.moReducedMotion || cell.isVirus || cell.isFood || cell.isEjected) return false;
+      const stretch = Math.min(0.035, Math.max(0, cell._moStretch || 0));
+      if (stretch < 0.0002 || cell.animRadius * Camera.viewport < 16) return false;
+      const x = cell.animX - origin.x, y = cell.animY - origin.y;
+      const vx = cell._moVX || 0, vy = cell._moVY || 0;
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(vx) || !Number.isFinite(vy) || !Number.isFinite(stretch)) return false;
+      this.ctx.save();
+      this.ctx.translate(x, y);
+      this.ctx.rotate(Math.atan2(vy, vx));
+      this.ctx.scale(1 + stretch, 1 / (1 + stretch));
+      this.ctx.translate(-x, -y);
+      return true;
+    }
+    static ["cacheMoCellLight"]() {
+      const sprite = document.createElement("canvas");
+      sprite.width = sprite.height = 128;
+      const ctx = sprite.getContext("2d");
+      const glow = ctx.createRadialGradient(42, 34, 2, 64, 64, 64);
+      glow.addColorStop(0, "rgba(255,255,255,0.7)");
+      glow.addColorStop(0.4, "rgba(255,255,255,0.12)");
+      glow.addColorStop(0.72, "rgba(0,0,0,0)");
+      glow.addColorStop(1, "rgba(0,0,0,0.28)");
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(64, 64, 63, 0, Math.PI * 2); ctx.fill();
+      return sprite;
+    }
+    static ["drawMoCellLight"](cell, origin, opacity) {
+      const r = cell.animRadius + 5;
+      if (!(r > 0) || !Number.isFinite(r) || r * Camera.viewport < 16 || !(opacity > 0)) return;
+      this.ctx.save();
+      this.ctx.globalAlpha = Math.min(1, opacity) * 0.32;
+      this.ctx.drawImage(this.moCellLight, cell.animX - origin.x - r, cell.animY - origin.y - r, r * 2, r * 2);
+      this.ctx.restore();
     }
     static ["createSkinMap"]() {
       this.arbSkin = $("#arbSkin").val();
