@@ -7738,14 +7738,22 @@
   };
   class MoEmotes {
     static init() {
-      this.choices = ["😂", "😎", "❤️", "🔥", "👑"];
-      this.labels = ["Laugh", "Cool", "Love", "Fire", "Crown"];
+      this.choices = [
+        { label: "Angry red", crop: [139, 71, 65, 64] },
+        { label: "Star eyes", crop: [139, 139, 65, 64] },
+        { label: "Dizzy", crop: [208, 207, 64, 65] },
+        { label: "Laughing tiger", crop: [2, 276, 64, 64] },
+        { label: "Blue happy", crop: [208, 276, 64, 64] }
+      ];
+      this.labels = this.choices.map(choice => choice.label);
       this.states = new Map(); this.sprites = new Map();
       this.root = document.createElement("div");
       this.root.id = "mo-emotes"; this.root.hidden = true;
       this.toggle = document.createElement("button");
       this.toggle.type = "button"; this.toggle.className = "mo-emote-toggle";
       this.toggle.textContent = "☺ Emotes";
+      this.toggle.disabled = true;
+      this.toggle.title = "Loading emote faces";
       this.toggle.setAttribute("aria-expanded", "false");
       this.toggle.setAttribute("aria-controls", "mo-emote-picker");
       this.panel = document.createElement("div");
@@ -7755,13 +7763,28 @@
       this.buttons = this.choices.map((emoji, index) => {
         const button = document.createElement("button");
         button.type = "button"; button.className = "mo-emote-choice";
-        button.textContent = emoji; button.setAttribute("aria-label", this.labels[index]);
+        button.setAttribute("aria-label", this.labels[index]);
         button.title = this.labels[index];
         button.addEventListener("click", () => { if (this.choose(index)) this.setOpen(false); });
         this.panel.appendChild(button); return button;
       });
       const hint = document.createElement("small");
       hint.textContent = "Visible to you · lasts 4 seconds"; this.panel.appendChild(hint);
+      this.atlas = new Image(); this.ready = false;
+      this.atlas.onload = () => {
+        if (this.atlas.naturalWidth !== 344 || this.atlas.naturalHeight !== 408) { this.atlas.onerror(); return; }
+        this.ready = true;
+        for (let index = 0; index < this.choices.length; index++) {
+          const sprite = this.cache(index); this.sprites.set(index, sprite);
+          const preview = document.createElement("canvas"); preview.width = preview.height = 64;
+          preview.setAttribute("aria-hidden", "true");
+          preview.getContext("2d").drawImage(sprite, 0, 0, 64, 64);
+          this.buttons[index].appendChild(preview);
+        }
+        this.toggle.disabled = false; this.toggle.title = "Cover your skin with an emote";
+      };
+      this.atlas.onerror = () => { hint.textContent = "Faces could not load · refresh to retry"; this.toggle.title = "Emote faces could not load"; };
+      this.atlas.src = "https://mohammedsinnan.github.io/ext-tools/mo-emotes.png";
       this.root.appendChild(this.panel); this.root.appendChild(this.toggle);
       document.body.appendChild(this.root);
       this.toggle.addEventListener("click", () => this.setOpen(this.panel.hidden));
@@ -7797,7 +7820,7 @@
       }
     }
     static choose(index) {
-      if (!Number.isInteger(index) || !this.choices[index] || MainMenu.isOpened || !this.biggest(Player.typeID)) return false;
+      if (!this.ready || !Number.isInteger(index) || !this.choices[index] || MainMenu.isOpened || !this.biggest(Player.typeID)) return false;
       this.states.set(Player.typeID, { index, started: performance.now(), until: performance.now() + 4000 });
       return true;
     }
@@ -7806,35 +7829,33 @@
       if (!state || performance.now() >= state.until) return null;
       return this.biggest(Player.typeID);
     }
+    static activeType() {
+      const state = this.states && this.states.get(Player.typeID);
+      return state && performance.now() < state.until ? Player.typeID : null;
+    }
     static cache(index) {
-      const sprite = document.createElement("canvas"); sprite.width = sprite.height = 128;
+      const sprite = document.createElement("canvas"); sprite.width = sprite.height = 256;
       const ctx = sprite.getContext("2d");
-      ctx.fillStyle = "rgba(12,18,32,0.9)";
-      ctx.beginPath(); ctx.arc(64,64,59,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = "rgba(220,237,255,0.65)"; ctx.lineWidth = 3; ctx.stroke();
-      ctx.font = '76px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillStyle = "#fff"; ctx.fillText(this.choices[index],64,68);
+      ctx.beginPath(); ctx.arc(128,128,128,0,Math.PI*2); ctx.clip();
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+      const crop = this.choices[index].crop;
+      ctx.drawImage(this.atlas, crop[0], crop[1], crop[2], crop[3], 0, 0, 256, 256);
       return sprite;
     }
     static draw(cell, origin, opacity) {
       const state = this.states.get(Player.typeID), zoom = Camera.viewport;
-      if (!state || performance.now() >= state.until || !(zoom > 0) || !Number.isFinite(zoom) || cell.animRadius * zoom < 20) return;
-      const radius = cell.animRadius, x = cell.animX - origin.x, y = cell.animY - origin.y;
+      if (!this.ready || !state || performance.now() >= state.until || !(zoom > 0) || !Number.isFinite(zoom) || cell.animRadius * zoom < 4) return;
+      const radius = cell.animRadius + 5, x = cell.animX - origin.x, y = cell.animY - origin.y;
       if (!(radius > 0) || !Number.isFinite(radius) || !Number.isFinite(x) || !Number.isFinite(y)) return;
       let sprite = this.sprites.get(state.index);
       if (!sprite) { sprite = this.cache(state.index); this.sprites.set(state.index, sprite); }
       const now = performance.now();
-      const reduced = Renderer.moReducedMotion;
-      const progress = Math.min(1, (now - state.started) / 180);
-      const pop = reduced ? 1 : 0.82 + 0.18 * (1 - Math.pow(1 - progress, 3));
-      const size = Math.min(radius * 0.62, 56 / zoom) * pop;
-      const cx = x + radius * 0.37, cy = y - radius * 0.37;
+      const size = radius * 2;
       const ctx = Renderer.ctx;
       ctx.save();
       try {
-        ctx.globalAlpha = Math.max(0, Math.min(1, opacity)) * Math.min(1, (state.until - now) / 350);
-        ctx.drawImage(sprite, cx - size / 2, cy - size / 2, size, size);
+        ctx.globalAlpha = Math.min(1, (state.until - now) / 350);
+        ctx.drawImage(sprite, x - radius, y - radius, size, size);
       } finally { ctx.restore(); }
     }
   }
@@ -8015,7 +8036,7 @@
       const bm = Theme.multiboxInactive;
       const iv = Theme.multiboxRingWidth;
       const no = Theme.lightenCellColor / 100;
-      const moEmoteCell = MoEmotes.target();
+      const moEmoteType = MoEmotes.activeType();
       amh.strokeStyle = Theme.virusBorderColor;
       amh.lineWidth = Theme.virusBorderWidth;
       for (const aeq of CellData.sortedCells) {
@@ -8103,6 +8124,7 @@
         if (!aeq.isVirus && !dk && !akw && Settings.moMotionStyle === "cinematic") {
           this.drawMoCellLight(aeq, w, afc * gu);
         }
+        if (aeq.isMine && aeq.cellType === moEmoteType && !aeq.isVirus && !aeq.isFood && gu === 1) MoEmotes.draw(aeq, w, afc);
         if (aeq.isMine && nl && aeq.cellType === Player.typeID && Settings.moMotionStyle !== "classic") {
           this.drawMoActiveGlow(aeq, w, afc * gu, ph);
         }
@@ -8118,7 +8140,6 @@
           amh.lineWidth = Theme.virusBorderWidth;
         }
         if (moDeformed) amh.restore();
-        if (aeq === moEmoteCell && gu === 1) MoEmotes.draw(aeq, w, afc);
         if (gu === 1 && ((aeq.isMine && !ajs) || (!aeq.isMine && acv))) {
           const ax = TextRenderer.nick(aeq);
           if (ax) {
