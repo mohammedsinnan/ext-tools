@@ -7876,6 +7876,9 @@
         if (!aeq.isVirus && !dk && !akw && Settings.moMotionStyle === "cinematic") {
           this.drawMoCellLight(aeq, w, afc * gu);
         }
+        if (aeq.isMine && nl && aeq.cellType === Player.typeID && Settings.moMotionStyle !== "classic") {
+          this.drawMoActiveGlow(aeq, w, afc * gu, ph);
+        }
         if (aeq.isMine && nl) {
           const jm = (aeq.animRadius * iv) / 100;
           amh.beginPath();
@@ -7964,6 +7967,38 @@
       this.ctx.globalAlpha = Math.min(1, opacity) * 0.32;
       this.ctx.drawImage(this.moCellLight, cell.animX - origin.x - r, cell.animY - origin.y - r, r * 2, r * 2);
       this.ctx.restore();
+    }
+    static ["drawMoActiveGlow"](cell, origin, opacity, color) {
+      const radius = cell.animRadius + 5;
+      const x = cell.animX - origin.x, y = cell.animY - origin.y;
+      if (cell.isVirus || cell.isFood || cell.isEjected || !Number.isFinite(radius) || !Number.isFinite(x) || !Number.isFinite(y) || !(opacity > 0) || radius * Camera.viewport < 14) return;
+      if (!this.moActiveGlow || this.moActiveGlow.color !== color) {
+        this.moActiveGlow = { color, sprite: this.cacheMoActiveGlow(color) };
+      }
+      const extent = radius * 1.25;
+      this.ctx.save();
+      this.ctx.globalAlpha = Math.min(1, opacity) * 0.7;
+      this.ctx.drawImage(this.moActiveGlow.sprite, x - extent, y - extent, extent * 2, extent * 2);
+      this.ctx.restore();
+    }
+    static ["cacheMoActiveGlow"](color) {
+      // Cache the colored halo once; avoid a per-cell, per-frame shadow blur.
+      const sprite = document.createElement("canvas");
+      sprite.width = sprite.height = 256;
+      const ctx = sprite.getContext("2d");
+      const halo = ctx.createRadialGradient(128, 128, 80, 128, 128, 125);
+      halo.addColorStop(0, "rgba(255,255,255,0)");
+      halo.addColorStop(0.32, "rgba(255,255,255,0.04)");
+      halo.addColorStop(0.45, "rgba(255,255,255,0.65)");
+      halo.addColorStop(0.62, "rgba(255,255,255,0.18)");
+      halo.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = halo;
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.globalCompositeOperation = "source-in";
+      ctx.fillStyle = "#ff61f8";
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 256, 256);
+      return sprite;
     }
     static ["createSkinMap"]() {
       this.arbSkin = $("#arbSkin").val();
