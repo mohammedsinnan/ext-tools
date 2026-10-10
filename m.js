@@ -1981,12 +1981,12 @@
         "padding-top": (0 | ((11 * adm) / 200)) + "px",
       });
       const le = $(".minimap-head");
-      le.css("bottom", adm + 9 + "px");
+      le.css("bottom", adm + 30 + "px");
       // Stack on top of .minimap-head (which is itself already anchored
       // above #minimap-hud) - measuring its real height instead of
       // guessing keeps this correct regardless of minimap size/theme.
       $("#server-restart-countdown").css({
-        bottom: adm + 9 + le.outerHeight() + 4 + "px",
+        bottom: adm + 30 + le.outerHeight() + 8 + "px",
         width: adm + "px",
       });
     }
@@ -2708,8 +2708,10 @@
       for (const ach of this.list.values()) {
         const lk = undefined !== ach.id ? this.scoreForId(ach.id) : undefined;
         const xu = undefined !== lk ? ' <span class="leaderboard-score">(' + this.formatScore(lk) + ")</span>" : "";
-        ir +=
-          '<span style="direction: rtl;"><strong>' + ach.position + "  </strong>" + this.cleanNick(ach.nick) + xu + "<span>";
+        const name = this.cleanNick(ach.nick).replace(/&/g, "&amp;");
+        ir += '<div class="mo-lb-row' + (ach.isSelf ? ' is-self' : '') + '">' +
+          '<span class="mo-lb-rank">' + Number(ach.position) + '</span>' +
+          '<span class="mo-lb-name" dir="auto">' + name + '</span>' + xu + '</div>';
       }
       this.div.innerHTML = ir;
     }

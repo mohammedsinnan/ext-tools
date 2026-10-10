@@ -4062,11 +4062,66 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
             #mo-emotes button:disabled { opacity: .5; cursor: not-allowed; }
             #mo-emote-picker small { grid-column: 1 / -1; text-align: center; color: #a9bad0; font-size: 10px; padding-top: 5px; }
             @media (max-width: 480px) { #mo-emotes { bottom: 16px; } }
+
+            /* MO gameplay HUD: lightweight surfaces with no full-screen overlay. */
+            #leaderboard-hud, #chatroom, #teamlist-hud, #targeting-hud {
+                background: linear-gradient(145deg, rgba(18,29,47,.94), rgba(8,15,27,.90));
+                border: 1px solid rgba(153,188,235,.16); border-radius: 16px;
+                box-shadow: 0 8px 26px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+                color: #e6edf8; text-shadow: none; font-family: Inter, Ubuntu, sans-serif;
+            }
+            .mo-hud-label { font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1.8px; color: #a7bdd8; }
+            #leaderboard-hud { width: 226px; right: 18px; padding: 13px 11px 10px; margin-top: 18px; box-sizing: border-box; }
+            #leaderboard-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 5px 12px; margin-bottom: 3px; border-bottom: 1px solid #9bbfe51a; text-align: left; }
+            .mo-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #79dab3; box-shadow: 0 0 8px #79dab340; }
+            #leaderboard-positions { text-align: left; font-family: Inter, Ubuntu, sans-serif; font-variant-numeric: tabular-nums; }
+            #leaderboard-positions .mo-lb-row { display: flex; align-items: center; gap: 9px; min-height: 30px; padding: 3px 6px; box-sizing: border-box; border-radius: 8px; margin: 3px 0; }
+            #leaderboard-positions .mo-lb-row:nth-child(odd) { background: rgba(160,196,240,.035); }
+            #leaderboard-positions .mo-lb-row.is-self { background: #7bbfff18; box-shadow: inset 2px 0 #91c9ff; }
+            #leaderboard-positions .mo-lb-rank { display: inline-flex; flex: 0 0 21px; justify-content: center; color: #7d94b1; font-size: .85em; font-weight: 700; white-space: normal; }
+            #leaderboard-positions .mo-lb-row:first-child .mo-lb-rank { color: #f2cf85; }
+            #leaderboard-positions .mo-lb-name { display: block; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+            #leaderboard-positions .leaderboard-score { display: inline; flex: 0 0 auto; color: #829cb9; font-size: .8em; white-space: nowrap; }
+            #leaderboard-chart { float: none; padding-top: 8px; }
+            #leaderboard-chart .chart-bar { border-radius: 6px; box-shadow: none; height: 8px; margin: 8px 0; }
+            #chatroom { width: 300px; max-width: calc(100vw - 36px); height: 262px; max-height: 32vh; left: 18px; bottom: 62px; border-radius: 16px; unicode-bidi: normal; box-sizing: border-box; }
+            #chat-mode-switch { position: sticky; top: 0; height: 34px; flex-shrink: 0; margin: 0; padding: 8px 11px; box-sizing: border-box; background: #111f32; border-radius: 15px 15px 0 0; border-bottom: 1px solid #9bbfe51a; z-index: 2; }
+            #chat-mode-switch .chat-mode-btn, #chat-mode-switch .chat-mode-btn.active { font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1.1px; text-transform: uppercase; padding: 0; border: 0; background: transparent; color: #bad5f3; }
+            #chatroom .chatroom-row { margin: 7px 10px; padding: 8px 9px; background: rgba(137,174,221,.045); border-radius: 9px; font: 12px/1.5 Inter, Ubuntu, sans-serif; overflow-wrap: anywhere; text-align: start; unicode-bidi: plaintext; }
+            #chatroom .chatroom-row[data-channel="system"] { background: transparent; border-left: 2px solid #6f94c24d; padding-left: 8px; }
+            #chatroom .chatroom-row .nick { font: 600 12px Inter, Ubuntu, sans-serif; color: #accfff; }
+            #chatroom .chatroom-row .message { font: 400 12px/1.5 Inter, Ubuntu, sans-serif; color: #d9e3f1; }
+            #chatroom .chatroom-row .chattime { font-size: 9px; color: #778ca6; margin-right: 4px; font-variant-numeric: tabular-nums; }
+            #chatroom .chatroom-row i { color: #8ba9ca; font-size: 11px; }
+            #chatroom .ps__scrollbar-y { background: #7495ba !important; box-shadow: none !important; }
+            #message { border: 1px solid #9abfeb40; border-radius: 14px; height: 42px; box-sizing: border-box; width: min(420px, calc(100vw - 36px)); background: #0d192bea; color: #edf5ff; padding: 11px 15px; transition: border-color .15s; }
+            #message:focus { border: 1px solid #8dc4ff; background: #142239; box-shadow: 0 0 0 3px #80bfff15; }
+            #message-hud { z-index: 104; bottom: 20px; }
+            #minimap-hud { right: 18px; bottom: 18px; border-radius: 16px; background: linear-gradient(145deg,#112038ed,#081424ed); box-shadow: 0 0 0 1px #9abfeb30, 0 8px 26px #0004; overflow: hidden; }
+            .minimap-sector { box-sizing: border-box; color: #829eba; border-right: 1px solid #8eb9ee0d; border-bottom: 1px solid #8eb9ee0d; font-weight: 500; }
+            .minimap-head { right: 18px; bottom: 230px; display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 2px; }
+            .minimap-head .mo-hud-label { margin-right: 8px; }
+            .minimap-button { border-radius: 6px; padding: 4px 9px; color: #92b4d8; background: #152239; font-size: 10px; }
+            .minimap-button.active { background: #2c4b6d; color: #e3f2ff; }
+            #server-restart-countdown { right: 18px; bottom: 264px; color: #8097b1; font: 10px Inter, Ubuntu, sans-serif; }
+            #teamlist-hud { left: 18px; margin-top: 8px; padding: 10px 12px; min-width: 130px; }
+            #teamlist-head { margin: 0 0 8px; font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1px; color: #a7bdd8; }
+            #targeting-hud { border-radius: 0 0 12px 12px; font-size: 10px; padding: 0 10px 8px; }
+            #stats-hud { left: 18px; bottom: 18px; padding: 8px 11px; border-radius: 10px; background: #0d192be8; border: 1px solid #9abfeb26; font: 12px Inter, Ubuntu, sans-serif; font-variant-numeric: tabular-nums; }
+            #menu-overlay #nav-menu { display: flex !important; justify-content: center; gap: 7px; margin: 10px 0; }
+            #menu-overlay #nav-menu .nav-buttons { border-radius: 9px; }
+            @media (max-width: 760px) {
+                #leaderboard-hud { width: 180px; right: 10px; padding: 9px; }
+                #leaderboard-positions .mo-lb-row { min-height: 25px; gap: 6px; }
+                #chatroom { width: 240px; left: 10px; max-height: 26vh; }
+                #teamlist-hud, #stats-hud { left: 10px; }
+            }
+            @media (max-height: 620px) { #leaderboard-positions .mo-lb-row { min-height: 23px; margin: 1px 0; } #chatroom { max-height: 28vh; } }
         </style>
         <div id="loading-screen"></div>
         <div id="huds">
             <div id="leaderboard-hud">
-                <div id="leaderboard-head" data="html.leaderboard.title">Multibox</div>
+                <div id="leaderboard-head"><span class="mo-hud-label">LEADERBOARD</span><span class="mo-live-dot" aria-hidden="true"></span></div>
                 <div id="leaderboard-positions"></div>
                 <div id="leaderboard-chart">
                     <div class="chart-bar red"></div>
@@ -4188,6 +4243,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                 </div>
             </div>
             <div class="minimap-head">
+                <span class="mo-hud-label">RADAR</span>
                 <button class="minimap-button" id="minimap-show-1">1</button>
                 <button class="minimap-button" id="minimap-show-2">2</button>
                 <button class="minimap-button active" id="minimap-show-0">All</button>
@@ -4249,13 +4305,13 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
             <div id="player-data">
                 <div id="nav-menu">
                     <div id="control-container">
-                        <a id="button-settings" class="nav-buttons">
+                        <a id="button-settings" class="nav-buttons" title="Settings" aria-label="Settings">
                             <i class="material-icons fa-fw">tune</i>
                         </a>
-                        <a id="button-inputs" class="nav-buttons">
+                        <a id="button-inputs" class="nav-buttons" title="Controls" aria-label="Controls">
                             <i class="material-icons fa-fw">keyboard</i>
                         </a>
-                        <a id="button-theme" class="nav-buttons">
+                        <a id="button-theme" class="nav-buttons" title="Theme" aria-label="Theme">
                             <i class="material-icons fa-fw">color_lens</i>
                         </a>
                     </div>
@@ -5212,17 +5268,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                 </div>
             </div>
         </div>
-        <div id="crest-topright">
-    <div class="crest-topright-btn" id="crest-record-btn">
-        <i class="fa fa-circle"></i> <span>RECORD</span>
-    </div>
-    <div class="crest-topright-btn" id="crest-spectate-btn">
-        <i class="fa fa-expand"></i> <span>SPECTATE</span>
-    </div>
-    <div class="crest-topright-btn" id="crest-settings-btn">
-        <i class="material-icons fa-fw">tune</i> <span>SETTINGS</span>
-    </div>
-</div>
+
         <script>
 document.addEventListener("DOMContentLoaded", function () {
     var settingsBtn = document.getElementById("crest-settings-btn");
