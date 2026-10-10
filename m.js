@@ -5908,6 +5908,7 @@
         this.ws2 = null;
         this.connected2 = false;
       }
+      PacketSender.handleDisabledProperty(!this.connected);
       this.resetShield(numericTab);
       PacketParser.clearCells(numericTab);
       Notifications.alert("Drag+", "Tab " + numericTab + " disconnected");
@@ -5936,6 +5937,7 @@
       } else if (2 === alo) {
         this.connected2 = false;
       }
+      PacketSender.handleDisabledProperty(!this.connected);
       console.log("Websocket " + alo + " errored out!");
     }
     static get ["wsOpen"]() {
@@ -6454,9 +6456,13 @@
   class PacketSender {
     static async ["init"](adx) {
       if (3 !== adx) {
-        this.handleDisabledProperty(true);
+        this.handleDisabledProperty(!WsConnection.connected);
       }
       this.stopPingLoop(adx);
+      const socket = 1 === adx ? WsConnection.ws : WsConnection.ws2;
+      const account = 1 === adx ? Account.slot1 : Account.slot2;
+      if ((1 === adx || 2 === adx) && account && account.uuid) await Account.fetchSlotToken(adx);
+      if (socket !== (1 === adx ? WsConnection.ws : WsConnection.ws2)) return;
       this.handshake1(adx);
       const ok = await this.handshake2(adx);
       if (!ok) {
@@ -6483,9 +6489,7 @@
           setTimeout(() => this.spawnTab(2), 400);
         }
       }
-      if (WsConnection.connected && WsConnection.connected2) {
-        this.handleDisabledProperty(false);
-      }
+      this.handleDisabledProperty(!WsConnection.connected);
     }
     static ["handleDisabledProperty"](du) {
       document.querySelector("#button-play").disabled = du;
@@ -6820,6 +6824,11 @@
       }
       const entry = { uuid: uuid, nick: this.nick, accessToken: "" };
       entry.accessToken = this.lastAuthAccessToken || this.readCookie("access_token") || "";
+      const previous = 1 === slot ? this.slot1 : this.slot2;
+      if (!previous || previous.uuid !== entry.uuid || (previous.accessToken || "") !== entry.accessToken) {
+        this["gameToken" + slot] = null;
+        this["gameTokenAt" + slot] = 0;
+      }
       if (1 === slot) {
         this.slot1 = entry;
         this.writeSlot("dragplus_account_1", entry);
@@ -6882,48 +6891,47 @@
     }
     static ["fetchSlotToken"](slot) {
       const entry = 1 === slot ? this.slot1 : this.slot2;
-      if (!entry || !entry.uuid) return;
-      if (1 === slot && this.gameToken1 && Date.now() - this.gameTokenAt1 < 150000) return;
-      if (2 === slot && this.gameToken2 && Date.now() - this.gameTokenAt2 < 150000) return;
-      // Without a saved access_token the API authenticates through the
-      // browser session cookie - only fetch while that session belongs to
-      // THIS slot's account, otherwise we would get the wrong account token.
-      if (!entry.accessToken && this.uuid && "logout" !== this.uuid && this.uuid !== entry.uuid) return;
-      this._slotFetching = this._slotFetching || {};
-      if (this._slotFetching[slot]) return;
-      this._slotFetching[slot] = true;
-      this._slotFetchFail = this._slotFetchFail || {};
+      if (!entry || !entry.uuid) return Promise.resolve(null);
+      const key = entry.uuid + "\0" + (entry.accessToken || "");
+      this._slotRequests = this._slotRequests || {};
+      const pending = this._slotRequests[slot];
+      if (pending && pending.key === key) return pending.promise;
+      const token = 1 === slot ? this.gameToken1 : this.gameToken2;
+      const at = 1 === slot ? this.gameTokenAt1 : this.gameTokenAt2;
+      if (token && Date.now() - at < 150000) return Promise.resolve(token);
+      if (!entry.accessToken && this.uuid && "logout" !== this.uuid && this.uuid !== entry.uuid) return Promise.resolve(null);
+      const request = { key, promise: null };
+      this._slotRequests[slot] = request;
+      const current = () => {
+        const saved = 1 === slot ? this.slot1 : this.slot2;
+        return this._slotRequests[slot] === request && saved && saved.uuid + "\0" + (saved.accessToken || "") === key;
+      };
       const opts = entry.accessToken
         ? { credentials: "omit", headers: { Authorization: "Bearer " + entry.accessToken } }
         : { credentials: "include" };
-      fetch("https://3rb.io/api/auth/game-token", opts)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          this._slotFetching[slot] = false;
+      request.promise = fetch("https://3rb.io/api/auth/game-token", opts)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!current()) return null;
           const tk = d && (d.token || (d.data && d.data.token));
+          this._slotFetchFail = this._slotFetchFail || {};
           if (!tk) {
             this._slotFetchFail[slot] = (this._slotFetchFail[slot] || 0) + 1;
-            Notifications.warn("Login", "Game token failed for account slot " + slot + (3 === this._slotFetchFail[slot] ? " - the saved account token looks expired, please login again or use DRAG_PLUS.clearAccounts()" : ""));
-            return;
+            Notifications.warn("Login", "Account session needs signing in again. Open Account to log in.");
+            return null;
           }
           this._slotFetchFail[slot] = 0;
-          if (1 === slot) {
-            this.gameToken1 = tk;
-            this.gameTokenAt1 = Date.now();
-          } else {
-            this.gameToken2 = tk;
-            this.gameTokenAt2 = Date.now();
-          }
+          this["gameToken" + slot] = tk;
+          this["gameTokenAt" + slot] = Date.now();
+          if (this.uuid === entry.uuid) { this.gameToken = tk; this.gameTokenAt = Date.now(); }
           Notifications.command("Login", "Game token ready (Tab " + slot + " account)");
           PacketSender.resendLogin();
-          if (WsConnection && WsConnection.connected && !WsConnection.ws2) {
-            WsConnection.queueTab2();
-          }
+          if (WsConnection && WsConnection.connected && !WsConnection.ws2) WsConnection.queueTab2();
+          return tk;
         })
-        .catch(() => {
-          this._slotFetching[slot] = false;
-          this._slotFetchFail[slot] = (this._slotFetchFail[slot] || 0) + 1;
-        });
+        .catch(() => null)
+        .finally(() => { if (this._slotRequests[slot] === request) delete this._slotRequests[slot]; });
+      return request.promise;
     }
     static ["loginStringFor"](slot) {
       if (1 === slot) {
@@ -6960,6 +6968,7 @@
       PacketSender.resendLogin();
     }
     static ["clearSlots"]() {
+      this._slotRequests = {};
       this.slot1 = null;
       this.slot2 = null;
       this.gameToken1 = null;
@@ -7003,6 +7012,7 @@
         Notifications.warn("Login", (e && e.error) || "Login error!");
         return;
       }
+      this.lastAuthAccessToken = e.access_token || e.accessToken || "";
       this.uuid = e.uuid || "";
       this.nick = e.Name || "";
       if (this.uuid) {
@@ -7032,33 +7042,15 @@
       this.startXpPoll();
     }
     static ["refreshGameToken"]() {
-      if (!this.loggedIn) {
-        this.gameToken = null;
-        return;
-      }
-      if (this.gameToken && Date.now() - this.gameTokenAt < 24e4) {
-        return;
-      }
-      fetch("https://3rb.io/api/auth/game-token", { credentials: "include" })
-        .then((r) => {
-          if (!r.ok) {
-            Notifications.warn("Login", "Game token failed (HTTP " + r.status + ") - chat may stay locked");
-            throw new Error("game-token status " + r.status);
-          }
-          return r.json();
-        })
-        .then((d) => {
-          const tk = d && (d.token || (d.data && d.data.token));
-          if (tk) {
-            this.gameToken = tk;
-            this.gameTokenAt = Date.now();
-            Notifications.command("Login", "Game token ready");
-            PacketSender.resendLogin();
-          } else {
-            Notifications.warn("Login", "Game token: no token in response");
-          }
-        })
-        .catch(() => {});
+      if (!this.loggedIn) { this.gameToken = null; return Promise.resolve(null); }
+      let slot = this.slot1 && this.slot1.uuid === this.uuid ? 1 : this.slot2 && this.slot2.uuid === this.uuid ? 2 : 0;
+      if (!slot) slot = this.captureCurrentSession();
+      if (!slot) return Promise.resolve(null);
+      const uuid = this.uuid;
+      return this.fetchSlotToken(slot).then(token => {
+        if (token && this.uuid === uuid) { this.gameToken = token; this.gameTokenAt = this["gameTokenAt" + slot]; }
+        return token;
+      });
     }
     static ["loadLevels"]() {
       // Level thresholds come from the account's Shop.Levels table. Prefer
@@ -7172,6 +7164,7 @@
     }
     static ["logout"]() {
       this.stopXpPoll();
+      this.lastAuthAccessToken = "";
       this.uuid = "logout";
       this.gameToken = null;
       PacketSender.resendLogin();
@@ -7192,6 +7185,7 @@
       if (v === this.uuid) {
         return;
       }
+      this.lastAuthAccessToken = "";
       this.uuid = v || "";
       this.nick = this.uuid ? localStorage.getItem("active_session_nick") || "" : "";
       this.gameToken = null;
