@@ -3237,6 +3237,7 @@
       this.streammode = !Storage.get("extras", "streammode");
       this.toggleStreammode();
       this.buttons();
+      MoMenu.init();
     }
     static ["buttons"]() {
       $("#button-settings").click(() => {
@@ -3351,6 +3352,7 @@
       }
     }
     static ["closeSubMenus"]() {
+      MoMenu.setAccount(false, false);
       Inputs.close();
       Settings.close();
       Theme.close();
@@ -3363,6 +3365,7 @@
       }
     }
     static ["close"]() {
+      MoMenu.setAccount(false, false);
       this.isOpened = false;
       this.div.fadeOut(250);
       $("#leaderboard-hud").css("top", "-2px");
