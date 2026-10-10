@@ -1,0 +1,1 @@
+{"name":"3rb-next-native-client","version":"1.0.0","private":true,"type":"module","scripts":{"build":"node build.mjs","test":"node --test tests/*.test.mjs"},"devDependencies":{"jsdom":"26.1.0","typescript":"5.9.3"}}

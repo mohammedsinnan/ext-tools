@@ -1694,6 +1694,7 @@
       this.isOpened = false;
       this.div = $("#theme");
       this.selectedPreset = Storage.get("theme", "selectedPreset") || "custom";
+      this.cellMaterial = Storage.get("theme", "cellMaterial") === "flat" ? "flat" : "glass";
       this.skinBorder = ~~Storage.get("theme", "skinBorder") || 100;
       this.lbSize = ~~Storage.get("theme", "lbSize") || 110;
       this.minimapSize = ~~Storage.get("theme", "minimapSize") || 200;
@@ -3179,6 +3180,11 @@
       this.streammode = !Storage.get("extras", "streammode");
       this.toggleStreammode();
       this.buttons();
+      window.NEXT_CLIENT_UI?.init({
+        get: key => Storage.get("nextInterface", key),
+        set: (key, value) => Storage.set("nextInterface", key, value),
+        applyPalette: palette => { for (const key of Object.keys(palette)) Theme.saveTheme(key, palette[key]); Theme.setDomValues(); }
+      });
     }
     static ["buttons"]() {
       $("#button-settings").click(() => {
@@ -7591,6 +7597,7 @@
       this.rgbTeammates = new Set();
       this.borderImages = new Map();
       this.indicator = this.cacheIndicator();
+      this.nextMaterial = this.cacheNextMaterial();
       this.getKnownSkins();
       BgRender.init();
       RgbCycle.init();
@@ -7832,6 +7839,11 @@
             2 * (aeq.animRadius + 5),
             2 * (aeq.animRadius + 5),
           );
+        }
+        // Shade only unskinned regular cells, inside the existing render pass.
+        // Server positions, interpolation, skins and player rings are native.
+        if (!dk && !akw && !aeq.isVirus && Theme.cellMaterial === "glass") {
+          this.drawNextMaterial(amh, aeq.animX - w.x, aeq.animY - w.y, aeq.animRadius + 5, afc * gu);
         }
         if (aeq.isMine && nl) {
           const jm = (aeq.animRadius * iv) / 100;
@@ -8094,6 +8106,28 @@
         if (Renderer.knownSkins[aak] != ts) {
           delete Renderer.knownSkins[aak];
         }
+    }
+    static ["cacheNextMaterial"]() {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.beginPath(); ctx.arc(64, 64, 63, 0, Math.PI * 2); ctx.clip();
+      const shade = ctx.createRadialGradient(47, 36, 9, 64, 64, 64);
+      shade.addColorStop(0, "rgba(255,255,255,.20)");
+      shade.addColorStop(.55, "rgba(255,255,255,0)");
+      shade.addColorStop(.87, "rgba(0,0,0,.03)");
+      shade.addColorStop(1, "rgba(0,0,0,.22)");
+      ctx.fillStyle = shade; ctx.fillRect(0, 0, 128, 128);
+      ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(64, 64, 61, 0, Math.PI * 2); ctx.stroke();
+      return canvas;
+    }
+    static ["drawNextMaterial"](ctx, x, y, radius, alpha) {
+      if (!this.nextMaterial || radius * Camera.viewport < 12 || !Number.isFinite(radius) || radius <= 0) return;
+      ctx.save();
+      try { ctx.globalAlpha = Math.max(0, Math.min(1, alpha)); ctx.drawImage(this.nextMaterial, x-radius, y-radius, radius*2, radius*2); }
+      finally { ctx.restore(); }
     }
     static ["cacheIndicator"]() {
       const ak = document.createElement("canvas");

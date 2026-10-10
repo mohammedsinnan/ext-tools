@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/thedarkness042/3rbup",
+  "commit": "6adce3f878ffe889c24c5ca713607d0bb2d2e7c7",
+  "mSha256": "e0b9691ea1d505d8f5eb3e9767326ea95ba09586923a2494cb10004abda9b30d",
+  "classes": {
+    "Storage": "38ec8af4a466b0024f65c3017d157f30aa64195875e61c7c818afb2138f0e0e6",
+    "RafLoop": "f9af2f91477d1b2f334b9cdeeb3d8e9a38ad682e60f5649c8116a5ad9ec92941",
+    "Settings": "5f98a1f35d41294e07c46ca5429cfcdf675138636892d9535a0a6e96385bd6d8",
+    "Inputs": "a2e43cb9d62491640503714f7b921dea768258d39bf0927c27a55a42ce1d9164",
+    "Server": "d3827aa53f6c97d99cd1c6eea813001cf3f78e4ceb497df7108d5ed34c269180",
+    "CellData": "e861c1f4dbe8300bd6ba5488fe34f6bf632a4e8b053fa35bdd39819e2cf18f8d",
+    "Cell": "4d7aa55c361751227c3d4ca1c5f630af2b374854e0e5db1a7fb4f9ee5433e86d",
+    "Player": "041fef56dea55fbe4486b06130bbf40de46e8b62c3c78ff506532e7557186020",
+    "WorldData": "df64b008435a62ae8bd9ef76bab74903b155883befb3e667f2cac484a3ede972",
+    "Camera": "f27d8f90edb0ee5c374ddbaecd0094b717f3e1d63fdf840888234ccad88a4c4c",
+    "FoodRender": "bbed54af76062a59b2a1af903f93a0e7bd10361eae5c8ebafd0a37c1ed329e74",
+    "BgRender": "8fe69f16021a6b835bf684f96beb3b1c380e39d89ae44f05d8cfbeed6034928f",
+    "WsConnection": "cb20563a8977b63f300c95cd80bc881e8cc742cbcbf9aabdcda9d22fdcb43ef1",
+    "PacketSender": "48f8a67d2cb17a947d92ab8f6bbb7adc83233e29590c327e0da87cb6ec7d3083",
+    "Account": "a09bb43a30476de682a9e8976df680670e4fa54e8d0950cdc4c3c14bf315bd34",
+    "GameLoop": "b8fe26b1fc99180d1c5a8750645ab231e6e873a05a52146006b905b557d4e32c"
+  },
+  "files": {
+    "v.js": "ebeb55c24201d1a9831642df523d6fbffe4e390bc935f8a4ac8c214103f56f81",
+    "shield.js": "6407ce194915043689086bdcf882f1ad250e4843a6b19a458ab646be2253b040"
+  }
+}
