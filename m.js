@@ -3341,6 +3341,10 @@
       });
     }
     static ["play"]() {
+      if (!WsConnection.connected) {
+        Notifications.warn("Connection", "Player 1 is still connecting. Wait for Ready before pressing Play.");
+        return;
+      }
       this.close();
       // Spawn both tabs: Tab 1 always, Tab 2 as well when its connection is
       // live. A single Play click brings the whole pair back.
@@ -5507,10 +5511,23 @@
     // drops it as idle.
     // The captcha queue serializes token requests so the standby tab never
     // renders a third widget while an earlier one is still pending.
-    static ["getToken"](alq) {
-      const task = this.captchaQueue.then(() => this._getToken(alq));
+    static ["getToken"](slot) {
+      const socket = 1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3;
+      const task = this.captchaQueue.then(() => {
+        if (socket !== (1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3)) throw new Error("Queued verification belongs to a closed connection");
+        return this._getToken(slot);
+      });
       this.captchaQueue = task.catch(() => {});
       return task;
+    }
+    static ["cancelVerification"](slot) {
+      const pending = this.pendingResolvers && this.pendingResolvers[slot];
+      if (pending) pending.reject(new Error("Connection closed during verification"));
+      const id = this.widgetIds && this.widgetIds[slot];
+      if (id !== undefined && id !== null) {
+        try { if (window.turnstile) window.turnstile.remove(id); } catch (_) {}
+        delete this.widgetIds[slot];
+      }
     }
     static ["loadTurnstileScript"]() {
       if (document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]')) return;
@@ -5520,86 +5537,55 @@
       s.defer = true;
       (document.head || document.documentElement).appendChild(s);
     }
-    static async ["_getToken"](alq) {
-      return new Promise((lv, dq) => {
-        if (alq <= 1) {
-          Notifications.warn("Drag+", "Solving captcha, please wait..");
-        }
-        // remember whoever is currently waiting for THIS tab's token
-        this.pendingResolvers[alq] = { resolve: lv, reject: dq };
-
-        const mu = alq === 1 ? "#cf-turnstile-1" : alq === 2 ? "#cf-turnstile-2" : "#cf-turnstile-3";
-        const SITEKEY = "0x4AAAAAAEkQx2FZR28MuMJC";
-
-        // The 2026 protocol server validates Cloudflare Turnstile tokens
-        // (sitekey of 3rb.io itself). One widget per tab: render it on first
-        // use, reset + re-execute on later reconnects.
-        const doRender = () => {
-          const container = document.querySelector(mu);
-          if (!container) {
-            return dq(new Error("Turnstile container not found: " + mu));
-          }
-          container.innerHTML = "";
-          container.style.visibility = "visible";
-          container.style.display = "block";
-          let wid;
-          try {
-            wid = window.turnstile.render(container, {
-              sitekey: SITEKEY,
-              execution: "execute",
-              // Hidden captcha: the widget only becomes visible if Cloudflare
-              // requires a manual interaction (risk-based). During the usual
-              // automated solve it stays fully hidden.
-              appearance: "interaction-only",
-              callback: (xs) => {
-                const rz = this.pendingResolvers[alq];
-                if (!xs) {
-                  return Notifications.warn("Drag+", "Unexpected response from Turnstile API.");
-                }
-                const ls = document.getElementById("loading-screen");
-                if (ls) {
-                  $(ls).fadeOut(500, function () {
-                    $(this).remove();
-                  });
-                }
-                PacketSender.handleDisabledProperty(false);
-                Notifications.warn("Drag+", "Captcha solved for Tab " + alq);
-                if (rz) {
-                  return rz.resolve(xs);
-                }
-              },
-              "expired-callback": () => {
-                const rz = this.pendingResolvers[alq];
-                if (rz) {
-                  rz.reject(new Error("Turnstile token expired for tab " + alq));
-                }
-              },
-              "error-callback": () => {
-                const rz = this.pendingResolvers[alq];
-                if (rz) {
-                  rz.reject(new Error("Turnstile error for tab " + alq));
-                }
-              },
-            });
-            this.widgetIds[alq] = wid;
-            window.turnstile.execute(wid);
-          } catch (e) {
-            console.log("[Drag+] Turnstile render error:", e);
-          }
+    static async ["_getToken"](slot) {
+      return new Promise((resolve, reject) => {
+        const container = document.getElementById("cf-turnstile-" + slot);
+        if (!container) { reject(new Error("Verification container missing for player " + slot)); return; }
+        if (slot === 1) Notifications.warn("Drag+", "Verifying Player 1 connection, please wait..");
+        let settled = false, sdkTimer, timeout;
+        const finish = (error, token) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout); clearTimeout(sdkTimer);
+          if (this.pendingResolvers[slot] === pending) delete this.pendingResolvers[slot];
+          if (error) reject(error); else resolve(token);
         };
+        const pending = { resolve: token => finish(null, token), reject: error => finish(error) };
+        this.pendingResolvers[slot] = pending;
+        timeout = setTimeout(() => pending.reject(new Error("Verification timed out for player " + slot)), 120000);
         this.loadTurnstileScript();
         let attempts = 0;
-        const maxAttempts = 40;
-        const waitForSdk = () => {
-          if (window.turnstile && window.turnstile.render) {
-            doRender();
-          } else if (++attempts <= maxAttempts) {
-            setTimeout(waitForSdk, 300);
-          } else {
-            dq(new Error("Cloudflare Turnstile SDK failed to load after " + maxAttempts * 300 + "ms"));
+        const render = () => {
+          if (settled) return;
+          if (!window.turnstile || !window.turnstile.render) {
+            if (++attempts > 40) { pending.reject(new Error("Verification service failed to load")); return; }
+            sdkTimer = setTimeout(render, 300); return;
           }
+          try {
+            const old = this.widgetIds[slot];
+            if (old !== undefined && old !== null) { window.turnstile.remove(old); delete this.widgetIds[slot]; }
+            container.innerHTML = "";
+            container.style.visibility = "visible";
+            container.style.display = "block";
+            const id = window.turnstile.render(container, {
+              sitekey: "0x4AAAAAAEkQx2FZR28MuMJC",
+              execution: "execute", appearance: "interaction-only",
+              callback: token => {
+                if (settled || this.pendingResolvers[slot] !== pending) return;
+                if (!token) { pending.reject(new Error("Empty verification token")); return; }
+                const loading = document.getElementById("loading-screen");
+                if (loading) $(loading).fadeOut(500, function () { $(this).remove(); });
+                Notifications.warn("Drag+", "Verification complete for Player " + slot);
+                pending.resolve(token);
+              },
+              "expired-callback": () => pending.reject(new Error("Verification expired for player " + slot)),
+              "error-callback": () => pending.reject(new Error("Verification failed for player " + slot))
+            });
+            this.widgetIds[slot] = id;
+            window.turnstile.execute(id);
+          } catch (error) { pending.reject(new Error("Could not start verification: " + error.message)); }
         };
-        waitForSdk();
+        render();
       });
     }
     static ["connect"](hy, aff) {
@@ -5723,6 +5709,7 @@
     }
     static ["disconnect"]() {
       this.intentionalDisconnect = true;
+      [1, 2, 3].forEach(slot => this.cancelVerification(slot));
       clearTimeout(this.backupRetryTimer);
       [this.ws, this.ws2, this.ws3].forEach((socket) => {
         if (!socket) return;
@@ -5889,6 +5876,7 @@
       const numericTab = Number(cq);
       const current = numericTab === 1 ? this.ws : numericTab === 2 ? this.ws2 : this.ws3;
       if (current !== socket) return false;
+      this.cancelVerification(numericTab);
       PacketSender.stopPingLoop(numericTab);
       clearTimeout(this["_protoTimer" + numericTab]);
       if (this.intentionalDisconnect) return false;
@@ -5951,6 +5939,7 @@
     }
     // Close a single tab's WebSocket (leaves other tabs intact)
     static ["closeTab"](tab) {
+      this.cancelVerification(tab);
       const ws = tab === 1 ? this.ws : tab === 2 ? this.ws2 : this.ws3;
       if (ws && ws.close) {
         ws.close();
@@ -6465,6 +6454,7 @@
       if (socket !== (1 === adx ? WsConnection.ws : WsConnection.ws2)) return;
       this.handshake1(adx);
       const ok = await this.handshake2(adx);
+      if (socket !== (1 === adx ? WsConnection.ws : WsConnection.ws2)) return;
       if (!ok) {
         const target = 1 === adx ? WsConnection.ws : 2 === adx ? WsConnection.ws2 : WsConnection.ws3;
         try {
@@ -6555,6 +6545,7 @@
       if (3 !== oq && WsConnection.connected && WsConnection.connected2) {
         return true;
       }
+      const socket = 1 === oq ? WsConnection.ws : 2 === oq ? WsConnection.ws2 : WsConnection.ws3;
       var add;
       try {
         add = await WsConnection.getToken(oq);
@@ -6563,6 +6554,7 @@
         Notifications.warn("Drag+", "Captcha failed for Tab " + oq + " - retrying the connection.");
         return false;
       }
+      if (socket !== (1 === oq ? WsConnection.ws : 2 === oq ? WsConnection.ws2 : WsConnection.ws3)) return false;
       var fj = new DataView(new ArrayBuffer(add.length + 6));
       var ip = 0;
       fj.setUint8(ip++, 123);
