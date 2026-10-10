@@ -3165,6 +3165,50 @@
       $("#spectate-mode-target").addClass("active");
     }
   }
+  class MoDiagnostics {
+    static note(stage, detail = "") {
+      this.events = this.events || [];
+      this.events.push(new Date().toLocaleTimeString() + " " + stage + (detail ? ": " + detail : ""));
+      if (this.events.length > 24) this.events.shift();
+    }
+    static closeReason(reason) {
+      const text = String(reason || "").toLowerCase();
+      if (!text) return "No close reason provided";
+      if (/new connection|another location|another connection/.test(text)) return "Replaced by another connection";
+      if (/captcha|turnstile|verif/.test(text)) return "Verification rejected";
+      if (/account|login|auth|token/.test(text)) return "Account or login rejected";
+      if (/session/.test(text)) return "Session rejected";
+      if (/ban|block|limit|policy/.test(text)) return "Server policy rejection";
+      if (/protocol|version/.test(text)) return "Protocol rejected";
+      return "Server supplied an unclassified close reason";
+    }
+    static report() {
+      const W = WsConnection, A = Account;
+      const lines = ["MO connection report 1", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn)];
+      for (const slot of [1, 2]) {
+        const socket = slot === 1 ? W.ws : W.ws2;
+        const entry = slot === 1 ? A.slot1 : A.slot2;
+        const token = A["gameToken" + slot], at = A["gameTokenAt" + slot];
+        const shield = W._shield && W._shield[slot];
+        lines.push("Player " + slot + ": socket=" + (socket ? ["connecting", "open", "closing", "closed"][socket.readyState] : "none") + ", ready=" + Boolean(slot === 1 ? W.connected : W.connected2) + ", shield=" + Boolean(shield && shield.established) + ", account=" + Boolean(entry && entry.uuid) + ", token=" + Boolean(token) + ", tokenAge=" + (token && at ? Math.max(0, Math.floor((Date.now() - at) / 1000)) + "s" : "none") + ", tokenRequest=" + Boolean(A._slotRequests && A._slotRequests[slot]) + ", verification=" + Boolean(W.pendingResolvers && W.pendingResolvers[slot]));
+      }
+      lines.push("Recent connection events:", ...(this.events || ["No events recorded yet"]));
+      return lines.join("\n");
+    }
+    static init() {
+      const host = document.getElementById("account-box");
+      if (!host || document.getElementById("mo-connection-report")) return;
+      const section = document.createElement("section");
+      section.style.cssText = "margin-top:18px;border-top:1px solid #8bd4d930;padding-top:16px";
+      const title = document.createElement("div"); title.textContent = "Connection report"; title.style.cssText = "color:#a9e8db;font:600 12px Inter,Ubuntu,sans-serif;margin-bottom:9px";
+      const report = document.createElement("textarea"); report.id = "mo-connection-report"; report.readOnly = true; report.setAttribute("aria-label", "Connection report"); report.style.cssText = "box-sizing:border-box;width:100%;height:175px;resize:vertical;padding:10px;background:#091725;color:#c8dce9;border:1px solid #a8d3ec25;border-radius:9px;font:10px/1.5 monospace";
+      const button = document.createElement("button");button.type = "button";button.textContent = "Select report to copy";button.style.cssText = "margin-top:8px;padding:9px 12px;background:#20524a;color:#a9f9e5;border:1px solid #8bd4d930;border-radius:8px;cursor:pointer;font:600 11px Inter,Ubuntu,sans-serif";
+      button.addEventListener("click", () => { report.value = this.report(); report.focus(); report.select(); });
+      section.append(title, report, button);host.appendChild(section);
+      const update = () => { if (document.activeElement !== report) report.value = this.report(); };
+      update(); this.timer = setInterval(update, 1000);
+    }
+  }
   class MoMenu {
     static init() {
       const toggle = document.getElementById("mo-account-toggle");
@@ -3193,6 +3237,7 @@
       this.observer = new MutationObserver(() => this.refreshPreview());
       this.observer.observe(primary, { attributes: true, attributeFilter: ["style"] });
       this.refreshPreview();
+      MoDiagnostics.init();
     }
     static setAccount(open, restoreFocus = true) {
       if (!this.panel) return;
@@ -5396,27 +5441,31 @@
     static ["shieldHello"](slot) {
       this.shieldReadyPromise()
         .then((sh) => {
-          if (!sh || !sh.ready || !this.ip) return;
+          if (!sh || !sh.ready || !this.ip) { MoDiagnostics.note("Player " + slot, "Shield library not ready"); return; }
           const entry = this._shield && this._shield[slot];
           if (!entry || entry.session) return;
           let session;
           try {
             session = new sh.ShieldSession(sh.shield_build_id());
           } catch (e) {
+            MoDiagnostics.note("Player " + slot, "Shield session creation failed");
             console.log("[Drag+] shield session error (tab " + slot + ")", e);
             return;
           }
+          MoDiagnostics.note("Player " + slot, "Shield session created");
           entry.session = session;
           let hello = null;
           try {
             hello = session.hello();
           } catch (e) {
+            MoDiagnostics.note("Player " + slot, "Shield hello failed");
             console.log("[Drag+] shield hello error (tab " + slot + ")", e);
             return;
           }
           const socket = 1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3;
           if (socket && socket.readyState === socket.OPEN) {
             socket.send(hello);
+            MoDiagnostics.note("Player " + slot, "Shield hello sent");
             console.log("[Drag+] shield hello sent (tab " + slot + ") len=" + hello.length);
           }
         })
@@ -5456,6 +5505,7 @@
           return true;
         }
         entry.established = true;
+        MoDiagnostics.note("Player " + slot, "Shield handshake established");
         if (this._protoWaiting && this._protoWaiting[slot]) {
           this._protoWaiting[slot] = false;
           clearTimeout(this["_protoTimer" + slot]);
@@ -5512,6 +5562,7 @@
     // The captcha queue serializes token requests so the standby tab never
     // renders a third widget while an earlier one is still pending.
     static ["getToken"](slot) {
+      MoDiagnostics.note("Player " + slot, "Verification queued");
       const socket = 1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3;
       const task = this.captchaQueue.then(() => {
         if (socket !== (1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3)) throw new Error("Queued verification belongs to a closed connection");
@@ -5548,6 +5599,7 @@
           settled = true;
           clearTimeout(timeout); clearTimeout(sdkTimer);
           if (this.pendingResolvers[slot] === pending) delete this.pendingResolvers[slot];
+          MoDiagnostics.note("Player " + slot, error ? "Verification failed or cancelled" : "Verification completed");
           if (error) reject(error); else resolve(token);
         };
         const pending = { resolve: token => finish(null, token), reject: error => finish(error) };
@@ -5567,6 +5619,7 @@
             container.innerHTML = "";
             container.style.visibility = "visible";
             container.style.display = "block";
+            MoDiagnostics.note("Player " + slot, "Verification widget rendering");
             const id = window.turnstile.render(container, {
               sitekey: "0x4AAAAAAEkQx2FZR28MuMJC",
               execution: "execute", appearance: "interaction-only",
@@ -5683,6 +5736,7 @@
           this.flushProtoQueue(slot);
         }
       }, 700);
+      MoDiagnostics.note("Player " + slot, "Opening socket");
       const socket = new WebSocket(this.ip, "d1elnjtfbyzq7a");
       if (1 === slot) this.ws = socket;
       else if (2 === slot) this.ws2 = socket;
@@ -5793,6 +5847,7 @@
       }
     }
     static ["onOpen"](nq) {
+      MoDiagnostics.note("Player " + nq, "Socket opened");
       RelaySender.ip();
       if (1 === nq) SpamDetect.init();
       // 2026 Shield: the server requires the WASM hello before anything else.
@@ -5882,6 +5937,7 @@
       if (this.intentionalDisconnect) return false;
       if (numericTab !== 1 && numericTab !== 2) return false;
       const reason = ev && ev.reason ? String(ev.reason) : "";
+      MoDiagnostics.note("Player " + numericTab, "Socket closed (code " + Number(ev && ev.code || 0) + "). " + MoDiagnostics.closeReason(reason));
       if (/new connection/i.test(reason)) {
         Notifications.warn("Drag+", "Tab " + numericTab + " was replaced by another connection from this IP (new 3rb.io rule)");
         if (2 === numericTab) {
@@ -5916,6 +5972,7 @@
       return true;
     }
     static ["onError"](alo) {
+      MoDiagnostics.note("Player " + alo, "WebSocket error; browser console has network details");
       if (!(this.wsOpen || this.ws2Open)) {
         MainMenu.open();
       }
@@ -6462,6 +6519,7 @@
         } catch (e) {}
         return;
       }
+      MoDiagnostics.note("Player " + adx, "Client handshake completed");
       this.initPingLoop(adx);
       this.accountPacketSent = false;
       Camera.isSpectating = false;
@@ -6902,7 +6960,7 @@
         ? { credentials: "omit", headers: { Authorization: "Bearer " + entry.accessToken } }
         : { credentials: "include" };
       request.promise = fetch("https://3rb.io/api/auth/game-token", opts)
-        .then(r => r.ok ? r.json() : null)
+        .then(r => { MoDiagnostics.note("Account slot " + slot, "Token HTTP " + Number(r.status || 0)); return r.ok ? r.json() : null; })
         .then(d => {
           if (!current()) return null;
           const tk = d && (d.token || (d.data && d.data.token));
@@ -6912,6 +6970,7 @@
             Notifications.warn("Login", "Account session needs signing in again. Open Account to log in.");
             return null;
           }
+          MoDiagnostics.note("Account slot " + slot, "Fresh token received");
           this._slotFetchFail[slot] = 0;
           this["gameToken" + slot] = tk;
           this["gameTokenAt" + slot] = Date.now();
@@ -6921,7 +6980,7 @@
           if (WsConnection && WsConnection.connected && !WsConnection.ws2) WsConnection.queueTab2();
           return tk;
         })
-        .catch(() => null)
+        .catch(() => { MoDiagnostics.note("Account slot " + slot, "Token request failed"); return null; })
         .finally(() => { if (this._slotRequests[slot] === request) delete this._slotRequests[slot]; });
       return request.promise;
     }
