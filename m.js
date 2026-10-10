@@ -3171,9 +3171,27 @@
       this.events.push(new Date().toLocaleTimeString() + " " + stage + (detail ? ": " + detail : ""));
       if (this.events.length > 24) this.events.shift();
     }
+    static packet(slot, direction, plain, wire = plain) {
+      // Only lengths and protocol bytes are retained. Never retain packet bodies.
+      const view = value => ArrayBuffer.isView(value)
+        ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+        : new Uint8Array(value);
+      const input = view(plain), output = view(wire);
+      const label = direction === "out" ? ({255:"login",123:"verification/control",100:"ping",0:"spawn",16:"movement"}[input[0]] || "control") : "server";
+      this.packetTrace = this.packetTrace || {};
+      const trace = this.packetTrace[slot] = this.packetTrace[slot] || [];
+      trace.push(direction + " " + label + ": opcode=" + (input.length ? input[0] : "empty") + ", plain=" + input.byteLength + "B, wire=" + output.byteLength + "B, envelope=" + (output.length ? output[0] : "empty"));
+      if (trace.length > 12) trace.shift();
+    }
+    static packetClose(slot, code) {
+      this.closedPackets = this.closedPackets || {};
+      this.closedPackets[slot] = {code:Number(code || 0), trace:[...((this.packetTrace && this.packetTrace[slot]) || [])]};
+      if (this.packetTrace) this.packetTrace[slot] = [];
+    }
     static closeReason(reason) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "No close reason provided";
+      if (/too (?:big|large|long)|size|length|oversiz|payload/.test(text)) return "Message size or length rejected";
       if (/new connection|another location|another connection/.test(text)) return "Replaced by another connection";
       if (/captcha|turnstile|verif/.test(text)) return "Verification rejected";
       if (/account|login|auth|token/.test(text)) return "Account or login rejected";
@@ -3184,13 +3202,19 @@
     }
     static report() {
       const W = WsConnection, A = Account;
-      const lines = ["MO connection report 2", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
+      const lines = ["MO connection report 3", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
       for (const slot of [1, 2]) {
         const socket = slot === 1 ? W.ws : W.ws2;
         const entry = slot === 1 ? A.slot1 : A.slot2;
         const token = A["gameToken" + slot], at = A["gameTokenAt" + slot];
         const shield = W._shield && W._shield[slot];
         lines.push("Player " + slot + ": socket=" + (socket ? ["connecting", "open", "closing", "closed"][socket.readyState] : "none") + ", ready=" + Boolean(slot === 1 ? W.connected : W.connected2) + ", shield=" + Boolean(shield && shield.established) + ", account=" + Boolean(entry && entry.uuid) + ", token=" + Boolean(token) + ", tokenAge=" + (token && at ? Math.max(0, Math.floor((Date.now() - at) / 1000)) + "s" : "none") + ", tokenRequest=" + Boolean(A._slotRequests && A._slotRequests[slot]) + ", verification=" + Boolean(W.pendingResolvers && W.pendingResolvers[slot]));
+      }
+      for (const slot of [1, 2]) {
+        const trace = this.packetTrace && this.packetTrace[slot];
+        if (trace && trace.length) lines.push("Player " + slot + " recent packet sizes (no packet contents):", ...trace);
+        const closed = this.closedPackets && this.closedPackets[slot];
+        if (closed) lines.push("Player " + slot + " packets at last disconnect (code " + closed.code + "):", ...closed.trace);
       }
       lines.push("Recent connection events:", ...(this.events || ["No events recorded yet"]));
       return lines.join("\n");
@@ -5844,6 +5868,7 @@
           console.log("[Drag+] shield seal error (tab " + yj + ")", e);
         }
       }
+      if ((1 === yj && this.wsOpen) || (2 === yj && this.ws2Open) || (3 === yj && this.ws3Open)) MoDiagnostics.packet(yj, "out", acr, payload);
       if (1 === yj && this.wsOpen) {
         this.ws.send(payload);
       } else if (2 === yj && this.ws2Open) {
@@ -5872,6 +5897,7 @@
         } catch (e) {}
         return;
       }
+      MoDiagnostics.packet(adu, "in", alh.data);
       // 2026 Shield frames (209 HelloAck / 210 sealed game frame).
       if (this.shieldHandleFrame(alh, adu)) {
         return;
@@ -5943,6 +5969,7 @@
       if (this.intentionalDisconnect) return false;
       if (numericTab !== 1 && numericTab !== 2) return false;
       const reason = ev && ev.reason ? String(ev.reason) : "";
+      MoDiagnostics.packetClose(numericTab, ev && ev.code);
       MoDiagnostics.note("Player " + numericTab, "Socket closed (code " + Number(ev && ev.code || 0) + "). " + MoDiagnostics.closeReason(reason));
       if (/new connection/i.test(reason)) {
         Notifications.warn("Drag+", "Tab " + numericTab + " was replaced by another connection from this IP (new 3rb.io rule)");
@@ -6583,7 +6610,7 @@
       // ("New connection from this browser"). Tab 1 uses slot 1, Tab 2 uses
       // slot 2 (falling back to guest).
       const str = 1 === Number(ahn) ? Account.loginStringFor(1) : Account.loginStringFor(2);
-      console.log("Drag+ Login packet (tab " + ahn + "): " + (str ? (str.length > 24 ? str.slice(0, 24) + "..." : str) : "guest"));
+      console.log("Drag+ Login packet (tab " + ahn + "): " + (str ? "account, " + (3 + str.length * 2) + " bytes" : "guest"));
       if (!str) {
         const px = new Uint8Array([255, 0, 0]);
         WsConnection.send(px, ahn);
