@@ -3184,7 +3184,7 @@
     }
     static report() {
       const W = WsConnection, A = Account;
-      const lines = ["MO connection report 1", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn)];
+      const lines = ["MO connection report 2", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
       for (const slot of [1, 2]) {
         const socket = slot === 1 ? W.ws : W.ws2;
         const entry = slot === 1 ? A.slot1 : A.slot2;
@@ -3198,6 +3198,12 @@
     static init() {
       const host = document.getElementById("account-box");
       if (!host || document.getElementById("mo-connection-report")) return;
+      window.addEventListener("securitypolicyviolation", event => {
+        const directive = String(event.effectiveDirective || "unknown").replace(/[^a-z-]/gi, "");
+        let destination = "resource";
+        try { destination = new URL(event.blockedURI).hostname; } catch (_) {}
+        this.note("Browser CSP", directive + " blocked " + destination);
+      });
       const section = document.createElement("section");
       section.style.cssText = "margin-top:18px;border-top:1px solid #8bd4d930;padding-top:16px";
       const title = document.createElement("div"); title.textContent = "Connection report"; title.style.cssText = "color:#a9e8db;font:600 12px Inter,Ubuntu,sans-serif;margin-bottom:9px";
