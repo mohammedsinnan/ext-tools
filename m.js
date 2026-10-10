@@ -385,6 +385,8 @@
       this.arbSkins = Storage.get("settings", "arbSkins") || "on";
       this.food = Storage.get("settings", "food") || "monoColored";
       this.bgSectors = Storage.get("settings", "bgSectors") || "image";
+      const arenaStyle = Storage.get("settings", "moArenaStyle");
+      this.moArenaStyle = arenaStyle === "classic" ? "classic" : "space";
       this.vanillaGrid = Storage.get("settings", "vanillaGrid") || "off";
       this.cursorLine = Storage.get("settings", "cursorLine") || "off";
       this.teamIndicator = Storage.get("settings", "teamIndicator") || "on";
@@ -4675,7 +4677,56 @@
         } else if ("rainbow" === Settings.food) {
           this.rainbow();
         }
+        if (Settings.moArenaStyle === "space") this.spaceFoodGlow();
       }
+    }
+    static ["spaceFoodGlow"]() {
+      const ctx = Renderer.ctx, view = Camera.viewBounds;
+      const zoom = Camera.viewport;
+      if (!(zoom > 0) || !Number.isFinite(zoom) || !view) return;
+      if (!this.spaceFoodSprites) this.spaceFoodSprites = new Map();
+      let drawn = 0;
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      try {
+        for (const food of CellData.food) {
+          const ox = food.cellType === 2 ? WorldData.position.x : 0;
+          const oy = food.cellType === 2 ? WorldData.position.y : 0;
+          const x = food.animX - ox, y = food.animY - oy;
+          const radius = food.animRadius + Theme.foodSize;
+          if (!(radius > 0) || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(radius) || radius * zoom < 1.5) continue;
+          const extent = radius * 2.4;
+          if (x + extent < view.left || x - extent > view.right || y + extent < view.top || y - extent > view.bottom) continue;
+          const color = Settings.food === "rainbow" ? "#a6dfff" : Theme.foodColor;
+          let sprite = this.spaceFoodSprites.get(color);
+          if (!sprite) {
+            sprite = this.cacheSpaceFoodGlow(color);
+            if (this.spaceFoodSprites.size >= 16) this.spaceFoodSprites.delete(this.spaceFoodSprites.keys().next().value);
+            this.spaceFoodSprites.set(color, sprite);
+          }
+          ctx.drawImage(sprite, x - extent, y - extent, extent * 2, extent * 2);
+          if (++drawn >= 400) break;
+        }
+      } finally { ctx.restore(); }
+    }
+    static ["cacheSpaceFoodGlow"](color) {
+      const sprite = document.createElement("canvas");
+      sprite.width = sprite.height = 64;
+      const ctx = sprite.getContext("2d");
+      ctx.fillStyle = "#96ddff";
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 64, 64);
+      const halo = ctx.createRadialGradient(32, 32, 0, 32, 32, 31);
+      halo.addColorStop(0, "rgba(255,255,255,0.9)");
+      halo.addColorStop(0.2, "rgba(255,255,255,0.7)");
+      halo.addColorStop(0.42, "rgba(255,255,255,0.22)");
+      halo.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.fillStyle = halo; ctx.fillRect(0, 0, 64, 64);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(238,249,255,0.8)";
+      ctx.beginPath(); ctx.arc(32, 32, 2.5, 0, Math.PI * 2); ctx.fill();
+      return sprite;
     }
     static ["monoColored"]() {
       const pi = Renderer.ctx;
@@ -4732,6 +4783,7 @@
       this.bgImageEl = null;
     }
     static ["render"]() {
+      if (Settings.moArenaStyle === "space") return this.spaceArena();
       const xf = Settings.bgSectors;
       if ("image" === xf) {
         return this.image();
@@ -4765,6 +4817,76 @@
           }
         }
       }
+    }
+    static ["spaceArena"]() {
+      const view = Camera.viewBounds, zoom = Camera.viewport;
+      const left = WorldData.left, top = WorldData.top, edge = WorldData.edge;
+      if (!view || !(edge > 0) || !Number.isFinite(edge) || !(zoom > 0) || !Number.isFinite(zoom)) return;
+      const x0 = Math.max(left, view.left), y0 = Math.max(top, view.top);
+      const x1 = Math.min(left + edge, view.right), y1 = Math.min(top + edge, view.bottom);
+      if (!(x1 > x0) || !(y1 > y0)) return;
+      const ctx = Renderer.ctx;
+      if (!this.spaceTile) this.spaceTile = this.cacheSpaceTile();
+      // The same native camera transform draws the arena. Tile count follows
+      // the visible screen, rather than the full map or the number of cells.
+      const tileEdge = 640 / zoom;
+      const firstX = Math.floor((x0 - left) / tileEdge);
+      const firstY = Math.floor((y0 - top) / tileEdge);
+      const lastX = Math.ceil((x1 - left) / tileEdge);
+      const lastY = Math.ceil((y1 - top) / tileEdge);
+      ctx.save();
+      try {
+        ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.clip();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#080e19"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        for (let iy = firstY; iy < lastY; iy++) {
+          for (let ix = firstX; ix < lastX; ix++) {
+            ctx.drawImage(this.spaceTile, left + ix * tileEdge, top + iy * tileEdge, tileEdge, tileEdge);
+          }
+        }
+        // Quiet sector guides retain orientation without giant background art.
+        ctx.strokeStyle = "rgba(115,164,220,0.1)";
+        ctx.lineWidth = 1 / zoom;
+        ctx.beginPath();
+        for (let i = 1; i < 5; i++) {
+          const x = left + edge * i / 5, y = top + edge * i / 5;
+          ctx.moveTo(x, top); ctx.lineTo(x, top + edge);
+          ctx.moveTo(left, y); ctx.lineTo(left + edge, y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "rgba(149,182,217,0.18)";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = (14 / zoom) + "px Ubuntu, sans-serif";
+        for (let row = 0; row < 5; row++) {
+          for (let column = 0; column < 5; column++) {
+            const x = left + edge * (column + 0.5) / 5;
+            const y = top + edge * (row + 0.5) / 5;
+            if (x >= x0 && x <= x1 && y >= y0 && y <= y1) ctx.fillText(this.letters[row] + (column + 1), x, y);
+          }
+        }
+      } finally { ctx.restore(); }
+    }
+    static ["cacheSpaceTile"]() {
+      const tile = document.createElement("canvas");
+      tile.width = tile.height = 640;
+      const ctx = tile.getContext("2d");
+      let seed = 3102026;
+      const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+      ctx.fillStyle = "#080e19"; ctx.fillRect(0, 0, 640, 640);
+      const haze = ctx.createRadialGradient(310, 300, 0, 310, 300, 280);
+      haze.addColorStop(0, "rgba(63,80,153,0.09)");
+      haze.addColorStop(1, "rgba(63,80,153,0)");
+      ctx.fillStyle = haze; ctx.fillRect(0, 0, 640, 640);
+      // Stable dim points: no flashing, drifting decorations or extra loop.
+      for (let i = 0; i < 55; i++) {
+        const x = 8 + random() * 624, y = 8 + random() * 624;
+        const radius = 0.45 + random() * 0.65;
+        ctx.globalAlpha = 0.16 + random() * 0.24;
+        ctx.fillStyle = i % 3 ? "#a1b9d7" : "#93a7d6";
+        ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return tile;
     }
     static ["sectors"]() {
       const qq = Renderer.ctx;
