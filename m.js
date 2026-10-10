@@ -6082,18 +6082,46 @@
       return false;
     }
     static ["recycleActiveCell"]() {
-      // Standby Tab 3 was removed: K / /kill now just respawns the active
-      // tab's cell instead of promoting a hidden third socket.
       const tab = Number(Player.typeID || 1);
-      const alive = tab === 2 ? Player._isAlive2 : Player._isAlive;
-      if (!alive) {
-        Notifications.warn("Drag+", "Tab " + tab + " is not alive.");
+      if (tab !== 1 && tab !== 2) return false;
+      const socket = tab === 1 ? this.ws : this.ws2;
+      const alive = () => tab === 1 ? Player._isAlive : Player._isAlive2;
+      const current = () => socket === (tab === 1 ? this.ws : this.ws2) && socket && socket.readyState === socket.OPEN && PacketSender.chekConnection(tab);
+      if (!alive() || !current()) {
+        Notifications.warn("MO", "Player " + tab + " must be alive and connected to kill and respawn.");
         return false;
       }
       if (this.recycleLocks.has(tab)) return false;
       this.recycleLocks.add(tab);
-      PacketSender.spawnTab(tab);
-      setTimeout(() => this.recycleLocks.delete(tab), 1800);
+      const locks = this.recycleLocks;
+      this._recycleJobs = this._recycleJobs || new Map();
+      const jobs = this._recycleJobs, job = {};
+      jobs.set(tab, job);
+      let spawned = false, interval;
+      const started = Date.now();
+      const finish = () => { clearInterval(interval); if (jobs.get(tab) === job) { locks.delete(tab); jobs.delete(tab); } };
+      const check = () => {
+        if (!current()) { finish(); return; }
+        if (!spawned && !alive()) {
+          // Wait for the server's cell removal. Do not fake a local death.
+          spawned = true;
+          PacketSender.spawnTab(tab);
+          if (MainMenu.isOpened) MainMenu.close();
+          MoDiagnostics.note("Player " + tab, "Kill confirmed; respawn requested");
+        } else if (spawned && alive()) {
+          MoDiagnostics.note("Player " + tab, "Respawn confirmed");
+          finish();
+        }
+        if (Date.now() - started >= 8000) {
+          Notifications.warn("MO", spawned ? "Respawn was not confirmed. Use Play to retry." : "The server did not accept the kill request for this player.");
+          finish();
+        }
+      };
+      PacketSender.killRequest(tab);
+      // The game's /kill command requires a second submission to confirm.
+      setTimeout(() => { if (current() && !spawned && alive() && jobs.get(tab) === job) PacketSender.killRequest(tab); }, 300);
+      interval = setInterval(check, 50);
+      MoDiagnostics.note("Player " + tab, "Kill and respawn requested with K");
       return true;
     }
     static ["statusSnapshot"]() {
@@ -6142,6 +6170,7 @@
       if (this.keyBindingsRegistered) return;
       this.keyBindingsRegistered = true;
       document.addEventListener("keydown", (event) => {
+        if (MainMenu.isOpened) return;
         if (event.code !== "KeyK" || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
         if (event.target && event.target.matches && event.target.matches("input, textarea, select, [contenteditable='true']")) return;
         event.preventDefault();
@@ -6688,6 +6717,18 @@
         fa.setFloat64(9, Math.fround(~~u), true);
         this.sendPacket(fa, afj);
       }
+    }
+    static killRequest(tab) {
+      if ((tab !== 1 && tab !== 2) || !this.chekConnection(tab)) return false;
+      // Same chat command encoding as the game: opcode 86, target -1,
+      // UTF-8 text and NUL. Keep the explicit slot, including guest Player 2.
+      const command = new TextEncoder().encode("/kill");
+      const packet = this.createView(6 + command.length);
+      packet.setUint8(0, 86);
+      packet.setInt32(1, -1, true);
+      new Uint8Array(packet.buffer).set(command, 5);
+      this.sendPacket(packet, tab);
+      return true;
     }
     static ["chat"](am, jj = Player.typeID) {
       const command = String(am || "").trim().toLowerCase();
