@@ -9,8 +9,8 @@
 (function () {
   "use strict";
 
-  var WASM_PRIMARY = "https://3rb.io/js/dist/37c2899eff56e1a2596a.module.wasm";
-  var WASM_FALLBACK = "https://3rb.io/js/dist/37c2899eff56e1a2596a.module.wasm";
+  var WASM_PRIMARY = "https://3rb.io/js/dist/bfc084687f4b21f1f54b.module.wasm";
+  var WASM_FALLBACK = "https://3rb.io/js/dist/bfc084687f4b21f1f54b.module.wasm";
 
   // ------------------------------------------------------------------ glue
   var T = new TextDecoder("utf-8", { ignoreBOM: true, fatal: true });
@@ -425,6 +425,7 @@
       .then(function (res) {
         E = res.instance.exports;
         if (!shield_selftest()) throw new Error("shield selftest failed");
+        if (window.__SHIELD__) window.__SHIELD__.wasmFile = new URL(url).pathname.split("/").pop();
         return true;
       });
   }
@@ -434,29 +435,32 @@
   // update. Discover the live wasm URL from the versioned bundle + shield
   // chunk, and cache it per bundle version so later loads are instant.
   function getBundleVersion() {
-    return fetch("https://3rb.io/").then(function (r) {
+    return fetch("https://3rb.io/", { cache: "no-cache" }).then(function (r) {
       if (!r.ok) throw new Error("page fetch failed " + r.status);
       return r.text();
     }).then(function (html) {
-      var m = html.match(/js\/dist\/bundle\.js\?v=([a-f0-9]+)/);
-      if (!m) throw new Error("bundle version not found in page");
-      return m[1];
+      // Support both old bundle.js?v=... and current bundle.<hash>.js URLs.
+      var m = html.match(/src=["']([^"']*js\/dist\/bundle(?:\.[a-f0-9]+)?\.js(?:\?[^"']*)?)["']/i);
+      if (!m) throw new Error("bundle URL not found in page");
+      var url = new URL(m[1], "https://3rb.io/");
+      if (url.origin !== "https://3rb.io") throw new Error("unexpected bundle origin");
+      return url.href;
     });
   }
-  function discoverWasmUrl(v) {
-    try {
-      var cached = localStorage.getItem("dragplus_wasm_" + v);
-      if (cached) return Promise.resolve(cached);
-    } catch (e) {}
-    return fetch("https://3rb.io/js/dist/bundle.js?v=" + v)
+  function discoverWasmUrl(bundleUrl) {
+    // Discover the Shield import from its selftest call, rather than pinning
+    // a webpack chunk ID: those IDs change when the game is rebuilt.
+    return fetch(bundleUrl, { cache: "no-cache" })
       .then(function (r) {
         if (!r.ok) throw new Error("bundle fetch failed " + r.status);
         return r.text();
       })
       .then(function (text) {
-        var m = text.match(/893:"([a-f0-9]+)"/);
-        if (!m) throw new Error("shield chunk not found in bundle");
-        return fetch("https://3rb.io/js/dist/893." + m[1] + ".bundle.js").then(function (r) {
+        var ref = text.match(/\.e\((\d+)\)\.then\([^;]{1,200}\);[^;]{1,350}\.shield_selftest\(/);
+        if (!ref) throw new Error("shield import not found in bundle");
+        var hash = text.match(new RegExp("(?:^|[,{])" + ref[1] + ':"([a-f0-9]+)"'));
+        if (!hash) throw new Error("shield chunk hash not found in bundle");
+        return fetch("https://3rb.io/js/dist/" + ref[1] + "." + hash[1] + ".bundle.js").then(function (r) {
           if (!r.ok) throw new Error("chunk fetch failed " + r.status);
           return r.text();
         });
@@ -465,10 +469,6 @@
         var m = text.match(/\.v\([^)]*?"([a-f0-9]{20})"/);
         if (!m) throw new Error("shield wasm id not found in chunk");
         return "https://3rb.io/js/dist/" + m[1] + ".module.wasm";
-      })
-      .then(function (url) {
-        try { localStorage.setItem("dragplus_wasm_" + v, url); } catch (e) {}
-        return url;
       });
   }
   function loadWasmDynamic() {

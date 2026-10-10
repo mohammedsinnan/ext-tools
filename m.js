@@ -3202,7 +3202,12 @@
     }
     static report() {
       const W = WsConnection, A = Account;
-      const lines = ["MO connection report 4", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
+      const lines = ["MO connection report 5", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
+      const sh = window.__SHIELD__;
+      lines.push("Shield loaded: " + Boolean(sh && sh.isReady));
+      if (sh && sh.isReady) {
+        try { lines.push("Shield build: " + sh.shield_build_id() + ", protocol: " + sh.shield_protocol_version() + ", file: " + String(sh.wasmFile || "unknown")); } catch (_) {}
+      }
       for (const slot of [1, 2]) {
         const socket = slot === 1 ? W.ws : W.ws2;
         const entry = slot === 1 ? A.slot1 : A.slot2;
