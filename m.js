@@ -3165,6 +3165,58 @@
       $("#spectate-mode-target").addClass("active");
     }
   }
+  class MoMenu {
+    static init() {
+      const toggle = document.getElementById("mo-account-toggle");
+      const panel = document.getElementById("mo-account-panel");
+      if (!toggle || !panel) return;
+      this.toggle = toggle; this.panel = panel;
+      const close = document.getElementById("mo-account-close");
+      toggle.addEventListener("click", () => this.setAccount(panel.hidden));
+      close.addEventListener("click", () => this.setAccount(false));
+      panel.addEventListener("click", event => { if (event.target === panel) this.setAccount(false); });
+      panel.addEventListener("keydown", event => {
+        if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); this.setAccount(false); }
+        if (event.key !== "Tab") return;
+        const controls = [...panel.querySelectorAll("button, a[href], input, select")].filter(el => el.getClientRects().length && !el.disabled);
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      });
+      ["skin", "skin2", "arbSkin"].forEach(id => {
+        const field = document.getElementById(id);
+        field.addEventListener("input", () => this.refreshPreview());
+        field.addEventListener("change", () => this.refreshPreview());
+        field.addEventListener("blur", () => setTimeout(() => this.refreshPreview(), 0));
+      });
+      const primary = document.querySelector("#mo-player-one .skin-preview");
+      this.observer = new MutationObserver(() => this.refreshPreview());
+      this.observer.observe(primary, { attributes: true, attributeFilter: ["style"] });
+      this.refreshPreview();
+    }
+    static setAccount(open, restoreFocus = true) {
+      if (!this.panel) return;
+      this.panel.hidden = !open;
+      this.toggle.setAttribute("aria-expanded", String(open));
+      if (open) document.getElementById("mo-account-close").focus();
+      else if (restoreFocus) this.toggle.focus();
+    }
+    static refreshPreview() {
+      const preview = document.querySelector(".mo-skin-preview-2");
+      if (!preview) return;
+      const second = document.getElementById("skin2").value.trim();
+      const primary = document.querySelector("#mo-player-one .skin-preview");
+      let background = primary ? primary.style.backgroundImage : "";
+      if (second) {
+        try {
+          const url = new URL(second, document.baseURI);
+          background = /^(https?:)$/.test(url.protocol) ? "url(" + JSON.stringify(url.href) + ")" : "";
+        } catch (_) { background = ""; }
+      }
+      preview.style.backgroundImage = background;
+      preview.parentElement.classList.toggle("has-skin", Boolean(background));
+    }
+  }
   class MainMenu {
     static ["init"]() {
       Notifications.init();
