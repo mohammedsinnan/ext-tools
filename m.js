@@ -3251,6 +3251,7 @@
         let saved; try { saved = Storage.get('cosmetics', 'player' + slot); } catch (_) {}
         saved = saved && typeof saved === 'object' ? saved : {};
         this.configs[slot] = {
+          matchingSkin: saved.matchingSkin !== false,
           mode: ['mouse','ring','both','still'].includes(saved.mode) ? saved.mode : 'mouse',
           ring: ['aurora','solar','eclipse','prism','cipher'].includes(saved.ring) ? saved.ring : 'aurora',
           speed: Number.isFinite(saved.speed) ? Math.min(1.5, Math.max(0, saved.speed)) : 0.65,
@@ -3271,11 +3272,11 @@
       const account = document.getElementById('mo-account-toggle');
       if (!account) return;
       this.styles = [
-        ['aurora','Aurora Halo','Ice-lit shards · twin orbits','#79f5df'],
-        ['solar','Solar Crown','Golden rays · royal geometry','#ffd48b'],
-        ['eclipse','Violet Eclipse','Lunar arcs · violet energy','#bc9aff'],
-        ['prism','Prism Bloom','Iridescent petals · soft light','#ffa8dd'],
-        ['cipher','Silver Cipher','Precision gears · etched silver','#cde4ff']
+        ['aurora','Frost Sentinel','Crystal armor · ice guardian','#79f5df'],
+        ['solar','Solar Sovereign','Golden crown · lion crest','#ffd48b'],
+        ['eclipse','Void Reaper','Violet blades · shadow mask','#bc9aff'],
+        ['prism','Prism Kitsune','Neon petals · fox spirit','#ffa8dd'],
+        ['cipher','Chrome Warden','Heavy steel · robotic helm','#cde4ff']
       ];
       this.slot = 1;
       const style = document.createElement('style');
@@ -3292,12 +3293,13 @@
       document.head.appendChild(style);
       this.toggle = document.createElement('button');this.toggle.id='mo-inventory-open';this.toggle.type='button';this.toggle.textContent='◈ Inventory';this.toggle.setAttribute('aria-controls','mo-inventory');this.toggle.setAttribute('aria-expanded','false');account.before(this.toggle);
       this.root=document.createElement('div');this.root.id='mo-inventory';this.root.hidden=true;
-      this.root.innerHTML=`<section class="moi-dialog" role="dialog" aria-modal="true" aria-labelledby="moi-title"><header class="moi-head"><div><div class="moi-kicker">MO / ORBIT COLLECTION</div><h2 id="moi-title">Make your orbit yours.</h2><div class="moi-muted">Original rings. A little motion. Your signature.</div></div><button type="button" class="moi-close">Close ×</button></header><div class="moi-tools moi-players"><button type="button" data-player="1">Player 01</button><button type="button" data-player="2">Player 02</button></div><div class="moi-tools moi-modes"><button type="button" data-mode="mouse">Mouse motion</button><button type="button" data-mode="ring">Spinning ring</button><button type="button" data-mode="both">Both effects</button><button type="button" data-mode="still">Effects off</button></div><div class="moi-layout"><aside class="moi-live"><canvas width="320" height="320" aria-label="Selected ring preview"></canvas><strong id="moi-selected"></strong><div class="moi-muted">Live preview</div><label>Rotation speed<input aria-label="Rotation speed" id="moi-speed" type="range" min="0" max="1.5" step="0.05"></label><label>Ring brightness<input aria-label="Ring brightness" id="moi-glow" type="range" min="0.2" max="1" step="0.05"></label></aside><div class="moi-grid"></div></div><footer class="moi-footer"><span>Saved automatically · separate choices for each player</span><span>Visible on your device</span></footer></section>`;
+      this.root.innerHTML=`<section class="moi-dialog" role="dialog" aria-modal="true" aria-labelledby="moi-title"><header class="moi-head"><div><div class="moi-kicker">MO / ORBIT COLLECTION</div><h2 id="moi-title">Make your orbit yours.</h2><div class="moi-muted">Five complete sets. Bold spinning frames. Matching character skins.</div></div><button type="button" class="moi-close">Close ×</button></header><div class="moi-tools moi-players"><button type="button" data-player="1">Player 01</button><button type="button" data-player="2">Player 02</button></div><div class="moi-tools moi-modes"><button type="button" data-mode="mouse">Mouse motion</button><button type="button" data-mode="ring">Spinning ring</button><button type="button" data-mode="both">Both effects</button><button type="button" data-mode="still">Effects off</button></div><div class="moi-layout"><aside class="moi-live"><canvas width="320" height="320" aria-label="Selected ring preview"></canvas><strong id="moi-selected"></strong><div class="moi-muted">Live preview</div><label><input id="moi-skin" type="checkbox" style="width:auto"> Use matching set skin</label><label>Rotation speed<input aria-label="Rotation speed" id="moi-speed" type="range" min="0" max="1.5" step="0.05"></label><label>Ring brightness<input aria-label="Ring brightness" id="moi-glow" type="range" min="0.2" max="1" step="0.05"></label></aside><div class="moi-grid"></div></div><footer class="moi-footer"><span>Saved automatically · separate choices for each player</span><span>Visible on your device</span></footer></section>`;
       document.body.appendChild(this.root);
       this.cards=[];
       const grid=this.root.querySelector('.moi-grid');
       for(const [id,name,description] of this.styles){const button=document.createElement('button');button.type='button';button.className='moi-card';button.dataset.ring=id;button.innerHTML=`<canvas width="220" height="220" aria-hidden="true"></canvas><strong>${name}</strong><small>${description}</small>`;button.addEventListener('click',()=>{const c=this.config(this.slot);c.ring=id;if(!this.ring(this.slot))c.mode='ring';this.save()});grid.appendChild(button);this.cards.push(button)}
-      const note=document.createElement('div');note.className='moi-note';note.innerHTML='<strong>A ring for every mood.</strong>Choose a ring to equip it. Keep your skin visible at the center.';grid.appendChild(note);
+      const note=document.createElement('div');note.className='moi-note';note.innerHTML='<strong>A ring for every mood.</strong>Choose a complete set. Turn off matching skin to keep your own skin.';grid.appendChild(note);
+      this.root.querySelector('#moi-skin').addEventListener('change',e=>{this.config(this.slot).matchingSkin=e.target.checked;this.save()});
       this.toggle.addEventListener('click',()=>this.setOpen(this.root.hidden));
       this.root.querySelector('.moi-close').addEventListener('click',()=>this.setOpen(false));
       this.root.addEventListener('click',e=>{if(e.target===this.root)this.setOpen(false)});
@@ -3307,24 +3309,56 @@
       this.root.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();this.setOpen(false)}if(event.key==='Tab'){const controls=[...this.root.querySelectorAll('button,input')].filter(x=>x.getClientRects().length);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}});
       this.refresh();
     }
-    static refresh(){if(!this.root)return;const c=this.config(this.slot);this.root.querySelectorAll('[data-player]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.player)===this.slot)));this.root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===c.mode)));this.cards.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ring===c.ring)));this.root.querySelector('#moi-speed').value=c.speed;this.root.querySelector('#moi-glow').value=c.glow;this.root.querySelector('#moi-selected').textContent=this.styles.find(x=>x[0]===c.ring)[1]}
+    static refresh(){if(!this.root)return;const c=this.config(this.slot);this.root.querySelectorAll('[data-player]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.player)===this.slot)));this.root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===c.mode)));this.cards.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ring===c.ring)));this.root.querySelector('#moi-skin').checked=c.matchingSkin;this.root.querySelector('#moi-speed').value=c.speed;this.root.querySelector('#moi-glow').value=c.glow;this.root.querySelector('#moi-selected').textContent=this.styles.find(x=>x[0]===c.ring)[1]}
     static setOpen(open){cancelAnimationFrame(this.frame);if(open){MoMenu.setAccount(false,false);this.slot=Player.typeID===2?2:1;this.refresh()}this.root.hidden=!open;this.toggle.setAttribute('aria-expanded',String(open));if(open){this.root.querySelector('.moi-close').focus();this.animate()}else{this.toggle.focus()}}
     static animate(){if(this.root.hidden)return;const c=this.config(this.slot),time=performance.now()/1000;for(const card of this.cards)this.preview(card.querySelector('canvas'),card.dataset.ring,c,time);this.preview(this.root.querySelector('.moi-live canvas'),c.ring,c,time);this.frame=requestAnimationFrame(()=>this.animate())}
-    static preview(canvas,id,c,time){const ctx=canvas.getContext('2d'),size=canvas.width;ctx.clearRect(0,0,size,size);ctx.save();ctx.translate(size/2,size/2);ctx.fillStyle='#172d41';ctx.beginPath();ctx.arc(0,0,size*.32,0,Math.PI*2);ctx.fill();ctx.fillStyle='#98c3d8';ctx.font='600 '+size*.13+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MO',0,0);this.paint(ctx,id,size*.38,time,c);ctx.restore()}
-    static sprite(id,layer){this.sprites=this.sprites||new Map();const key=id+layer;if(this.sprites.has(key))return this.sprites.get(key);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.translate(256,256);const colors={aurora:['#91ffe6','#b5eaff'],solar:['#ffe4a8','#ffb761'],eclipse:['#d2afff','#9f80ff'],prism:['#ffaadd','#91eeff'],cipher:['#e6f3ff','#9bb8dc']};const color=colors[id]||colors.aurora;ctx.strokeStyle=color[layer];ctx.fillStyle=color[layer];ctx.shadowColor=color[layer];ctx.shadowBlur=layer?9:15;ctx.lineCap='round';ctx.lineWidth=3;
-      const arc=(r,a,b,width=3)=>{ctx.lineWidth=width;ctx.beginPath();ctx.arc(0,0,r,a,b);ctx.stroke()};
-      const point=(r,a)=>[Math.cos(a)*r,Math.sin(a)*r];
-      const line=(r1,r2,a)=>{const p=point(r1,a),q=point(r2,a);ctx.beginPath();ctx.moveTo(...p);ctx.lineTo(...q);ctx.stroke()};
-      const shape=(points)=>{ctx.beginPath();ctx.moveTo(...points[0]);for(const p of points.slice(1))ctx.lineTo(...p);ctx.closePath();ctx.stroke()};
-      const tau=Math.PI*2;
-      if(layer){arc(216,0,tau,1.4);for(let i=0;i<6;i++){const a=i*tau/6;arc(209,a,a+.55,2);const p=point(216,a);ctx.beginPath();ctx.arc(...p,3.8,0,tau);ctx.fill()}}
-      else if(id==='aurora'){arc(228,0,tau,2);for(let i=0;i<12;i++){const a=i*tau/12;arc(237,a+.07,a+.33,4);shape([point(226,a),point(243,a+.07),point(226,a+.15),point(219,a+.07)])}}
-      else if(id==='solar'){arc(225,0,tau,3);arc(235,0,tau,1.3);for(let i=0;i<16;i++){const a=i*tau/16;shape([point(228,a-.04),point(248,a),point(228,a+.04)]);line(218,228,a+.15)}for(let i=0;i<4;i++)arc(241,i*tau/4+.08,i*tau/4+.45,4)}
-      else if(id==='eclipse'){for(let i=0;i<3;i++){const a=i*tau/3;arc(231,a+.12,a+1.35,8);arc(241,a+.4,a+1.2,2);shape([point(224,a),point(248,a+.12),point(230,a+.24)])}arc(219,0,tau,1)}
-      else if(id==='prism'){for(let i=0;i<10;i++){const a=i*tau/10;ctx.strokeStyle=i%2?'#91eeff':'#ffaadd';ctx.shadowColor=ctx.strokeStyle;shape([point(215,a),point(235,a-.1),point(248,a),point(235,a+.1)]);arc(230,a+.18,a+.4,2)}ctx.strokeStyle=color[0];arc(217,0,tau,1.3)}
-      else {arc(222,0,tau,2);arc(233,0,tau,3);arc(243,0,tau,1);for(let i=0;i<48;i++){const a=i*tau/48;ctx.lineWidth=i%4===0?3:1;line(234,i%4===0?249:241,a)}for(let i=0;i<8;i++){const a=i*tau/8;shape([point(218,a),point(225,a+.06),point(218,a+.12),point(211,a+.06)])}}
-      this.sprites.set(key,canvas);return canvas;
+    static preview(canvas,id,c,time){const ctx=canvas.getContext('2d'),size=canvas.width,r=size*.285;ctx.clearRect(0,0,size,size);ctx.save();ctx.translate(size/2,size/2);ctx.fillStyle='#172d41';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();if(c.matchingSkin)ctx.drawImage(this.skin(id),-r,-r,r*2,r*2);else{ctx.fillStyle='#98c3d8';ctx.font='600 '+size*.13+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MO',0,0)}this.paint(ctx,id,r*1.3,time,c);ctx.restore()}
+    static sprite(id,layer){this.sprites=this.sprites||new Map();const key=id+layer;if(this.sprites.has(key))return this.sprites.get(key);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.translate(256,256);const palettes={aurora:['#9efff0','#38bfdd','#143d69'],solar:['#fff4ba','#ffb32d','#673a12'],eclipse:['#e1bcff','#ad57ff','#361554'],prism:['#ffadee','#65e8ff','#662764'],cipher:['#f3f8ff','#a9bfd7','#294456']};const colors=palettes[id]||palettes.aurora;ctx.lineJoin='round';ctx.lineCap='round';ctx.shadowColor=colors[1];ctx.shadowBlur=10;
+      const tau=Math.PI*2,p=(r,a)=>[Math.cos(a)*r,Math.sin(a)*r];
+      const arc=(r,a,b,w,color)=>{ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.arc(0,0,r,a,b);ctx.stroke()};
+      const poly=(points,fill,stroke=colors[0],w=2)=>{ctx.beginPath();ctx.moveTo(...points[0]);for(const q of points.slice(1))ctx.lineTo(...q);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.stroke()};
+      if(layer){arc(180,0,tau,4,colors[0]);for(let i=0;i<12;i++){const a=i*tau/12;arc(189,a+.05,a+.27,5,colors[1]);poly([p(184,a),p(195,a+.03),p(184,a+.06)],colors[0])}}
+      else{
+        arc(214,0,tau,30,colors[2]);arc(200,0,tau,4,colors[0]);arc(231,0,tau,3,colors[1]);
+        if(id==='aurora'){for(let i=0;i<12;i++){const a=i*tau/12;poly([p(199,a-.14),p(219,a-.1),p(247,a),p(219,a+.1),p(199,a+.14),p(207,a)],colors[1]);poly([p(208,a),p(245,a),p(218,a+.08)],colors[0],'#caffff',1)}}
+        else if(id==='solar'){for(let i=0;i<16;i++){const a=i*tau/16;poly([p(203,a-.12),p(227,a-.09),p(i%2?239:248,a),p(227,a+.09),p(203,a+.12)],colors[1]);arc(216,a-.08,a+.08,7,colors[0])}for(let i=0;i<4;i++){const a=i*tau/4;poly([p(210,a-.07),p(245,a),p(210,a+.07),p(196,a)],'#fff5c3')}}
+        else if(id==='eclipse'){for(let i=0;i<6;i++){const a=i*tau/6;poly([p(197,a),p(230,a+.14),p(249,a+.38),p(224,a+.32),p(203,a+.66)],colors[1]);arc(216,a+.3,a+.77,8,colors[0])}}
+        else if(id==='prism'){for(let i=0;i<10;i++){const a=i*tau/10,c=i%2?colors[1]:colors[0];poly([p(195,a),p(219,a-.16),p(247,a),p(219,a+.16)],c,'#fff1ff',2);poly([p(206,a),p(243,a),p(219,a+.12)],i%2?'#287cb2':'#b442b9',c,1)}}
+        else{for(let i=0;i<24;i++){const a=i*tau/24;poly([p(203,a-.08),p(238,a-.08),p(238,a-.04),p(249,a-.04),p(249,a+.04),p(238,a+.04),p(238,a+.08),p(203,a+.08)],i%3===0?colors[0]:colors[1],colors[2],2);arc(216,a-.045,a+.045,4,'#fff')}arc(195,0,tau,5,colors[0])}
+      }this.sprites.set(key,canvas);return canvas;
     }
+    static skin(id){this.skins=this.skins||new Map();if(this.skins.has(id))return this.skins.get(id);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const c=canvas.getContext('2d');c.translate(256,256);c.beginPath();c.arc(0,0,256,0,Math.PI*2);c.clip();const colors={aurora:['#7bffe8','#247b97','#0b2537'],solar:['#ffe59e','#cf741e','#311921'],eclipse:['#d59dff','#7546bd','#100c26'],prism:['#ff91db','#327baa','#141c38'],cipher:['#e9f4ff','#59728e','#182738']}[id]||['#7bffe8','#247b97','#0b2537'];const g=c.createRadialGradient(-70,-90,8,0,0,340);g.addColorStop(0,colors[1]);g.addColorStop(1,colors[2]);c.fillStyle=g;c.fillRect(-256,-256,512,512);
+      const poly=(points,fill,stroke=colors[0],width=4)=>{c.beginPath();c.moveTo(...points[0]);for(const p of points.slice(1))c.lineTo(...p);c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=stroke;c.lineWidth=width;c.lineJoin='round';c.stroke()};
+      // Background etched rays remain still while the outer frame rotates.
+      c.strokeStyle=colors[0];c.globalAlpha=.18;c.lineWidth=2;for(let i=0;i<24;i++){const a=i*Math.PI/12;c.beginPath();c.moveTo(Math.cos(a)*130,Math.sin(a)*130);c.lineTo(Math.cos(a)*300,Math.sin(a)*300);c.stroke()}c.globalAlpha=1;
+      if(id==='aurora'){
+        poly([[-155,-170],[-80,-124],[0,-170],[80,-124],[155,-170],[136,-5],[102,120],[0,187],[-102,120],[-136,-5]],colors[2]);
+        for(const s of [-1,1]){poly([[s*18,-92],[s*113,-136],[s*100,-10],[s*42,52]],colors[1]);poly([[s*42,-41],[s*115,-69],[s*85,-16],[s*35,-8]],'#baffff');poly([[s*52,70],[s*100,25],[s*79,110],[s*20,144]],'#174359')}
+        poly([[0,-152],[31,-96],[0,9],[-31,-96]],'#c6fff3');poly([[-26,24],[26,24],[0,62]],colors[0]);
+      }else if(id==='solar'){
+        for(let i=0;i<14;i++){const a=i*Math.PI/7;poly([[Math.cos(a)*110,Math.sin(a)*110],[Math.cos(a-.12)*193,Math.sin(a-.12)*193],[Math.cos(a)*218,Math.sin(a)*218],[Math.cos(a+.12)*193,Math.sin(a+.12)*193]],i%2?colors[1]:'#85501d',colors[0],2)}
+        poly([[-104,-89],[0,-140],[104,-89],[121,14],[69,139],[0,180],[-69,139],[-121,14]],'#9b5926');
+        poly([[-98,-98],[-130,-173],[-49,-133],[0,-202],[49,-133],[130,-173],[98,-98]],'#f3c357');
+        for(const s of [-1,1]){poly([[s*17,-19],[s*90,-49],[s*70,7],[s*25,8]],'#fff4b4');poly([[0,63],[s*46,30],[s*78,83],[s*22,131]],'#e9af57')}
+        poly([[-30,25],[30,25],[0,60]],'#291c1b');
+      }else if(id==='eclipse'){
+        poly([[-175,-74],[-105,-180],[0,-224],[105,-180],[175,-74],[146,126],[0,202],[-146,126]],'#211631');
+        poly([[-120,-83],[0,-155],[120,-83],[106,95],[0,159],[-106,95]],'#100f24');
+        for(const s of [-1,1]){poly([[s*12,-27],[s*103,-52],[s*76,1],[s*18,10]],'#deacff');poly([[s*49,58],[s*90,96],[s*40,125]],'#7756bb')}
+        poly([[0,-150],[21,-73],[0,-39],[-21,-73]],'#b583ee');poly([[-21,50],[21,50],[0,87]],'#8755be');
+      }else if(id==='prism'){
+        for(const s of [-1,1]){poly([[s*39,-98],[s*162,-211],[s*137,5],[s*93,88],[0,157],[0,-50]],s<0?'#ef8fd1':'#69d5ef');poly([[s*73,-100],[s*147,-184],[s*113,-22]],'#3b3267');poly([[s*23,-3],[s*124,-40],[s*89,23],[s*36,28]],'#15273e');poly([[s*42,9],[s*92,-12],[s*72,15]],'#fff5f9');poly([[s*62,52],[s*110,8],[s*85,84]],'#7a3b8c')}
+        poly([[0,-127],[27,-58],[0,-20],[-27,-58]],'#fff0fd');poly([[-19,87],[19,87],[0,109]],'#1b2038');
+      }else{
+        poly([[-139,-150],[-71,-192],[71,-192],[139,-150],[166,56],[108,157],[0,198],[-108,157],[-166,56]],'#526c87');
+        poly([[-105,-91],[0,-130],[105,-91],[102,82],[58,149],[-58,149],[-102,82]],'#142b3e');
+        poly([[-122,-42],[-78,-72],[78,-72],[122,-42],[85,12],[-85,12]],'#9dc5e4');
+        poly([[-97,-36],[97,-36],[75,-8],[-75,-8]],'#9cffff','#deffff',2);
+        poly([[-57,60],[57,60],[38,130],[-38,130]],'#96aabe');c.strokeStyle='#233a51';c.lineWidth=7;for(let x=-30;x<=30;x+=15){c.beginPath();c.moveTo(x,75);c.lineTo(x,111);c.stroke()}
+      }this.skins.set(id,canvas);return canvas;
+    }
+    static drawSkin(cell,origin,opacity){if(!cell.isMine||cell.isVirus||cell.isFood||cell.isEjected||!this.ring(cell.cellType)||!this.config(cell.cellType).matchingSkin)return;const r=(cell.animRadius+5)*1.3,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.globalAlpha=Math.min(1,opacity);ctx.drawImage(this.skin(this.config(cell.cellType).ring),x-r,y-r,r*2,r*2);ctx.restore()}
+
     static paint(ctx,id,r,time,c){const reduced=Renderer.moReducedMotion,angle=reduced?0:time*c.speed*.55;for(let layer=0;layer<2;layer++){ctx.save();ctx.rotate(layer?-angle*.65:angle);ctx.globalAlpha=c.glow*(layer?.7:1);ctx.drawImage(this.sprite(id,layer),-r*1.12,-r*1.12,r*2.24,r*2.24);ctx.restore()}}
     static draw(cell,origin,opacity){if(!cell.isMine||cell.isVirus||cell.isFood||cell.isEjected||!this.ring(cell.cellType))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||r*Camera.viewport<18||opacity<=0)return;const ctx=Renderer.ctx,c=this.config(cell.cellType);ctx.save();ctx.translate(x,y);ctx.globalAlpha=Math.min(1,opacity);this.paint(ctx,c.ring,r,performance.now()/1000,{...c,glow:c.glow*Math.min(1,opacity)});ctx.restore()}
   }
@@ -8400,6 +8434,7 @@
         if (!aeq.isVirus && !dk && !akw && Settings.moMotionStyle === "cinematic") {
           this.drawMoCellLight(aeq, w, afc * gu);
         }
+        if (gu === 1) MoInventory.drawSkin(aeq, w, afc);
         if (aeq.isMine && aeq.cellType === moEmoteType && !aeq.isVirus && !aeq.isFood && gu === 1) MoEmotes.draw(aeq, w, afc);
         if (aeq.isMine && nl && aeq.cellType === Player.typeID && Settings.moMotionStyle !== "classic" && MoInventory.config(aeq.cellType).mode !== "still" && !MoInventory.ring(aeq.cellType)) {
           this.drawMoActiveGlow(aeq, w, afc * gu, ph);
