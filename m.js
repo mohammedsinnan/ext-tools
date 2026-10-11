@@ -367,7 +367,7 @@
       this.language = Storage.get("settings", "language") || Language.browser;
       this.CellAnimation = ~~Storage.get("settings", "CellAnimation") || 160;
       const motionStyle = Storage.get("settings", "moMotionStyle");
-      this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid"].includes(motionStyle) ? motionStyle : "cinematic";
+      this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid", "snappy"].includes(motionStyle) ? motionStyle : "cinematic";
       this.eatAnimation = Storage.get("settings", "eatAnimation") || "on";
       this.zoomSpeed = ~~Storage.get("settings", "zoomSpeed") || 92;
       this.cameraSpeed = ~~Storage.get("settings", "cameraSpeed") || 20;
@@ -3405,9 +3405,9 @@
   }
 
   class MoGameplay {
-    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));this.refresh()}
-    static select(style){if(!['cinematic','fluid'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
-    static refresh(){if(!this.hub)return;const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
+    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));this.refresh()}
+    static select(style){if(!['cinematic','fluid','snappy'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
+    static refresh(){if(!this.hub)return;const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
   }
 
   class MoMenu {
@@ -3975,20 +3975,21 @@
       const delay = Math.max(40, Number(Settings.CellAnimation) || 160);
       const resumed = dt > 250;
       const fluid = Settings.moMotionStyle === "fluid";
-      const moveBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (fluid ? 0.95 : 0.75)));
-      const sizeBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (fluid ? 0.85 : 0.55)));
+      const snappy = Settings.moMotionStyle === "snappy";
+      const moveBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.45 : fluid ? 0.95 : 0.75)));
+      const sizeBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.35 : fluid ? 0.85 : 0.55)));
       const dx = (this.x - this.animX) * moveBlend;
       const dy = (this.y - this.animY) * moveBlend;
       this.animX += dx;
       this.animY += dy;
       this.animRadius += (this.radius - this.animRadius) * sizeBlend;
-      const velocityBlend = -Math.expm1(-dt / (fluid ? 90 : 65));
+      const velocityBlend = -Math.expm1(-dt / (snappy ? 40 : fluid ? 90 : 65));
       const vx = resumed ? 0 : dx / dt;
       const vy = resumed ? 0 : dy / dt;
       this._moVX = (this._moVX || 0) + (vx - (this._moVX || 0)) * velocityBlend;
       this._moVY = (this._moVY || 0) + (vy - (this._moVY || 0)) * velocityBlend;
       const speed = Math.hypot(this._moVX, this._moVY);
-      const target = resumed ? 0 : Math.min(fluid ? 0.02 : 0.035, speed * 2 / Math.max(20, this.animRadius));
+      const target = resumed ? 0 : Math.min(snappy ? 0.008 : fluid ? 0.02 : 0.035, speed * 2 / Math.max(20, this.animRadius));
       this._moStretch = (this._moStretch || 0) + (target - (this._moStretch || 0)) * velocityBlend;
       if (resumed) this._moVX = this._moVY = this._moStretch = 0;
     }
@@ -8423,7 +8424,7 @@
             2 * (aeq.animRadius + 5),
           );
         }
-        if (!aeq.isVirus && !dk && !akw && ["cinematic", "fluid"].includes(Settings.moMotionStyle)) {
+        if (!aeq.isVirus && !dk && !akw && ["cinematic", "fluid", "snappy"].includes(Settings.moMotionStyle)) {
           this.drawMoCellLight(aeq, w, afc * gu);
         }
         if (gu === 1) { MoInventory.drawSkin(aeq, w, afc); MoInventory.drawInactive(aeq, w, afc, dk || akw); }
@@ -8490,8 +8491,8 @@
       const shared = MoSharedCosmetics.visual(cell);
       if (shared && !["mouse","both"].includes(shared.c.mode)) return false;
       if (cell.isMine && !MoInventory.mouse(cell.cellType)) return false;
-      if (!["cinematic", "fluid"].includes(Settings.moMotionStyle) || this.moReducedMotion || cell.isVirus || cell.isFood || cell.isEjected) return false;
-      const stretch = Math.min(Settings.moMotionStyle === "fluid" ? 0.02 : 0.035, Math.max(0, cell._moStretch || 0));
+      if (!["cinematic", "fluid", "snappy"].includes(Settings.moMotionStyle) || this.moReducedMotion || cell.isVirus || cell.isFood || cell.isEjected) return false;
+      const stretch = Math.min(Settings.moMotionStyle === "snappy" ? 0.008 : Settings.moMotionStyle === "fluid" ? 0.02 : 0.035, Math.max(0, cell._moStretch || 0));
       if (stretch < 0.0002 || cell.animRadius * Camera.viewport < 16) return false;
       const x = cell.animX - origin.x, y = cell.animY - origin.y;
       const vx = cell._moVX || 0, vy = cell._moVY || 0;
