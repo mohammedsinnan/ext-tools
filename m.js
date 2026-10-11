@@ -8139,7 +8139,7 @@
       const ctx = Renderer.ctx;
       ctx.save();
       try {
-        ctx.globalAlpha = Math.min(1, (state.until - now) / 350);
+        ctx.globalAlpha = 1;
         ctx.drawImage(sprite, x - radius, y - radius, size, size);
       } finally { ctx.restore(); }
     }
@@ -8340,6 +8340,7 @@
         // Only the cell body, skin and active-player ring follow the visual
         // deformation. Labels stay upright and server coordinates stay intact.
         const moDeformed = this.beginMoCellMotion(aeq, w);
+        const moCover = gu === 1 && aeq.isMine && aeq.cellType === moEmoteType && !aeq.isVirus && !aeq.isFood && !aeq.isEjected;
         amh.beginPath();
         amh.arc(aeq.animX - w.x, aeq.animY - w.y, aeq.animRadius + 5, 0, this.pi2, true);
         amh.closePath();
@@ -8410,11 +8411,11 @@
           this.drawMoCellLight(aeq, w, afc * gu);
         }
         if (gu === 1) { MoInventory.drawSkin(aeq, w, afc); MoInventory.drawInactive(aeq, w, afc, dk || akw); }
-        if (aeq.isMine && aeq.cellType === moEmoteType && !aeq.isVirus && !aeq.isFood && gu === 1) MoEmotes.draw(aeq, w, afc);
-        if (aeq.isMine && nl && aeq.cellType === Player.typeID && Settings.moMotionStyle !== "classic" && MoInventory.config(aeq.cellType).mode !== "still" && !MoInventory.ring(aeq.cellType)) {
+        if (moCover) MoEmotes.draw(aeq, w, afc);
+        if (!moCover && aeq.isMine && nl && aeq.cellType === Player.typeID && Settings.moMotionStyle !== "classic" && MoInventory.config(aeq.cellType).mode !== "still" && !MoInventory.ring(aeq.cellType)) {
           this.drawMoActiveGlow(aeq, w, afc * gu, ph);
         }
-        if (aeq.isMine && nl) {
+        if (!moCover && aeq.isMine && nl) {
           const jm = (aeq.animRadius * iv) / 100;
           amh.beginPath();
           amh.arc(aeq.animX - w.x, aeq.animY - w.y, aeq.animRadius + 5 - (jm >> 1), 0, this.pi2, true);
@@ -8425,9 +8426,9 @@
           amh.strokeStyle = Theme.virusBorderColor;
           amh.lineWidth = Theme.virusBorderWidth;
         }
-        MoInventory.draw(aeq, w, afc * gu);
+        if (!moCover) MoInventory.draw(aeq, w, afc * gu);
         if (moDeformed) amh.restore();
-        if (gu === 1 && ((aeq.isMine && !ajs) || (!aeq.isMine && acv))) {
+        if (!moCover && gu === 1 && ((aeq.isMine && !ajs) || (!aeq.isMine && acv))) {
           const ax = TextRenderer.nick(aeq);
           if (ax) {
             const ik =
@@ -8446,7 +8447,7 @@
             }
           }
         }
-        if (gu === 1 && ((aeq.isMine && !afz) || (!aeq.isMine && ait))) {
+        if (!moCover && gu === 1 && ((aeq.isMine && !afz) || (!aeq.isMine && ait))) {
           const mk = TextRenderer.mass(aeq);
           if (mk) {
             const ep =
