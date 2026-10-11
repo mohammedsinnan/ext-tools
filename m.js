@@ -386,7 +386,9 @@
       this.food = Storage.get("settings", "food") || "monoColored";
       this.bgSectors = Storage.get("settings", "bgSectors") || "image";
       const arenaStyle = Storage.get("settings", "moArenaStyle");
-      this.moArenaStyle = arenaStyle === "classic" ? "classic" : "space";
+      this.moArenaStyle = ["classic","space","abyss","obsidian"].includes(arenaStyle) ? arenaStyle : "space";
+      const arenaEffects = Storage.get("settings", "moArenaEffects");
+      this.moArenaEffects = typeof arenaEffects === "number" && Number.isFinite(arenaEffects) ? Math.max(0,Math.min(1,arenaEffects)) : 0.7;
       this.vanillaGrid = Storage.get("settings", "vanillaGrid") || "off";
       this.cursorLine = Storage.get("settings", "cursorLine") || "off";
       this.teamIndicator = Storage.get("settings", "teamIndicator") || "on";
@@ -3380,17 +3382,17 @@
       this.inventory=inventory;inventory.toggle.textContent='✦ Customize';inventory.root.querySelector('.moi-kicker').textContent='MO / CUSTOMIZE';inventory.root.querySelector('#moi-title').textContent='Your look. Your reactions.';inventory.root.querySelector('.moi-muted').textContent='Choose your cell style and the emotes you take into the arena.';
       const tabs=document.createElement('div');tabs.className='moi-tools';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Customize category');
       this.views={};this.tabs={};
-      for(const [id,label] of [['inventory','Inventory'],['emotes','Emotes'],['gameplay','Gameplay']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.id='moc-tab-'+id;button.setAttribute('role','tab');button.setAttribute('aria-controls','moc-'+id);button.addEventListener('click',()=>this.show(id));tabs.appendChild(button);this.tabs[id]=button;const panel=document.createElement('section');panel.id='moc-'+id;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);this.views[id]=panel}
+      for(const [id,label] of [['inventory','Inventory'],['emotes','Emotes'],['gameplay','Gameplay'],['map','Map']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.id='moc-tab-'+id;button.setAttribute('role','tab');button.setAttribute('aria-controls','moc-'+id);button.addEventListener('click',()=>this.show(id));tabs.appendChild(button);this.tabs[id]=button;const panel=document.createElement('section');panel.id='moc-'+id;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);this.views[id]=panel}
       const dialog=inventory.root.querySelector('.moi-dialog');dialog.querySelector('.moi-head').after(tabs);
       for(const selector of ['.moi-players','.moi-modes','.moi-layout'])this.views.inventory.appendChild(dialog.querySelector(selector));
-      dialog.querySelector('.moi-footer').before(this.views.inventory,this.views.emotes,this.views.gameplay);
+      dialog.querySelector('.moi-footer').before(this.views.inventory,this.views.emotes,this.views.gameplay,this.views.map);
       this.views.emotes.innerHTML='<div class="moi-muted" style="margin:20px 0">Choose up to five emotes for your gameplay button. Click a face to equip or remove it.</div><div class="moc-loadout" aria-label="Equipped emotes"></div><div class="moi-grid moc-emote-grid" style="margin-top:24px"></div><div class="moi-muted" style="margin-top:18px">Four new faces available · fifth slot ready for another face. Emotes cover your cell for 4 seconds and sync with updated MO users in your tag / party.</div>';
       const saved=Storage.get('cosmetics','emoteLoadout'),all=MoEmotes.library().map(x=>x.id);this.ids=Array.isArray(saved)?[...new Set(saved)].filter(id=>all.includes(id)).slice(0,5):all;
       this.cards=[];for(const face of MoEmotes.library()){const button=document.createElement('button');button.type='button';button.className='moi-card';button.dataset.emote=face.id;button.setAttribute('aria-label',face.label);const img=document.createElement('img');img.src=face.src;img.alt='';img.style.cssText='width:100%;aspect-ratio:1;object-fit:contain;border-radius:50%;display:block;margin-bottom:12px';const name=document.createElement('strong');name.textContent=face.label;button.append(img,name);button.addEventListener('click',()=>{if(this.ids.includes(face.id)){this.ids=this.ids.filter(id=>id!==face.id)}else if(this.ids.length<5)this.ids.push(face.id);Storage.set('cosmetics','emoteLoadout',this.ids);this.refresh();MoEmotes.refreshLoadout()});this.views.emotes.querySelector('.moc-emote-grid').appendChild(button);this.cards.push(button)}
-      const css=document.createElement('style');css.textContent='.moc-loadout{display:flex;gap:12px;flex-wrap:wrap}.moc-slot{width:72px;height:72px;border-radius:18px;background:#ffffff07;border:1px dashed #94d7e442;display:grid;place-items:center;color:#91abba;font-size:11px}.moc-slot img{width:58px;height:58px;object-fit:contain;border-radius:50%}.moi-tools [role=tab][aria-selected=true]{background:#22524d;border-color:#78ecd07a;color:#adffe7}';document.head.appendChild(css);MoGameplay.init(this);this.refresh();this.show('inventory');
+      const css=document.createElement('style');css.textContent='.moc-loadout{display:flex;gap:12px;flex-wrap:wrap}.moc-slot{width:72px;height:72px;border-radius:18px;background:#ffffff07;border:1px dashed #94d7e442;display:grid;place-items:center;color:#91abba;font-size:11px}.moc-slot img{width:58px;height:58px;object-fit:contain;border-radius:50%}.moi-tools [role=tab][aria-selected=true]{background:#22524d;border-color:#78ecd07a;color:#adffe7}';document.head.appendChild(css);MoGameplay.init(this);MoMap.init(this);this.refresh();this.show('inventory');
     }
     static refresh(){this.cards.forEach(b=>b.setAttribute('aria-pressed',String(this.ids.includes(b.dataset.emote))));const slots=this.views.emotes.querySelector('.moc-loadout');slots.replaceChildren();for(let i=0;i<5;i++){const slot=document.createElement('div');slot.className='moc-slot';const face=MoEmotes.library().find(x=>x.id===this.ids[i]);if(face){const img=document.createElement('img');img.src=face.src;img.alt=face.label;slot.appendChild(img)}else slot.textContent='Empty '+(i+1);slots.appendChild(slot)}}
-    static show(id){for(const key of ['inventory','emotes','gameplay']){this.views[key].hidden=key!==id;this.tabs[key].setAttribute('aria-selected',String(key===id))}cancelAnimationFrame(this.inventory.frame);if(id==='inventory'&&!this.inventory.root.hidden)this.inventory.animate()}
+    static show(id){for(const key of ['inventory','emotes','gameplay','map']){this.views[key].hidden=key!==id;this.tabs[key].setAttribute('aria-selected',String(key===id))}cancelAnimationFrame(this.inventory.frame);if(id==='inventory'&&!this.inventory.root.hidden)this.inventory.animate()}
   }
 
   class MoSharedCosmetics {
@@ -3402,6 +3404,16 @@
     static emote(cell){if(cell.isVirus||cell.isFood||cell.isEjected)return null;const state=this.visual(cell)?.emote;return state&&state.until>performance.now()&&MoEmotes.sprites?.has(state.index)?state:null}
     static publish(){try{if(RelayWs.isOpen())RelaySender.skin()}catch(error){console.warn('MO cosmetic sharing unavailable',error)}}
     static tick(){this.rebuild();if(!RelayWs.isOpen())return;const now=performance.now(),key=JSON.stringify([this.server(),Player.typeID,MoInventory.config(1),MoInventory.config(2),[...MoEmotes.states?.entries()||[]].map(([slot,s])=>[slot,s.index,s.started,s.until>now])]);if(key!==this.lastKey||now-(this.lastSent||0)>=5000){this.lastKey=key;this.lastSent=now;this.publish()}}
+  }
+
+  class MoMap {
+    static palette(style=Settings.moArenaStyle){return {space:{bg:'#080e19',grid:'rgba(115,164,220,.1)',text:'rgba(149,182,217,.18)',border:'#82dce8',food:'#a6dfff'},abyss:{bg:'#051823',grid:'rgba(77,206,208,.12)',text:'rgba(135,217,225,.28)',border:'#61d8c5',food:'#8ceee3'},obsidian:{bg:'#140f15',grid:'rgba(226,132,90,.12)',text:'rgba(238,180,145,.26)',border:'#ed9563',food:'#ffb265'}}[style]||null}
+    static init(hub){this.hub=hub;const p=hub.views.map;p.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Give your arena its own atmosphere.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"></div><div class="moi-note" role="status" id="mo-map-status"></div><label class="moi-muted" style="display:block;margin:20px 0">Atmosphere intensity <output id="mo-map-intensity"></output><input aria-label="Atmosphere intensity" type="range" min="0" max="100" step="5" style="width:100%;margin-top:14px;accent-color:#83e9d6"></label><div class="moi-muted">Applies instantly and saves on this device.</div>';for(const [id,name,desc] of [['space','Space','Quiet stars · luminous stardust'],['abyss','Abyss','Deep ocean · soft rays and glowing pearls'],['obsidian','Obsidian','Volcanic glass · lava veins and warm embers']]){const b=document.createElement('button');b.type='button';b.className='moi-card';b.dataset.map=id;const c=document.createElement('canvas');c.width=c.height=640;c.style.cssText='width:100%;height:132px;object-fit:cover;border-radius:12px;margin-bottom:14px';c.getContext('2d').drawImage(id==='space'?BgRender.cacheSpaceTile():this.tile(id),0,0);const title=document.createElement('strong');title.textContent=name;const small=document.createElement('small');small.textContent=desc;b.append(c,title,small);b.addEventListener('click',()=>this.select(id));p.querySelector('.moi-grid').appendChild(b)}p.querySelector('input').addEventListener('input',e=>{const n=Number(e.target.value);if(!Number.isFinite(n))return;Settings.moArenaEffects=Math.max(0,Math.min(1,n/100));Storage.set('settings','moArenaEffects',Settings.moArenaEffects);this.refresh()});this.refresh()}
+    static select(style){if(!this.palette(style))return;Settings.moArenaStyle=style;Storage.set('settings','moArenaStyle',style);this.refresh()}
+    static refresh(){if(!this.hub)return;const p=this.hub.views.map;p.querySelectorAll('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===Settings.moArenaStyle)));p.querySelector('#mo-map-status').textContent=(Settings.moArenaStyle[0].toUpperCase()+Settings.moArenaStyle.slice(1))+' arena active';p.querySelector('input').value=Math.round(Settings.moArenaEffects*100);p.querySelector('output').textContent=Math.round(Settings.moArenaEffects*100)+'%'}
+    static tile(style){const tile=document.createElement('canvas');tile.width=tile.height=640;const c=tile.getContext('2d'),p=this.palette(style);c.fillStyle=p.bg;c.fillRect(0,0,640,640);let seed=style==='abyss'?81427:91241;const rnd=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+      if(style==='abyss'){for(let i=0;i<5;i++){const x=i*170-120,g=c.createLinearGradient(x,0,x+200,640);g.addColorStop(0,'rgba(84,224,206,.09)');g.addColorStop(1,'rgba(50,138,191,0)');c.fillStyle=g;c.beginPath();c.moveTo(x,0);c.lineTo(x+45,0);c.lineTo(x+280,640);c.lineTo(x+80,640);c.closePath();c.fill()}for(let i=0;i<44;i++){const x=rnd()*640,y=rnd()*640,r=.6+rnd()*1.8;c.strokeStyle='rgba(120,229,223,.15)';c.lineWidth=.7;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.stroke()}}
+      else{for(let i=0;i<12;i++){let x=rnd()*640,y=rnd()*640;const path=new Path2D();path.moveTo(x,y);for(let j=0;j<7;j++){x+=(rnd()-.5)*95;y+=(rnd()-.5)*100;path.lineTo(x,y)}c.strokeStyle='rgba(244,92,39,.045)';c.lineWidth=9;c.stroke(path);c.strokeStyle='rgba(255,123,55,.18)';c.lineWidth=1;c.stroke(path)}for(let i=0;i<36;i++){c.fillStyle='rgba(255,176,94,.24)';c.beginPath();c.arc(rnd()*640,rnd()*640,.5+rnd(),0,Math.PI*2);c.fill()}}return tile}
   }
 
   class MoGameplay {
@@ -4987,7 +4999,7 @@
         } else if ("rainbow" === Settings.food) {
           this.rainbow();
         }
-        if (Settings.moArenaStyle === "space") this.spaceFoodGlow();
+        if (MoMap.palette() && Settings.moArenaEffects > 0) this.spaceFoodGlow();
       }
     }
     static ["spaceFoodGlow"]() {
@@ -4997,7 +5009,7 @@
       if (!this.spaceFoodSprites) this.spaceFoodSprites = new Map();
       let drawn = 0;
       ctx.save();
-      ctx.globalAlpha = 0.75;
+      ctx.globalAlpha = 0.75 * Settings.moArenaEffects;
       try {
         for (const food of CellData.food) {
           const ox = food.cellType === 2 ? WorldData.position.x : 0;
@@ -5007,7 +5019,7 @@
           if (!(radius > 0) || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(radius) || radius * zoom < 1.5) continue;
           const extent = radius * 2.4;
           if (x + extent < view.left || x - extent > view.right || y + extent < view.top || y - extent > view.bottom) continue;
-          const color = Settings.food === "rainbow" ? "#a6dfff" : Theme.foodColor;
+          const color = Settings.moArenaStyle === "space" ? (Settings.food === "rainbow" ? "#a6dfff" : Theme.foodColor) : MoMap.palette().food;
           let sprite = this.spaceFoodSprites.get(color);
           if (!sprite) {
             sprite = this.cacheSpaceFoodGlow(color);
@@ -5093,7 +5105,7 @@
       this.bgImageEl = null;
     }
     static ["render"]() {
-      if (Settings.moArenaStyle === "space") return this.spaceArena();
+      if (MoMap.palette()) return this.spaceArena();
       const xf = Settings.bgSectors;
       if ("image" === xf) {
         return this.image();
@@ -5136,7 +5148,10 @@
       const x1 = Math.min(left + edge, view.right), y1 = Math.min(top + edge, view.bottom);
       if (!(x1 > x0) || !(y1 > y0)) return;
       const ctx = Renderer.ctx;
-      if (!this.spaceTile) this.spaceTile = this.cacheSpaceTile();
+      const palette = MoMap.palette();
+      if (!this.moTiles) this.moTiles = new Map();
+      if (!this.moTiles.has(Settings.moArenaStyle)) this.moTiles.set(Settings.moArenaStyle,Settings.moArenaStyle === "space" ? this.cacheSpaceTile() : MoMap.tile(Settings.moArenaStyle));
+      const tile = this.moTiles.get(Settings.moArenaStyle);
       // The same native camera transform draws the arena. Tile count follows
       // the visible screen, rather than the full map or the number of cells.
       const tileEdge = 640 / zoom;
@@ -5148,14 +5163,16 @@
       try {
         ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.clip();
         ctx.globalAlpha = 1;
-        ctx.fillStyle = "#080e19"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.fillStyle = palette.bg; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.globalAlpha = Settings.moArenaEffects;
         for (let iy = firstY; iy < lastY; iy++) {
           for (let ix = firstX; ix < lastX; ix++) {
-            ctx.drawImage(this.spaceTile, left + ix * tileEdge, top + iy * tileEdge, tileEdge, tileEdge);
+            ctx.drawImage(tile, left + ix * tileEdge, top + iy * tileEdge, tileEdge, tileEdge);
           }
         }
+        ctx.globalAlpha = 1;
         // Quiet sector guides retain orientation without giant background art.
-        ctx.strokeStyle = "rgba(115,164,220,0.1)";
+        ctx.strokeStyle = palette.grid;
         ctx.lineWidth = 1 / zoom;
         ctx.beginPath();
         for (let i = 1; i < 5; i++) {
@@ -5164,7 +5181,7 @@
           ctx.moveTo(left, y); ctx.lineTo(left + edge, y);
         }
         ctx.stroke();
-        ctx.fillStyle = "rgba(149,182,217,0.18)";
+        ctx.fillStyle = palette.text;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.font = (14 / zoom) + "px Ubuntu, sans-serif";
         for (let row = 0; row < 5; row++) {
@@ -8242,7 +8259,7 @@
       if ("default" === Theme.borderStyle) {
         const sy = this.ctx;
         const dw = Theme.borderWidth >> 1;
-        sy.strokeStyle = Theme.borderColor;
+        sy.strokeStyle = MoMap.palette()?.border || Theme.borderColor;
         sy.lineWidth = Theme.borderWidth;
         sy.strokeRect(
           WorldData.left - dw,
