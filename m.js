@@ -3267,6 +3267,7 @@
       const c = this.config(this.slot);
       Storage.set('cosmetics', 'player' + this.slot, {...c});
       this.refresh();
+      MoSharedCosmetics.publish();
     }
     static init() {
       if (this.root) return;
@@ -3294,7 +3295,7 @@
       document.head.appendChild(style);
       this.toggle = document.createElement('button');this.toggle.id='mo-inventory-open';this.toggle.type='button';this.toggle.textContent='◈ Inventory';this.toggle.setAttribute('aria-controls','mo-inventory');this.toggle.setAttribute('aria-expanded','false');account.before(this.toggle);
       this.root=document.createElement('div');this.root.id='mo-inventory';this.root.hidden=true;
-      this.root.innerHTML=`<section class="moi-dialog" role="dialog" aria-modal="true" aria-labelledby="moi-title"><header class="moi-head"><div><div class="moi-kicker">MO / ORBIT COLLECTION</div><h2 id="moi-title">Make your orbit yours.</h2><div class="moi-muted">Five complete sets. Bold spinning frames. Matching character skins.</div></div><button type="button" class="moi-close">Close ×</button></header><div class="moi-tools moi-players"><button type="button" data-player="1">Player 01</button><button type="button" data-player="2">Player 02</button></div><div class="moi-tools moi-modes"><button type="button" data-mode="mouse">Mouse motion</button><button type="button" data-mode="ring">Spinning ring</button><button type="button" data-mode="both">Both effects</button><button type="button" data-mode="still">Effects off</button></div><div class="moi-layout"><aside class="moi-live"><canvas width="320" height="320" aria-label="Selected ring preview"></canvas><strong id="moi-selected"></strong><div class="moi-muted">Live preview</div><label><input id="moi-skin" type="checkbox" style="width:auto"> Use matching set skin</label><label><input id="moi-white" type="checkbox" style="width:auto"> White skin when inactive</label><label>Rotation speed<input aria-label="Rotation speed" id="moi-speed" type="range" min="0" max="1.5" step="0.05"></label><label>Ring brightness<input aria-label="Ring brightness" id="moi-glow" type="range" min="0.2" max="1" step="0.05"></label></aside><div class="moi-grid"></div></div><footer class="moi-footer"><span>Saved automatically · separate choices for each player</span><span>Visible on your device</span></footer></section>`;
+      this.root.innerHTML=`<section class="moi-dialog" role="dialog" aria-modal="true" aria-labelledby="moi-title"><header class="moi-head"><div><div class="moi-kicker">MO / ORBIT COLLECTION</div><h2 id="moi-title">Make your orbit yours.</h2><div class="moi-muted">Five complete sets. Bold spinning frames. Matching character skins.</div></div><button type="button" class="moi-close">Close ×</button></header><div class="moi-tools moi-players"><button type="button" data-player="1">Player 01</button><button type="button" data-player="2">Player 02</button></div><div class="moi-tools moi-modes"><button type="button" data-mode="mouse">Mouse motion</button><button type="button" data-mode="ring">Spinning ring</button><button type="button" data-mode="both">Both effects</button><button type="button" data-mode="still">Effects off</button></div><div class="moi-layout"><aside class="moi-live"><canvas width="320" height="320" aria-label="Selected ring preview"></canvas><strong id="moi-selected"></strong><div class="moi-muted">Live preview</div><label><input id="moi-skin" type="checkbox" style="width:auto"> Use matching set skin</label><label><input id="moi-white" type="checkbox" style="width:auto"> White skin when inactive</label><label>Rotation speed<input aria-label="Rotation speed" id="moi-speed" type="range" min="0" max="1.5" step="0.05"></label><label>Ring brightness<input aria-label="Ring brightness" id="moi-glow" type="range" min="0.2" max="1" step="0.05"></label></aside><div class="moi-grid"></div></div><footer class="moi-footer"><span>Saved automatically · separate choices for each player</span><span>Shared with updated MO users in your tag / party</span></footer></section>`;
       document.body.appendChild(this.root);
       this.cards=[];
       const grid=this.root.querySelector('.moi-grid');
@@ -3364,14 +3365,14 @@
       c.beginPath();c.arc(0,0,251,0,Math.PI*2);c.strokeStyle=colors[0];c.lineWidth=6;c.stroke();
       this.skins.set(id,canvas);return canvas;
     }
-    static drawSkin(cell,origin,opacity){if(!cell.isMine||cell.isVirus||cell.isFood||cell.isEjected||!this.ring(cell.cellType)||!this.config(cell.cellType).matchingSkin)return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.globalAlpha=Math.min(1,opacity);ctx.drawImage(this.skinFor(this.config(cell.cellType).ring,this.inactive(cell)),x-r,y-r,r*2,r*2);ctx.restore()}
+    static drawSkin(cell,origin,opacity){const v=MoSharedCosmetics.visual(cell);if(!v||cell.isVirus||cell.isFood||cell.isEjected||!['ring','both'].includes(v.c.mode)||!v.c.matchingSkin)return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.globalAlpha=Math.min(1,opacity);ctx.drawImage(this.skinFor(v.c.ring,this.inactive(cell)),x-r,y-r,r*2,r*2);ctx.restore()}
 
 
-    static inactive(cell){return cell.isMine && cell.cellType!==Player.typeID && this.config(cell.cellType).whiteInactive}
+    static inactive(cell){const v=MoSharedCosmetics.visual(cell);return !!(v && v.inactive && v.c.whiteInactive)}
     static skinFor(id,white){if(!white)return this.skin(id);this.whiteSkins=this.whiteSkins||new Map();if(this.whiteSkins.has(id))return this.whiteSkins.get(id);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.drawImage(this.skin(id),0,0);const pixels=ctx.getImageData(0,0,512,512);for(let i=0;i<pixels.data.length;i+=4){const value=Math.round(250-(pixels.data[i]*.2126+pixels.data[i+1]*.7152+pixels.data[i+2]*.0722)*.55);pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=value}ctx.putImageData(pixels,0,0);this.whiteSkins.set(id,canvas);return canvas}
-    static drawInactive(cell,origin,opacity,source){if(!this.inactive(cell)||cell.isVirus||cell.isFood||cell.isEjected||(this.ring(cell.cellType)&&this.config(cell.cellType).matchingSkin))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);if(source){ctx.filter='grayscale(1) brightness(1.8)';ctx.drawImage(source,x-r,y-r,r*2,r*2);ctx.filter='none';ctx.globalAlpha*=.58}ctx.fillStyle='#fff';ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore()}
+    static drawInactive(cell,origin,opacity,source){const v=MoSharedCosmetics.visual(cell);if(!v||!this.inactive(cell)||cell.isVirus||cell.isFood||cell.isEjected||(['ring','both'].includes(v.c.mode)&&v.c.matchingSkin))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);if(source){ctx.filter='grayscale(1) brightness(1.8)';ctx.drawImage(source,x-r,y-r,r*2,r*2);ctx.filter='none';ctx.globalAlpha*=.58}ctx.fillStyle='#fff';ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore()}
     static paint(ctx,id,r,time,c){const reduced=Renderer.moReducedMotion,angle=reduced?0:time*c.speed*.55;for(let layer=0;layer<2;layer++){ctx.save();ctx.rotate(layer?-angle*.65:angle);ctx.globalAlpha=c.glow*(layer?.7:1);ctx.drawImage(this.sprite(id,layer),-r,-r,r*2,r*2);ctx.restore()}}
-    static draw(cell,origin,opacity){if(!cell.isMine||cell.isVirus||cell.isFood||cell.isEjected||!this.ring(cell.cellType))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||r*Camera.viewport<18||opacity<=0)return;const ctx=Renderer.ctx,c=this.config(cell.cellType);ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);this.paint(ctx,c.ring,r,performance.now()/1000,{...c,glow:c.glow*Math.min(1,opacity)});ctx.restore()}
+    static draw(cell,origin,opacity){const v=MoSharedCosmetics.visual(cell);if(!v||cell.isVirus||cell.isFood||cell.isEjected||!['ring','both'].includes(v.c.mode))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||r*Camera.viewport<18||opacity<=0)return;const ctx=Renderer.ctx,c=v.c;ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);this.paint(ctx,c.ring,r,performance.now()/1000,{...c,glow:c.glow*Math.min(1,opacity)});ctx.restore()}
   }
 
   class MoCustomize {
@@ -3383,13 +3384,24 @@
       const dialog=inventory.root.querySelector('.moi-dialog');dialog.querySelector('.moi-head').after(tabs);
       for(const selector of ['.moi-players','.moi-modes','.moi-layout'])this.views.inventory.appendChild(dialog.querySelector(selector));
       dialog.querySelector('.moi-footer').before(this.views.inventory,this.views.emotes);
-      this.views.emotes.innerHTML='<div class="moi-muted" style="margin:20px 0">Choose up to five emotes for your gameplay button. Click a face to equip or remove it.</div><div class="moc-loadout" aria-label="Equipped emotes"></div><div class="moi-grid moc-emote-grid" style="margin-top:24px"></div><div class="moi-muted" style="margin-top:18px">Four new faces available · fifth slot ready for another face. Emotes cover your cell for 4 seconds and are visible on your device.</div>';
+      this.views.emotes.innerHTML='<div class="moi-muted" style="margin:20px 0">Choose up to five emotes for your gameplay button. Click a face to equip or remove it.</div><div class="moc-loadout" aria-label="Equipped emotes"></div><div class="moi-grid moc-emote-grid" style="margin-top:24px"></div><div class="moi-muted" style="margin-top:18px">Four new faces available · fifth slot ready for another face. Emotes cover your cell for 4 seconds and sync with updated MO users in your tag / party.</div>';
       const saved=Storage.get('cosmetics','emoteLoadout'),all=MoEmotes.library().map(x=>x.id);this.ids=Array.isArray(saved)?[...new Set(saved)].filter(id=>all.includes(id)).slice(0,5):all;
       this.cards=[];for(const face of MoEmotes.library()){const button=document.createElement('button');button.type='button';button.className='moi-card';button.dataset.emote=face.id;button.setAttribute('aria-label',face.label);const img=document.createElement('img');img.src=face.src;img.alt='';img.style.cssText='width:100%;aspect-ratio:1;object-fit:contain;border-radius:50%;display:block;margin-bottom:12px';const name=document.createElement('strong');name.textContent=face.label;button.append(img,name);button.addEventListener('click',()=>{if(this.ids.includes(face.id)){this.ids=this.ids.filter(id=>id!==face.id)}else if(this.ids.length<5)this.ids.push(face.id);Storage.set('cosmetics','emoteLoadout',this.ids);this.refresh();MoEmotes.refreshLoadout()});this.views.emotes.querySelector('.moc-emote-grid').appendChild(button);this.cards.push(button)}
       const css=document.createElement('style');css.textContent='.moc-loadout{display:flex;gap:12px;flex-wrap:wrap}.moc-slot{width:72px;height:72px;border-radius:18px;background:#ffffff07;border:1px dashed #94d7e442;display:grid;place-items:center;color:#91abba;font-size:11px}.moc-slot img{width:58px;height:58px;object-fit:contain;border-radius:50%}.moi-tools [role=tab][aria-selected=true]{background:#22524d;border-color:#78ecd07a;color:#adffe7}';document.head.appendChild(css);this.refresh();this.show('inventory');
     }
     static refresh(){this.cards.forEach(b=>b.setAttribute('aria-pressed',String(this.ids.includes(b.dataset.emote))));const slots=this.views.emotes.querySelector('.moc-loadout');slots.replaceChildren();for(let i=0;i<5;i++){const slot=document.createElement('div');slot.className='moc-slot';const face=MoEmotes.library().find(x=>x.id===this.ids[i]);if(face){const img=document.createElement('img');img.src=face.src;img.alt=face.label;slot.appendChild(img)}else slot.textContent='Empty '+(i+1);slots.appendChild(slot)}}
     static show(id){for(const key of ['inventory','emotes']){this.views[key].hidden=key!==id;this.tabs[key].setAttribute('aria-selected',String(key===id))}cancelAnimationFrame(this.inventory.frame);if(id==='inventory'&&!this.inventory.root.hidden)this.inventory.animate()}
+  }
+
+  class MoSharedCosmetics {
+    static server(){return String(WsConnection.ip||'').split('?')[0].slice(0,180)}
+    static payload(){const configs=[1,2].map(slot=>{const c=MoInventory.config(slot);return [c.mode,c.ring,c.speed,c.glow,c.matchingSkin,c.whiteInactive]});const emotes=[1,2].map(slot=>{const state=MoEmotes.states?.get(slot);return state&&state.until>performance.now()?[MoEmotes.choices[state.index].id,state.started,Math.ceil(state.until-performance.now())]:null});return 'MO1:'+encodeURIComponent(JSON.stringify([this.server(),Player.typeID,configs,emotes]))}
+    static read(player,text){if(typeof text!=='string'||!text.startsWith('MO1:')||text.length>1800){delete player.moVisual;return}try{const data=JSON.parse(decodeURIComponent(text.slice(4)));if(!Array.isArray(data)||data.length!==4||typeof data[0]!=='string'||data[0].length>180||![1,2].includes(data[1])||!Array.isArray(data[2])||data[2].length!==2||!Array.isArray(data[3])||data[3].length!==2)throw Error('shape');const configs=data[2].map(c=>{if(!Array.isArray(c)||c.length!==6||!['mouse','ring','both','still'].includes(c[0])||!['aurora','solar','eclipse','prism','cipher'].includes(c[1])||!Number.isFinite(c[2])||!Number.isFinite(c[3])||typeof c[4]!=='boolean'||typeof c[5]!=='boolean')throw Error('config');return {mode:c[0],ring:c[1],speed:Math.max(0,Math.min(1.5,c[2])),glow:Math.max(.2,Math.min(1,c[3])),matchingSkin:c[4],whiteInactive:c[5]}});const now=performance.now(),previous=player.moVisual;const emotes=data[3].map((e,i)=>{if(e===null)return null;if(!Array.isArray(e)||e.length!==3||!MoEmotes.library().some(face=>face.id===e[0])||!Number.isFinite(e[1])||!Number.isFinite(e[2])||e[2]<0||e[2]>4000)throw Error('emote');const old=previous?.emotes[i],until=now+e[2];return {index:MoEmotes.library().findIndex(face=>face.id===e[0]),sequence:e[1],until:old&&old.sequence===e[1]&&old.index===MoEmotes.library().findIndex(face=>face.id===e[0])?Math.min(old.until,until):until}});player.moVisual={server:data[0],active:data[1],configs,emotes,received:now};this.rebuild()}catch(_){delete player.moVisual;this.rebuild()}}
+    static rebuild(){this.byCell=new Map();const now=performance.now();for(const p of RelayData.teamPlayers?.values()||[]){const v=p.moVisual;if(!v||!p.isAlive||v.server!==this.server()||now-v.received>16000)continue;for(const slot of [1,2]){const color=slot===1?p.colorHex:p.skin2Color;if(!/^#[0-9a-f]{6}$/i.test(color||''))continue;const nick=slot===1?p.nick:(p.nick2||p.nick);this.byCell.set(Renderer.skinKey(nick,color),{c:v.configs[slot-1],inactive:v.active!==slot,emote:v.emotes[slot-1],received:v.received})}}}
+    static visual(cell){if(cell.isMine)return {c:MoInventory.config(cell.cellType),inactive:Player.typeID!==cell.cellType,emote:MoEmotes.states?.get(cell.cellType)};const v=this.byCell?.get(Renderer.skinKey(cell.nick,cell.colorHex));return v&&performance.now()-v.received<=16000?v:null}
+    static emote(cell){if(cell.isVirus||cell.isFood||cell.isEjected)return null;const state=this.visual(cell)?.emote;return state&&state.until>performance.now()&&MoEmotes.sprites?.has(state.index)?state:null}
+    static publish(){try{if(RelayWs.isOpen())RelaySender.skin()}catch(error){console.warn('MO cosmetic sharing unavailable',error)}}
+    static tick(){this.rebuild();if(!RelayWs.isOpen())return;const now=performance.now(),key=JSON.stringify([this.server(),Player.typeID,MoInventory.config(1),MoInventory.config(2),[...MoEmotes.states?.entries()||[]].map(([slot,s])=>[slot,s.index,s.started,s.until>now])]);if(key!==this.lastKey||now-(this.lastSent||0)>=5000){this.lastKey=key;this.lastSent=now;this.publish()}}
   }
 
   class MoMenu {
@@ -7805,6 +7817,7 @@
           afb.skin = aey[0] || "";
           afb.skin2 = aey[1] || "";
           afb.skin2Color = /^[0-9a-fA-F]{6}$/.test(aey[2] || "") ? "#" + aey[2].toLowerCase() : "";
+          MoSharedCosmetics.read(afb, aey[3]);
         }
         if (16 & abw) {
           afb.x = ri.readInt16();
@@ -7848,6 +7861,7 @@
         ami.skin = aek[0] || "";
         ami.skin2 = aek[1] || "";
         ami.skin2Color = /^[0-9a-fA-F]{6}$/.test(aek[2] || "") ? "#" + aek[2].toLowerCase() : "";
+        MoSharedCosmetics.read(ami, aek[3]);
         ami.x = vy.readInt16();
         ami.y = vy.readInt16();
         ami.mass = vy.readUInt32();
@@ -7927,13 +7941,7 @@
         // copies), so both tabs' cells got both skins and the overlap picked
         // one at random. Colors are server-assigned per spawn and stay fixed
         // for the player's whole life, so the key is stable.
-        const parts = [Player.skin];
-        if (Player.skin2) {
-          parts.push(Player.skin2);
-          if (/^#[0-9a-fA-F]{6}$/.test(Player.colorHex2)) {
-            parts.push(Player.colorHex2.slice(1));
-          }
-        }
+        const parts = [Player.skin || '', Player.skin2 || '', /^#[0-9a-fA-F]{6}$/.test(Player.colorHex2 || '') ? Player.colorHex2.slice(1) : '', MoSharedCosmetics.payload()];
         const ahc = parts.join("|");
         let aeb = ahc.length;
         const bk = this.createView(2 + ahc.length);
@@ -8082,11 +8090,11 @@
       this.toggle=document.createElement('button');this.toggle.type='button';this.toggle.className='mo-emote-toggle';this.toggle.textContent='☺ Emotes';this.toggle.disabled=true;this.toggle.title='Loading new emote faces';this.toggle.setAttribute('aria-expanded','false');this.toggle.setAttribute('aria-controls','mo-emote-picker');
       this.panel=document.createElement('div');this.panel.id='mo-emote-picker';this.panel.hidden=true;this.panel.setAttribute('role','group');this.panel.setAttribute('aria-label','Choose an emote');
       this.buttons=this.choices.map((face,index)=>{const button=document.createElement('button');button.type='button';button.className='mo-emote-choice';button.setAttribute('aria-label',face.label);button.title=face.label;button.addEventListener('click',()=>{if(this.choose(index))this.setOpen(false)});this.panel.appendChild(button);return button});
-      this.hint=document.createElement('small');this.hint.textContent='Visible to you · lasts 4 seconds';this.panel.appendChild(this.hint);this.root.append(this.panel,this.toggle);document.body.appendChild(this.root);
+      this.hint=document.createElement('small');this.hint.textContent='Tag / party sharing · lasts 4 seconds';this.panel.appendChild(this.hint);this.root.append(this.panel,this.toggle);document.body.appendChild(this.root);
       this.toggle.addEventListener('click',()=>this.setOpen(this.panel.hidden));this.root.addEventListener('pointerdown',e=>e.stopPropagation());this.root.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();this.setOpen(false)}});document.addEventListener('pointerdown',e=>{if(!this.root.contains(e.target))this.setOpen(false)});
       this.choices.forEach((face,index)=>{const img=new Image();img.onload=()=>{this.images.set(index,img);const sprite=this.cache(index);this.sprites.set(index,sprite);const preview=document.createElement('canvas');preview.width=preview.height=80;preview.setAttribute('aria-hidden','true');preview.getContext('2d').drawImage(sprite,0,0,80,80);this.buttons[index].appendChild(preview);this.ready=true;this.refreshLoadout()};img.onerror=()=>{this.buttons[index].disabled=true;this.buttons[index].title='Face failed to load'};img.src=face.src});this.refreshLoadout();
     }
-    static refreshLoadout(){if(!this.root)return;const saved=Storage.get('cosmetics','emoteLoadout');this.equipped=Array.isArray(saved)?new Set(saved):new Set(this.choices.map(x=>x.id));this.buttons.forEach((b,i)=>{b.hidden=!this.equipped.has(this.choices[i].id);b.disabled=!this.images.has(i)});const available=this.choices.some((x,i)=>this.equipped.has(x.id)&&this.images.has(i));this.toggle.disabled=!available;this.toggle.title=available?'Cover your skin with an emote':'Equip a face in Customize → Emotes';this.hint.textContent=available?'Visible to you · lasts 4 seconds':'Choose your faces in Customize';}
+    static refreshLoadout(){if(!this.root)return;const saved=Storage.get('cosmetics','emoteLoadout');this.equipped=Array.isArray(saved)?new Set(saved):new Set(this.choices.map(x=>x.id));this.buttons.forEach((b,i)=>{b.hidden=!this.equipped.has(this.choices[i].id);b.disabled=!this.images.has(i)});const available=this.choices.some((x,i)=>this.equipped.has(x.id)&&this.images.has(i));this.toggle.disabled=!available;this.toggle.title=available?'Cover your skin with an emote':'Equip a face in Customize → Emotes';this.hint.textContent=available?'Tag / party sharing · lasts 4 seconds':'Choose your faces in Customize';}
 
     static setOpen(open) {
       if (!this.panel) return;
@@ -8115,6 +8123,7 @@
     static choose(index) {
       if (!this.ready || !Number.isInteger(index) || !this.choices[index] || !this.images.has(index) || !this.equipped.has(this.choices[index].id) || MainMenu.isOpened || !this.biggest(Player.typeID)) return false;
       this.states.set(Player.typeID, { index, started: performance.now(), until: performance.now() + 4000 });
+      MoSharedCosmetics.publish();
       return true;
     }
     static target() {
@@ -8128,7 +8137,7 @@
     }
     static cache(index){const sprite=document.createElement('canvas');sprite.width=sprite.height=512;const ctx=sprite.getContext('2d'),img=this.images.get(index);if(!img)return sprite;ctx.beginPath();ctx.arc(256,256,256,0,Math.PI*2);ctx.clip();ctx.fillStyle='#fff';ctx.fillRect(0,0,512,512);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(this.choices[index].id==='rage'){ctx.drawImage(img,img.naturalWidth*.07,img.naturalHeight*.07,img.naturalWidth*.86,img.naturalHeight*.86,0,0,512,512)}else{const scale=512/Math.max(img.naturalWidth,img.naturalHeight),w=img.naturalWidth*scale,h=img.naturalHeight*scale;ctx.drawImage(img,(512-w)/2,(512-h)/2,w,h)}return sprite}
     static draw(cell, origin, opacity) {
-      const state = this.states.get(Player.typeID), zoom = Camera.viewport;
+      const state = MoSharedCosmetics.emote(cell), zoom = Camera.viewport;
       if (!this.ready || !state || performance.now() >= state.until || !(zoom > 0) || !Number.isFinite(zoom) || cell.animRadius * zoom < 4) return;
       const radius = cell.animRadius + 5, x = cell.animX - origin.x, y = cell.animY - origin.y;
       if (!(radius > 0) || !Number.isFinite(radius) || !Number.isFinite(x) || !Number.isFinite(y)) return;
@@ -8340,7 +8349,7 @@
         // Only the cell body, skin and active-player ring follow the visual
         // deformation. Labels stay upright and server coordinates stay intact.
         const moDeformed = this.beginMoCellMotion(aeq, w);
-        const moCover = gu === 1 && aeq.isMine && aeq.cellType === moEmoteType && !aeq.isVirus && !aeq.isFood && !aeq.isEjected;
+        const moCover = gu === 1 && !!MoSharedCosmetics.emote(aeq);
         amh.beginPath();
         amh.arc(aeq.animX - w.x, aeq.animY - w.y, aeq.animRadius + 5, 0, this.pi2, true);
         amh.closePath();
@@ -8471,6 +8480,8 @@
       }
     }
     static ["beginMoCellMotion"](cell, origin) {
+      const shared = MoSharedCosmetics.visual(cell);
+      if (shared && !["mouse","both"].includes(shared.c.mode)) return false;
       if (cell.isMine && !MoInventory.mouse(cell.cellType)) return false;
       if (Settings.moMotionStyle !== "cinematic" || this.moReducedMotion || cell.isVirus || cell.isFood || cell.isEjected) return false;
       const stretch = Math.min(0.035, Math.max(0, cell._moStretch || 0));
@@ -8789,6 +8800,7 @@
       const hbPos = { x: 0, y: 0, m: 0 };
       let hbAlive = -1;
       setInterval(() => {
+        MoSharedCosmetics.tick();
         RelaySender.aliveStatus();
         const x = 0 | Player.x;
         const y = 0 | Player.y;
