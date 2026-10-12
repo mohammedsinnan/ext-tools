@@ -3431,8 +3431,10 @@
   }
 
   class MoVirusGlow {
-    static draw(cell,origin,opacity){const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y,z=Camera.viewport;if(!(r>0)||!(z>0)||r*z<8||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();try{ctx.globalAlpha=Math.min(1,opacity)*.72;const size=r*1.22;ctx.drawImage(this.sprite(),x-size,y-size,size*2,size*2)}finally{ctx.restore()}}
-    static sprite(){if(this.cached)return this.cached;const s=document.createElement('canvas');s.width=s.height=256;const c=s.getContext('2d'),g=c.createRadialGradient(128,128,88,128,128,127);g.addColorStop(0,'rgba(80,255,180,0)');g.addColorStop(.35,'rgba(87,255,164,.035)');g.addColorStop(.51,'rgba(131,255,149,.85)');g.addColorStop(.58,'rgba(84,255,167,.28)');g.addColorStop(1,'rgba(51,236,177,0)');c.fillStyle=g;c.fillRect(0,0,256,256);this.cached=s;return s}
+    static draw(cell,origin,opacity){const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y,z=Camera.viewport;if(!(r>0)||!(z>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();try{const alpha=Math.min(1,opacity);if(r*z>=8){ctx.globalAlpha=alpha*.9;const size=r*1.22;ctx.drawImage(this.sprite(),x-size,y-size,size*2,size*2)}ctx.globalAlpha=alpha;ctx.drawImage(this.body(),x-r,y-r,r*2,r*2)}finally{ctx.restore()}}
+    static sprite(){if(this.cached)return this.cached;const s=document.createElement('canvas');s.width=s.height=256;const c=s.getContext('2d'),g=c.createRadialGradient(128,128,86,128,128,127);g.addColorStop(0,'rgba(94,255,111,0)');g.addColorStop(.28,'rgba(77,255,124,.02)');g.addColorStop(.49,'rgba(164,255,115,.9)');g.addColorStop(.6,'rgba(73,255,126,.4)');g.addColorStop(1,'rgba(58,239,169,0)');c.fillStyle=g;c.fillRect(0,0,256,256);this.cached=s;return s}
+    static body(){if(this.cachedBody)return this.cachedBody;const s=document.createElement('canvas');s.width=s.height=512;const c=s.getContext('2d');c.translate(256,256);c.beginPath();c.arc(0,0,255,0,Math.PI*2);c.clip();const shape=()=>{c.beginPath();for(let i=0;i<40;i++){const a=i*Math.PI/20-Math.PI/2,r=i%2?215:251,x=Math.cos(a)*r,y=Math.sin(a)*r;if(i)c.lineTo(x,y);else c.moveTo(x,y)}c.closePath()};shape();const g=c.createRadialGradient(-70,-85,10,0,0,275);g.addColorStop(0,'#3bbb64');g.addColorStop(.35,'#146644');g.addColorStop(.7,'#073c2f');g.addColorStop(1,'#1c8850');c.fillStyle=g;c.fill();c.save();shape();c.clip();const center=c.createRadialGradient(0,0,5,0,0,210);center.addColorStop(0,'rgba(89,255,123,.33)');center.addColorStop(.4,'rgba(57,204,107,.15)');center.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=center;c.fillRect(-255,-255,510,510);c.strokeStyle='rgba(92,255,131,.22)';c.lineWidth=4;for(let i=0;i<20;i++){const a=i*Math.PI/10-Math.PI/2;c.beginPath();c.moveTo(Math.cos(a)*178,Math.sin(a)*178);c.lineTo(Math.cos(a)*249,Math.sin(a)*249);c.stroke()}c.restore();shape();c.shadowColor='#52ff7c';c.shadowBlur=11;c.strokeStyle='#81ff98';c.lineWidth=7;c.stroke();c.shadowBlur=0;c.strokeStyle='#d9ffbf';c.lineWidth=2;c.stroke();
+      c.strokeStyle='rgba(102,246,141,.36)';c.lineWidth=3;c.beginPath();c.arc(0,0,155,0,Math.PI*2);c.stroke();c.fillStyle='#a9ff9c';c.beginPath();c.arc(0,0,18,0,Math.PI*2);c.fill();for(let i=0;i<3;i++){const a=i*Math.PI*2/3-Math.PI/2;c.save();c.rotate(a);c.fillStyle='#8cfb99';c.beginPath();c.arc(0,-63,49,Math.PI*.13,Math.PI*.87);c.arc(0,-48,29,Math.PI*.83,Math.PI*.17,true);c.closePath();c.fill();c.restore()}c.strokeStyle='rgba(199,255,189,.5)';c.lineWidth=5;c.beginPath();c.arc(-40,-43,108,-2.65,-1.35);c.stroke();this.cachedBody=s;return s}
   }
 
   class MoMap {
@@ -8413,16 +8415,12 @@
         // deformation. Labels stay upright and server coordinates stay intact.
         const moDeformed = this.beginMoCellMotion(aeq, w);
         const moCover = gu === 1 && !!MoSharedCosmetics.emote(aeq);
-        if(aeq.isVirus) MoVirusGlow.draw(aeq,w,gu);
+        
         amh.beginPath();
         amh.arc(aeq.animX - w.x, aeq.animY - w.y, aeq.animRadius + 5, 0, this.pi2, true);
         amh.closePath();
         if (aeq.isVirus) {
-          amh.fillStyle = Theme.virusColor;
-          amh.globalAlpha = 0.7;
-          amh.fill();
-          amh.globalAlpha = 1;
-          amh.stroke();
+          MoVirusGlow.draw(aeq,w,gu);
         } else if ("radiant" === Theme.cellTransparencyStyle) {
           const mn = 0 | (aeq.colorObject.r * no);
           const ajn = 0 | (aeq.colorObject.g * no);
