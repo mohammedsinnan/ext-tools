@@ -4473,7 +4473,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">CELL LABELS</div>
+                    <div class="row divider">VISIBILITY</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.autoHideText">Auto hide text</span>
                         <span class="settings-options" type="options" name="autoHideText">
@@ -4501,7 +4501,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">SKINS</div>
+                    <div class="row divider">CELL LABELS</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.cellNick">Cell Nick</span>
                         <span class="settings-options" type="options" name="cellNick">
@@ -4541,7 +4541,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">BACKGROUND</div>
+                    <div class="row divider">SKINS</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.urlSkins">Skins</span>
                         <span class="settings-options" type="options" name="urlSkins">
@@ -4560,7 +4560,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">ARENA DETAILS</div>
+                    <div class="row divider">BACKGROUND</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.vanillaGrid">Vanilla grid</span>
                         <span class="settings-options" type="options" name="vanillaGrid">
@@ -4589,7 +4589,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         <span class="title" data="html.settingMenu.bgImageUrl">Background image URL</span>
                         <input id="bgImageUrl" class="menu-inputs" style="width:100%;background-color:#000;margin-top:5px;margin-bottom:0px;" type="text" placeholder="https://example.com/image.png">
                     </div>
-                    <div class="row divider">TEAM & MULTIBOX</div>
+                    <div class="row divider">FOOD</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.food">Food</span>
                         <span class="settings-options" type="options" name="food">
@@ -4600,7 +4600,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">CHAT</div>
+                    <div class="row divider">TEAM & MULTIBOX</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.cursorLine">Cursor lines</span>
                         <span class="settings-options" type="options" name="cursorLine">
@@ -4646,7 +4646,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">MORE OPTIONS</div>
+                    <div class="row divider">CHAT</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.chatType">Chat type</span>
                         <span class="settings-options" type="options" name="chatType">
@@ -5634,6 +5634,7 @@ document.addEventListener("DOMContentLoaded", function () {
 #settings button:focus-visible,#theme button:focus-visible,#inputs [tabindex]:focus-visible,#inputs input:focus-visible,#settings input:focus-visible,#theme input:focus-visible{outline:2px solid #94e1ca!important;outline-offset:3px!important;}
 @media(max-width:650px){.crest-tool-label{display:none;}.crest-panel-heading{padding:22px 22px 16px}.crest-panel-heading h2{font-size:25px}.crest-panel-heading p{max-width:85%;font-size:11px}.crest-panel-search{margin:14px 16px 12px}#settings,#inputs,#theme{height:calc(100dvh - 24px)!important;border-radius:18px!important;}#settings .settings-container,#theme .theme-container{height:calc(100% - 231px)!important;margin-left:8px!important;margin-right:8px!important;}#inputs .inputs-menu-container{height:calc(100% - 280px)!important;margin:0 8px 16px!important;}#settings .row,#theme .row,#inputs .row{padding:12px!important;gap:10px;}#settings .row .title,#theme .row .title{font-size:12px!important;}.crest-panel-foot{padding:13px 20px}.crest-panel-foot span{display:none;}}
 
+#settings .row,#settings .row *,#theme .row,#theme .row *,#inputs .row,#inputs .row *{text-shadow:none!important;}
 </style><script id="crest-preferences-ui">(function(){function init(){for(const id of ['settings','inputs','theme']){const panel=document.getElementById(id);if(!panel||panel.dataset.crestReady)continue;panel.dataset.crestReady='true';const search=panel.querySelector('.crest-panel-search input');const empty=panel.querySelector('.crest-empty');if(search)search.addEventListener('input',function(){const query=this.value.trim().toLocaleLowerCase();let count=0;panel.querySelectorAll('.row').forEach(row=>{const label=row.querySelector('.title');const match=!query||((label?.textContent||'')+' '+(row.getAttribute('name')||'')+' '+(row.querySelector('[name]')?.getAttribute('name')||'')).toLocaleLowerCase().includes(query);row.classList.toggle('crest-filtered',row.classList.contains('divider')?Boolean(query):!match);if(match&&!row.classList.contains('divider'))count++});if(empty)empty.hidden=count>0});}
 for(const el of document.querySelectorAll('#control-container a,#streamMode,#inputs .inputs-tab')){el.setAttribute('role','button');el.setAttribute('tabindex','0');el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}})}
 const privacy=document.getElementById('streamMode');if(privacy){privacy.title='Privacy: show or hide your name and tag';privacy.setAttribute('aria-label','Privacy: show or hide your name and tag')}
