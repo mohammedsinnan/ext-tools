@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CREST
 // @namespace    https://mohammedsinnan.github.io/ext-tools/
-// @version      2.0.0
+// @version      2.0.1
 // @description  Crest client with ordered startup, bounded download retries and a visible loading screen.
 // @match        *://3rb.io/*
 // @match        *://*.3rb.io/*
@@ -23,14 +23,14 @@
   async function run(){if(running)return;running=true;show('Preparing your arena…',false);try{
     const [html,library,shield,client]=await Promise.all(['index.html','v.js','shield.js','m.js'].map(get));
     if(!html.includes('crest-dom-ready')||!html.includes('id="canvas"')||!library.includes('perfectScrollbar')||!client.includes('class GameLoop')||!shield.includes('__SHIELD__'))throw Error('A client resource was incomplete');
-    // Start a fresh document before creating the library's document bindings.
+    // Build the page before libraries inspect its root, head and body.
     document.open();
-    new Function(library)();
-    new Function(shield)();
     document.write(html);
     document.close();
+    new Function(library)();
+    new Function(shield)();
     new Function(client)();
-  }catch(error){show('Startup could not finish. '+String(error.message||error)+'. Retry when your connection is ready.',true)}finally{running=false}}
+  }catch(error){if(!document.getElementById('ls-message')){document.open();document.write(shell);document.close()}console.error('Crest startup:',error);show('Startup could not finish. '+String(error.message||error)+'. Retry when your connection is ready.',true)}finally{running=false}}
   document.open();document.write(shell);document.close();
   run();
 })();
