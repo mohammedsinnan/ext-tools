@@ -4310,13 +4310,13 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                     <div id="control-container">
                         <a id="button-settings" class="nav-buttons" title="Settings" aria-label="Settings">
                             <i class="material-icons fa-fw">tune</i>
-                        </a>
+                        <span class="crest-tool-label">Settings</span></a>
                         <a id="button-inputs" class="nav-buttons" title="Controls" aria-label="Controls">
                             <i class="material-icons fa-fw">keyboard</i>
-                        </a>
+                        <span class="crest-tool-label">Controls</span></a>
                         <a id="button-theme" class="nav-buttons" title="Theme" aria-label="Theme">
                             <i class="material-icons fa-fw">color_lens</i>
-                        </a>
+                        <span class="crest-tool-label">Appearance</span></a>
                     </div>
                     <a class="nav-buttons" href="" target="_blank">
                         <i class="fas fa-smile-wink" style="padding-left: 6px;"></i>
@@ -4371,10 +4371,8 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         <div id="account-tab2" style="color:#aaa;font-size:11px;font-family:ubuntu;text-align:center;margin:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tab1: none&nbsp;&nbsp;|&nbsp;&nbsp;Tab2: none</div>
                     </div></div></section>
 </div>
-<div id="settings" class="menu-panel">
-                <div class="settings-close">
-                    <i class="fa fa-times" aria-hidden="true"></i>
-                </div>
+<div id="settings" class="menu-panel"><header class="crest-panel-heading"><small>CREST / SETTINGS</small><h2>Your game. Your way.</h2><p>Fine-tune your camera, cell animation and arena display.</p></header><label class="crest-panel-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search settings…" aria-label="Search settings…" autocomplete="off" spellcheck="false"></label>
+                <button type="button" class="settings-close" aria-label="Close settings">×</button>
                 <div class="settings-container">
                     <div class="row">
                         <span class="title" data="html.settingMenu.language">Language</span>
@@ -4384,7 +4382,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">ARENA & MOTION</div>
                     <div class="row">
                         <span class="title">MO arena style</span>
                         <span class="settings-options" type="options" name="moArenaStyle">
@@ -4434,7 +4432,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">CAMERA</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.zoomSpeed">Zoom speed</span>
                         <span class="settings-options" type="range" name="zoomSpeed">
@@ -4475,7 +4473,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">CELL LABELS</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.autoHideText">Auto hide text</span>
                         <span class="settings-options" type="options" name="autoHideText">
@@ -4503,7 +4501,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">SKINS</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.cellNick">Cell Nick</span>
                         <span class="settings-options" type="options" name="cellNick">
@@ -4543,7 +4541,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">BACKGROUND</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.urlSkins">Skins</span>
                         <span class="settings-options" type="options" name="urlSkins">
@@ -4562,7 +4560,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">ARENA DETAILS</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.vanillaGrid">Vanilla grid</span>
                         <span class="settings-options" type="options" name="vanillaGrid">
@@ -4591,7 +4589,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         <span class="title" data="html.settingMenu.bgImageUrl">Background image URL</span>
                         <input id="bgImageUrl" class="menu-inputs" style="width:100%;background-color:#000;margin-top:5px;margin-bottom:0px;" type="text" placeholder="https://example.com/image.png">
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">TEAM & MULTIBOX</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.food">Food</span>
                         <span class="settings-options" type="options" name="food">
@@ -4602,7 +4600,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">CHAT</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.cursorLine">Cursor lines</span>
                         <span class="settings-options" type="options" name="cursorLine">
@@ -4648,7 +4646,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider"></div>
+                    <div class="row divider">MORE OPTIONS</div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.chatType">Chat type</span>
                         <span class="settings-options" type="options" name="chatType">
@@ -4659,8 +4657,8 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         </span>
                     </div>
                 </div>
-            </div>
-            <div id="inputs" class="menu-panel">
+            <p class="crest-empty" hidden>No matching options. Try another search.</p><footer class="crest-panel-foot"><b>● Saved as you change</b><span>CREST / PERSONAL PREFERENCES</span></footer></div>
+            <div id="inputs" class="menu-panel"><header class="crest-panel-heading"><small>CREST / CONTROLS</small><h2>Make every move yours.</h2><p>Keep your shortcuts close. Bind the keys that feel right.</p></header><label class="crest-panel-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Find a key or action…" aria-label="Find a key or action…" autocomplete="off" spellcheck="false"></label>
                 <div class="inputs-tab-bar">
                     <span class="inputs-tab active" target="#hotkeys">
                         <i class="fa fa-keyboard-o"></i>
@@ -4919,9 +4917,9 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         </div>
                     </div>
                 </div>
-            </div>
-            <div id="theme" class="menu-panel">
-                <div class="theme-close">X</div>
+            <p class="crest-empty" hidden>No matching options. Try another search.</p><footer class="crest-panel-foot"><b>● Saved as you change</b><span>CREST / PERSONAL PREFERENCES</span></footer></div>
+            <div id="theme" class="menu-panel"><header class="crest-panel-heading"><small>CREST / APPEARANCE</small><h2>Set the atmosphere.</h2><p>Personalize colors, text and the little details around your arena.</p></header><label class="crest-panel-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Find a color or detail…" aria-label="Find a color or detail…" autocomplete="off" spellcheck="false"></label>
+                <button type="button" class="theme-close" aria-label="Close appearance">×</button>
                 <div class="theme-container">
                     <div class="row">
                         <span class="title" data="html.themeMenu.selectedPreset">Theme preset</span>
@@ -5259,7 +5257,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         </span>
                     </div>
                 </div>
-            </div>
+            <p class="crest-empty" hidden>No matching options. Try another search.</p><footer class="crest-panel-foot"><b>● Saved as you change</b><span>CREST / PERSONAL PREFERENCES</span></footer></div>
         </div>
 
         <script>
@@ -5602,5 +5600,43 @@ document.addEventListener("DOMContentLoaded", function () {
 #crest-start-retry{border:1px solid #a7dbc842;border-radius:10px;background:#16322b;color:#def1e7;padding:10px 22px;margin:20px 0 0;cursor:pointer;font:600 13px Segoe UI,sans-serif}#crest-start-retry[hidden]{display:none}
 .crest-entry-help{display:block;margin-top:28px;color:#6f9385;font-size:11px;text-decoration:none}.crest-entry-help:hover{color:#bfdfcf}.crest-entry button:focus-visible,.crest-entry a:focus-visible{outline:2px solid #bde8d3;outline-offset:4px}
 @keyframes crest-breathe{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.crest-entry-track span{animation:none}#loading-screen{transition:none}}
-</style><span id="crest-dom-ready" hidden></span></body>
+</style><span id="crest-dom-ready" hidden></span><style id="crest-preferences-style">#settings,#inputs,#theme{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;width:min(720px,calc(100vw - 32px))!important;height:min(740px,calc(100dvh - 48px))!important;box-sizing:border-box!important;padding:0!important;border:1px solid #9ed9cd30!important;border-radius:24px!important;background:linear-gradient(140deg,#10282d,#0c1926 65%)!important;box-shadow:0 30px 100px #0009,0 0 0 100vmax #030b13c9!important;color:#e5f3f2!important;z-index:50!important;font-family:Segoe UI,Arial,sans-serif!important;overflow:hidden!important;text-align:left!important;}
+.crest-panel-heading{padding:30px 32px 20px;border-bottom:1px solid #b9d9e412;background:linear-gradient(120deg,#8fe4c40b,transparent)}
+.crest-panel-heading small{display:block;font-size:10px;font-weight:700;letter-spacing:.23em;color:#89dbc4;margin-bottom:11px}.crest-panel-heading h2{font:600 30px/1.2 Segoe UI,Arial,sans-serif;margin:0 46px 9px 0;color:#f1fbfa;letter-spacing:-.8px}.crest-panel-heading p{font-size:12px;line-height:1.7;color:#96afbf;margin:0;max-width:520px}
+#settings .settings-close,#theme .theme-close,#inputs .inputs-tab.close{position:absolute!important;right:22px!important;top:24px!important;float:none!important;width:34px!important;height:34px!important;display:grid!important;place-items:center!important;padding:0!important;margin:0!important;border-radius:10px!important;border:1px solid #aac7da25!important;background:#aec9d20b!important;color:#9dbbc8!important;cursor:pointer!important;font:20px Segoe UI,sans-serif!important;transform:none!important;text-shadow:none!important;box-sizing:border-box!important;}
+#settings .settings-close:hover,#theme .theme-close:hover,#inputs .inputs-tab.close:hover{color:#fff!important;background:#9edbc622!important;}
+.crest-panel-search{position:relative;display:flex;align-items:center;gap:12px;margin:18px 24px 12px;padding:0 14px;border-radius:11px;border:1px solid #b7dbe822;background:#06131d70;color:#84a9b9;font-size:20px;}
+.crest-panel-search input{height:42px;min-width:0;width:100%;color:#e0eff2!important;background:transparent!important;border:0!important;box-shadow:none!important;outline:none!important;font:13px Segoe UI,sans-serif!important;padding:0!important;margin:0!important;}.crest-panel-search input::placeholder{color:#698c9f!important;}.crest-panel-search:focus-within{border-color:#8adbc4;box-shadow:0 0 0 2px #82dabe12}
+#settings .settings-container,#theme .theme-container,#inputs .inputs-menu-container{position:relative!important;width:auto!important;height:calc(100% - 244px)!important;margin:0 16px 16px!important;padding:0 8px 16px!important;box-sizing:border-box!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;background:transparent!important;scrollbar-color:#345563 transparent;scrollbar-width:thin;border-radius:0!important;}
+#inputs .inputs-menu-container{height:calc(100% - 288px)!important;}#inputs .inputs-menu{position:relative!important;height:auto!important;width:100%!important;}
+#settings .row,#theme .row,#inputs .row{box-sizing:border-box!important;margin:7px 0!important;padding:14px 16px!important;min-height:55px!important;border:1px solid #b8d5e314!important;border-radius:12px!important;background:#98b5d008!important;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#cee1e9!important;transform:none!important;}
+#settings .row:hover,#theme .row:hover,#inputs .row:hover{background:#a0d6ce0e!important;border-color:#a3dacc2b!important;}
+#settings .row .title,#theme .row .title,#inputs .row .title{font:500 13px/1.5 Segoe UI,Arial,sans-serif!important;color:#cbdfe7!important;text-transform:none!important;letter-spacing:0!important;}
+#settings .row.divider,#theme .row.divider{border:0!important;min-height:0!important;display:block;padding:16px 2px 4px!important;background:transparent!important;margin:8px 0 0!important;font:700 10px Segoe UI,sans-serif!important;letter-spacing:.17em!important;color:#729ba8!important;}
+#settings .settings-options,#theme .theme-options,#inputs .mouse-options{float:none!important;margin:0!important;display:flex!important;align-items:center;gap:12px;font:600 11px Segoe UI,sans-serif!important;text-transform:none!important;transform:none!important;color:#a6e5d2!important;}
+#settings .settings-options i,#theme .theme-options i,#inputs .mouse-options i{display:grid;place-items:center;min-width:27px;min-height:27px;border:1px solid #92b6c52a;border-radius:8px;color:#a8c5d1;cursor:pointer;animation:none!important;font-size:10px!important;}
+#settings .settings-options b.active,#theme .theme-options b.active,#inputs .mouse-options b.active{min-width:70px;text-align:center;color:#b1e8d5!important;}
+#settings .settings-options span.outer,#theme .theme-options span.outer{width:100px!important;height:5px!important;padding:0!important;transform:none!important;border-radius:5px!important;background:#85b9ac24!important;}
+#settings .settings-options span.inner,#theme .theme-options span.inner{height:5px!important;background:#8bdcc2!important;border-radius:5px!important;transition:none!important;}
+#settings .range-value,#theme .range-value{color:#7d9fad;font:11px Segoe UI,sans-serif!important;min-width:30px;}
+#inputs .key,#inputs input[type=text],#theme input,#settings input.menu-inputs,#inputs .command{background:#091924!important;color:#caeae6!important;border:1px solid #9bc7ce35!important;border-radius:8px!important;padding:9px 12px!important;box-shadow:none!important;transform:none!important;box-sizing:border-box!important;}
+#inputs input.key{margin:0!important;min-width:70px;width:80px!important;text-align:center;font:600 12px Segoe UI,sans-serif!important;}
+#theme .minicolors,#theme .minicolors-input{max-width:130px;}#theme .minicolors-input{padding-left:30px!important;}
+#inputs .inputs-tab-bar{height:40px!important;display:flex;gap:6px;padding:0 24px;margin-bottom:9px;align-items:center;font-family:Segoe UI,sans-serif!important;}
+#inputs .inputs-tab:not(.close){border:1px solid #a3c6d520!important;border-radius:8px!important;padding:8px 13px!important;background:#a4c3d009!important;color:#8fabbc!important;font-size:11px!important;}
+#inputs .inputs-tab.active{background:#81dcc520!important;border-color:#8be0cc50!important;color:#b9f3df!important;}
+.crest-panel-foot{position:absolute;bottom:0;left:0;right:0;border-top:1px solid #bddbe713;padding:13px 28px;background:#0b1a26;font:10px Segoe UI,sans-serif;color:#7495a6;display:flex;align-items:center;justify-content:space-between;}.crest-panel-foot b{font-weight:500;color:#a6d8c7}.crest-empty{position:absolute;top:280px;left:20px;right:20px;pointer-events:none;color:#92b2c3;text-align:center;padding:22px;font:13px Segoe UI,sans-serif;}
+#settings .crest-filtered,#inputs .crest-filtered,#theme .crest-filtered{display:none!important;}
+#menu-overlay #control-container{padding:4px!important;border:1px solid #b5d9e61a!important;border-radius:14px!important;background:#91c4d108!important;gap:3px!important;}
+#menu-overlay #control-container .nav-buttons{width:auto!important;min-width:38px!important;height:34px!important;line-height:34px!important;padding:0 10px!important;display:flex!important;align-items:center;justify-content:center;gap:7px!important;border:0!important;background:transparent!important;color:#9cb6c8!important;border-radius:9px!important;}
+#menu-overlay #control-container .nav-buttons:hover{background:#8ad8c41a!important;color:#c7f2e3!important;}.crest-tool-label{font:500 11px Segoe UI,sans-serif;}
+#streamMode{position:relative;}#streamMode::after{content:'Privacy';display:none;position:absolute;top:44px;right:0;padding:6px 9px;background:#142b39;border:1px solid #a8d5da30;border-radius:6px;color:#bcd2df;font:11px Segoe UI,sans-serif;}#streamMode:hover::after,#streamMode:focus-visible::after{display:block;}
+#settings button:focus-visible,#theme button:focus-visible,#inputs [tabindex]:focus-visible,#inputs input:focus-visible,#settings input:focus-visible,#theme input:focus-visible{outline:2px solid #94e1ca!important;outline-offset:3px!important;}
+@media(max-width:650px){.crest-tool-label{display:none;}.crest-panel-heading{padding:22px 22px 16px}.crest-panel-heading h2{font-size:25px}.crest-panel-heading p{max-width:85%;font-size:11px}.crest-panel-search{margin:14px 16px 12px}#settings,#inputs,#theme{height:calc(100dvh - 24px)!important;border-radius:18px!important;}#settings .settings-container,#theme .theme-container{height:calc(100% - 231px)!important;margin-left:8px!important;margin-right:8px!important;}#inputs .inputs-menu-container{height:calc(100% - 280px)!important;margin:0 8px 16px!important;}#settings .row,#theme .row,#inputs .row{padding:12px!important;gap:10px;}#settings .row .title,#theme .row .title{font-size:12px!important;}.crest-panel-foot{padding:13px 20px}.crest-panel-foot span{display:none;}}
+
+</style><script id="crest-preferences-ui">(function(){function init(){for(const id of ['settings','inputs','theme']){const panel=document.getElementById(id);if(!panel||panel.dataset.crestReady)continue;panel.dataset.crestReady='true';const search=panel.querySelector('.crest-panel-search input');const empty=panel.querySelector('.crest-empty');if(search)search.addEventListener('input',function(){const query=this.value.trim().toLocaleLowerCase();let count=0;panel.querySelectorAll('.row').forEach(row=>{const label=row.querySelector('.title');const match=!query||((label?.textContent||'')+' '+(row.getAttribute('name')||'')+' '+(row.querySelector('[name]')?.getAttribute('name')||'')).toLocaleLowerCase().includes(query);row.classList.toggle('crest-filtered',row.classList.contains('divider')?Boolean(query):!match);if(match&&!row.classList.contains('divider'))count++});if(empty)empty.hidden=count>0});}
+for(const el of document.querySelectorAll('#control-container a,#streamMode,#inputs .inputs-tab')){el.setAttribute('role','button');el.setAttribute('tabindex','0');el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}})}
+const privacy=document.getElementById('streamMode');if(privacy){privacy.title='Privacy: show or hide your name and tag';privacy.setAttribute('aria-label','Privacy: show or hide your name and tag')}
+}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init()})();
+</script></body>
 </html>
