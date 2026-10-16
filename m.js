@@ -1,4 +1,26 @@
-!(function (window, $, document) {
+(function crestDependencyGate(factory) {
+  const state=window.__crestLaunch||(window.__crestLaunch={});
+  if(state.factoryAccepted)return;
+  state.factoryAccepted=true;
+  let deadline=Date.now()+60000,timer;
+  const status=(message)=>{const el=document.getElementById('ls-message');if(el)el.textContent=message};
+  const check=()=>{
+    clearTimeout(timer);
+    const jq=window.jQuery;
+    const dom=document.getElementById('crest-dom-ready')&&document.getElementById('canvas')&&document.getElementById('button-play');
+    if(dom&&jq&&jq.fn&&typeof jq.fn.perfectScrollbar==='function'&&typeof jq.fn.minicolors==='function'){
+      if(state.factoryStarted)return;state.factoryStarted=true;
+      try{factory(window,jq,document)}catch(error){state.error=String(error.message||error);status('The client could not start. '+state.error);const retry=document.getElementById('crest-start-retry');if(retry){retry.hidden=false;retry.onclick=()=>location.reload()}}
+      return;
+    }
+    status(dom?'Preparing the interface library…':'Preparing your arena…');
+    if(Date.now()>=deadline){status('An interface resource did not finish loading. Retry the startup or install the updated Crest loader below.');const retry=document.getElementById('crest-start-retry');if(retry){retry.hidden=false;retry.onclick=()=>{deadline=Date.now()+60000;retry.hidden=true;check()}}return}
+    timer=setTimeout(check,100);
+  };
+  window.addEventListener('load',check);
+  document.addEventListener('DOMContentLoaded',check);
+  check();
+})(function(window,$,document){
   const antiDebug = (function () {
     let ka = true;
     return function (hb, dd) {
@@ -178,7 +200,7 @@
     MXSkin_noAcc: "Account does not exist.",
   };
   const langLB = {
-    title: "Drag+",
+    title: "Crest",
   };
   const langHUD = {
     enterChatMsg: "Enter chat message...",
@@ -551,7 +573,7 @@
     static ["saveSettings"](mb, fz) {
       this[mb] = fz;
       if ("multiboxMode" === mb) {
-        Notifications.alert("Drag+", "Please rejoin the server!");
+        Notifications.alert("Crest", "Please rejoin the server!");
       }
       if ("chatType" === mb) {
         this.toggleChatroom();
@@ -777,7 +799,7 @@
     static ["setNick"](jl) {
       if (Player.isAlive) {
         $("#nick").val(Player.nick);
-        Notifications.alert("Drag+", Language.current.notif.nickChangeInGame);
+        Notifications.alert("Crest", Language.current.notif.nickChangeInGame);
       }
       let ht = Storage.get("profiles", "profile" + this.selected);
       const o = {
@@ -1621,18 +1643,14 @@
         }
       });
     }
-    static ["fetchServerinfo"]() {
-      let rp;
-      let aan = new XMLHttpRequest();
-      aan.open("GET", "https://3rb.io/php/Servers.php", false);
-      aan.send();
-      try {
-        rp = JSON.parse(aan.responseText);
-      } catch (akm) {
-        rp = null;
-      }
-      return rp;
+    static async prepare(){
+      if(this.bootstrapInfo)return this.bootstrapInfo;
+      if(this.preparing)return this.preparing;
+      this.preparing=(async()=>{let lastError;for(let attempt=0;attempt<3;attempt++){window.__crestStatus?.(attempt?'Retrying the server directory…':'Finding available arenas…',2);try{const info=await this.requestServerinfo();this.bootstrapInfo=info;return info}catch(error){lastError=error;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)))}}throw lastError})();
+      try{return await this.preparing}finally{this.preparing=null}
     }
+    static requestServerinfo(){return new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET','https://3rb.io/php/Servers.php',true);xhr.timeout=8000;xhr.onload=()=>{try{if(xhr.status<200||xhr.status>=300)throw Error('Server directory returned '+xhr.status);const data=JSON.parse(xhr.responseText);if(!data||typeof data.ip!=='string'||!data.ip||!data.modes||!Object.keys(data.modes).length||!Object.values(data.modes).every(m=>m&&Array.isArray(m.servers)&&m.servers[0]&&m.servers[0].port))throw Error('The server directory response was incomplete');resolve(data)}catch(error){reject(error)}};xhr.onerror=()=>reject(Error('Could not reach the server directory'));xhr.ontimeout=()=>reject(Error('The server directory timed out'));xhr.onabort=()=>reject(Error('Server directory request was cancelled'));xhr.send()})}
+    static ["fetchServerinfo"](){if(!this.bootstrapInfo)throw Error('Server directory is not ready');return this.bootstrapInfo}
     static ["getServers"]() {
       try {
         var aco = [];
@@ -1657,7 +1675,7 @@
           this.restartTimes[fq] = lp ? Date.parse(lp) : null;
         });
       } catch (zi) {
-        Notifications.warn("Drag+", "Unexpected error occured while parsing servers info.");
+        Notifications.warn("Crest", "Unexpected error occured while parsing servers info.");
         throw zi;
       }
       return [abp, aco];
@@ -4331,7 +4349,7 @@
       // whose code was literally "XXXXXXX" (i.e. no skin), with no warning.
       return "XXXXXXX" !== acy
         ? (this.isRGB !== pj && ((this.isRGB = pj), RelaySender.rgbMode()), (this._skin = acy), void RelaySender.skin())
-        : void Notifications.alert("Drag+", Language.current.notif.invalidSkinUrl);
+        : void Notifications.alert("Crest", Language.current.notif.invalidSkinUrl);
     }
     static get ["skin"]() {
       return this._skin;
@@ -4343,7 +4361,7 @@
       // second skin works); anything unparseable warns and keeps the old.
       if ("XXXXXXX" === acy) {
         if (dn) {
-          return void Notifications.alert("Drag+", Language.current.notif.invalidSkinUrl);
+          return void Notifications.alert("Crest", Language.current.notif.invalidSkinUrl);
         }
         this._skin2 = "";
       } else {
@@ -5490,7 +5508,7 @@
       });
       if (acl) {
         if (acl.isUnnamed) {
-          Notifications.alert("Drag+", Language.current.notif.target_unnamed);
+          Notifications.alert("Crest", Language.current.notif.target_unnamed);
         } else {
           const ou = this[1 === us ? "target1" : "target2"];
           ou.turnedOn = true;
@@ -5734,7 +5752,7 @@
             session = new sh.ShieldSession(sh.shield_build_id());
           } catch (e) {
             MoDiagnostics.note("Player " + slot, "Shield session creation failed");
-            console.log("[Drag+] shield session error (tab " + slot + ")", e);
+            console.log("[Crest] shield session error (tab " + slot + ")", e);
             return;
           }
           MoDiagnostics.note("Player " + slot, "Shield session created");
@@ -5744,17 +5762,17 @@
             hello = session.hello();
           } catch (e) {
             MoDiagnostics.note("Player " + slot, "Shield hello failed");
-            console.log("[Drag+] shield hello error (tab " + slot + ")", e);
+            console.log("[Crest] shield hello error (tab " + slot + ")", e);
             return;
           }
           const socket = 1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3;
           if (socket && socket.readyState === socket.OPEN) {
             socket.send(hello);
             MoDiagnostics.note("Player " + slot, "Shield hello sent");
-            console.log("[Drag+] shield hello sent (tab " + slot + ") len=" + hello.length);
+            console.log("[Crest] shield hello sent (tab " + slot + ") len=" + hello.length);
           }
         })
-        .catch((e) => console.log("[Drag+] shield hello failed (tab " + slot + ")", e));
+        .catch((e) => console.log("[Crest] shield hello failed (tab " + slot + ")", e));
     }
     static ["flushShieldQueue"](slot) {
       const q = (this._shieldQueue && this._shieldQueue[slot]) || [];
@@ -5786,7 +5804,7 @@
         try {
           entry.session.onHelloAck(raw, "");
         } catch (e) {
-          console.log("[Drag+] shield onHelloAck error (tab " + slot + ")", e);
+          console.log("[Crest] shield onHelloAck error (tab " + slot + ")", e);
           return true;
         }
         entry.established = true;
@@ -5797,7 +5815,7 @@
           this.flushProtoQueue(slot);
         }
         this.flushShieldQueue(slot);
-        console.log("[Drag+] shield established (tab " + slot + ")");
+        console.log("[Crest] shield established (tab " + slot + ")");
         return true;
       }
       if (210 === first) {
@@ -5806,7 +5824,7 @@
         try {
           inner = entry.session.open(raw);
         } catch (e) {
-          console.log("[Drag+] shield open error (tab " + slot + ")", e);
+          console.log("[Crest] shield open error (tab " + slot + ")", e);
           return true;
         }
         if (inner && inner.length > 1 && 212 === inner[0]) {
@@ -5815,9 +5833,9 @@
             const sh = window.__SHIELD__;
             const attest = sh.shield_attest(() => 0, inner.subarray(1));
             this.send(attest, slot);
-            console.log("[Drag+] shield attestation answered (tab " + slot + ")");
+            console.log("[Crest] shield attestation answered (tab " + slot + ")");
           } catch (e) {
-            console.log("[Drag+] shield attest error (tab " + slot + ")", e);
+            console.log("[Crest] shield attest error (tab " + slot + ")", e);
           }
           return true;
         }
@@ -5873,7 +5891,7 @@
       return new Promise((resolve, reject) => {
         const container = document.getElementById("cf-turnstile-" + slot);
         if (!container) { reject(new Error("Verification container missing for player " + slot)); return; }
-        if (slot === 1) Notifications.warn("Drag+", "Verifying Player 1 connection, please wait..");
+        if (slot === 1) Notifications.warn("Crest", "Verifying Player 1 connection, please wait..");
         let settled = false, sdkTimer, timeout;
         const finish = (error, token) => {
           if (settled) return;
@@ -5909,7 +5927,7 @@
                 if (!token) { pending.reject(new Error("Empty verification token")); return; }
                 const loading = document.getElementById("loading-screen");
                 if (loading) $(loading).fadeOut(500, function () { $(this).remove(); });
-                Notifications.warn("Drag+", "Verification complete for Player " + slot);
+                Notifications.warn("Crest", "Verification complete for Player " + slot);
                 pending.resolve(token);
               },
               "expired-callback": () => pending.reject(new Error("Verification expired for player " + slot)),
@@ -5924,7 +5942,7 @@
     }
     static ["connect"](hy, aff) {
       if ("string" != typeof hy) {
-        return Notifications.warn("Drag+", "Server IP is invalid");
+        return Notifications.warn("Crest", "Server IP is invalid");
       }
       if (!hy) return;
       const go = () => {
@@ -5993,7 +6011,7 @@
         if (!Account.loginStringFor(1)) {
           if (!this.tab2WarnedGuest) {
             this.tab2WarnedGuest = true;
-            Notifications.warn("Drag+", "3rb.io now blocks two guest tabs from the same IP. Log in with an account to enable Tab 2.");
+            Notifications.warn("Crest", "3rb.io now blocks two guest tabs from the same IP. Log in with an account to enable Tab 2.");
           }
           setTimeout(attempt, 3000);
           return;
@@ -6011,7 +6029,7 @@
       this.tab2Queued = false;
       if (this.intentionalDisconnect || !this.ip) return;
       if (!Account.loginStringFor(2) && 3 <= (this.tab2GuestKicks || 0)) {
-        Notifications.warn("Drag+", "Tab 2 keeps getting kicked as guest - log in with a second account to keep Tab 2 alive.");
+        Notifications.warn("Crest", "Tab 2 keeps getting kicked as guest - log in with a second account to keep Tab 2 alive.");
         return;
       }
       this.queueTab2();
@@ -6138,7 +6156,7 @@
         try {
           payload = entry.session.seal(new Uint8Array(payload));
         } catch (e) {
-          console.log("[Drag+] shield seal error (tab " + yj + ")", e);
+          console.log("[Crest] shield seal error (tab " + yj + ")", e);
         }
       }
       if ((1 === yj && this.wsOpen) || (2 === yj && this.ws2Open) || (3 === yj && this.ws3Open)) MoDiagnostics.packet(yj, "out", acr, payload);
@@ -6157,7 +6175,7 @@
       // 2026 Shield: the server requires the WASM hello before anything else.
       this.shieldHello(nq);
       PacketSender.init(nq);
-      if (3 !== nq) Notifications.alert("Drag+", "Tab " + nq + " connected");
+      if (3 !== nq) Notifications.alert("Crest", "Tab " + nq + " connected");
     }
     static ["onMessage"](alh, adu) {
       this.packetCount["in"]++;
@@ -6165,7 +6183,7 @@
         try {
           const o = JSON.parse(alh.data);
           if (o && "ban_ui" === o.type) {
-            console.log("[Drag+] ban_ui received");
+            console.log("[Crest] ban_ui received");
           }
         } catch (e) {}
         return;
@@ -6245,7 +6263,7 @@
       MoDiagnostics.packetClose(numericTab, ev && ev.code);
       MoDiagnostics.note("Player " + numericTab, "Socket closed (code " + Number(ev && ev.code || 0) + "). " + MoDiagnostics.closeReason(reason));
       if (/new connection/i.test(reason)) {
-        Notifications.warn("Drag+", "Tab " + numericTab + " was replaced by another connection from this IP (new 3rb.io rule)");
+        Notifications.warn("Crest", "Tab " + numericTab + " was replaced by another connection from this IP (new 3rb.io rule)");
         if (2 === numericTab) {
           this.tab2GuestKicks = (this.tab2GuestKicks || 0) + 1;
         }
@@ -6261,7 +6279,7 @@
       PacketSender.handleDisabledProperty(!this.connected);
       this.resetShield(numericTab);
       PacketParser.clearCells(numericTab);
-      Notifications.alert("Drag+", "Tab " + numericTab + " disconnected");
+      Notifications.alert("Crest", "Tab " + numericTab + " disconnected");
       console.log("Websocket " + numericTab + " closed" + (reason ? " (" + reason + ")" : ""));
       if (1 === numericTab) {
         setTimeout(() => {
@@ -6395,7 +6413,7 @@
         hud = document.createElement("div");
         hud.id = "drag-plus-connection-status";
         hud.style.cssText = "position:fixed;right:5px;z-index:2147483000;text-align:center;font-family:ubuntu,sans-serif;font-size:11px;color:rgba(255,255,255,.75);pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000;padding-bottom:3px";
-        hud.title = "Drag+ Multibox - Tab 1 and Tab 2 connection status.";
+        hud.title = "Crest Multibox - Tab 1 and Tab 2 connection status.";
         document.body.appendChild(hud);
       }
       if (hud) {
@@ -6442,7 +6460,7 @@
         const ajb = this.messages.get(gf);
         if ((ajb == dm && dm.length >= 30) || (ajb.length >= 30 && dm.length >= 30)) {
           this.spammers.push(gf);
-          Notifications.alert("Drag+", "Spammer Catched -> " + gf);
+          Notifications.alert("Crest", "Spammer Catched -> " + gf);
           return true;
         }
       } else if (dm.length >= 30) {
@@ -6903,7 +6921,7 @@
       // ("New connection from this browser"). Tab 1 uses slot 1, Tab 2 uses
       // slot 2 (falling back to guest).
       const str = 1 === Number(ahn) ? Account.loginStringFor(1) : Account.loginStringFor(2);
-      console.log("Drag+ Login packet (tab " + ahn + "): " + (str ? "account, " + (3 + str.length * 2) + " bytes" : "guest"));
+      console.log("Crest Login packet (tab " + ahn + "): " + (str ? "account, " + (3 + str.length * 2) + " bytes" : "guest"));
       if (!str) {
         const px = new Uint8Array([255, 0, 0]);
         WsConnection.send(px, ahn);
@@ -6935,7 +6953,7 @@
         add = await WsConnection.getToken(oq);
       } catch (nb) {
         console.log("Multibox: failed to get captcha token for tab " + oq + ":", nb);
-        Notifications.warn("Drag+", "Captcha failed for Tab " + oq + " - retrying the connection.");
+        Notifications.warn("Crest", "Captcha failed for Tab " + oq + " - retrying the connection.");
         return false;
       }
       if (socket !== (1 === oq ? WsConnection.ws : 2 === oq ? WsConnection.ws2 : WsConnection.ws3)) return false;
@@ -8944,15 +8962,18 @@
       this.time = Date.now();
     }
   }
-  window.onload = () => (
-    $("#loading-screen").html(
-      '<div class="ls-title">Drag+</div><div class="ls-spinner"><span id="ls-icon"><i class="fa fa-solid fa-circle-notch fa-spin"></i></span><span style="display:block;" id="ls-message">Loading...</span></div>',
-    ),
+  let crestStarting=false,crestInitialized=false;
+  const crestStart=async()=>{if(crestStarting||crestInitialized)return;crestStarting=true;const retry=document.getElementById('crest-start-retry');if(retry)retry.hidden=true;try{
+    window.__crestStatus?.('Preparing your client…',1);
+    await Server.prepare();
+    if(GameLoop.browserVersion()<49)throw Error("Please use a current Chrome or Chromium browser");
+    const initialize=()=> (
+    window.__crestStatus?.("Entering your arena…",2),
     49 > GameLoop.browserVersion()
       ? ($("#ls-icon").html('<i class="fa fa-chrome" aria-hidden="true"></i>'),
         void $("#ls-message").text(" Only Chrome version 49 or higher are supported."))
       : (Language.init(),
-        GameLoop.init(),
+        (crestInitialized=true,GameLoop.init()),
         class {
           static ["init"]() {
             this.apiUrl = "";
@@ -8992,4 +9013,7 @@
           }
         }.init())
   );
-})(window, $, document);
+    initialize();window.__crestComplete?.();
+  }catch(error){window.__crestLaunch.error=String(error.message||error);window.__crestStatus?.(crestInitialized?'The client could not finish starting. '+window.__crestLaunch.error:'Could not prepare your arena: '+window.__crestLaunch.error,2);if(retry){retry.hidden=false;retry.onclick=()=>crestInitialized?location.reload():crestStart()}}finally{crestStarting=false}};
+  crestStart();
+});
