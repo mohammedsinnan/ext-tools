@@ -3552,7 +3552,7 @@
     static defaults={density:'comfortable',accent:'mint',largeText:false,highContrast:false,reduceMotion:false,remember:true};
     static init(){
       if(this.root)return;
-      this.ui={};for(const [key,value]of Object.entries(this.defaults)){const stored=Storage.get('crestUI',key);this.ui[key]=typeof stored===typeof value?stored:value}
+      const record=Storage.get('crestUI','config');this.ui={};for(const [key,value]of Object.entries(this.defaults)){const stored=record&&typeof record==='object'?record[key]:undefined;this.ui[key]=typeof stored===typeof value?stored:value}
       if(!['comfortable','compact'].includes(this.ui.density))this.ui.density='comfortable';if(!['mint','amber','ice','violet'].includes(this.ui.accent))this.ui.accent='mint';
       this.descriptors=[];this.fields=[];this.root=document.createElement('div');this.root.id='crest-preferences-studio';this.root.hidden=true;
       this.root.innerHTML='<div class="cpx-dialog" role="dialog" aria-modal="true" aria-labelledby="cpx-title"><aside class="cpx-sidebar"><div class="cpx-brand"><span>◈</span> CREST<small>MAKE IT YOURS</small></div><nav aria-label="Preference categories"></nav><div class="cpx-sidebar-note">Your arena.<br>Your rhythm.<span>One setup, made for you.</span></div></aside><main class="cpx-main"><header class="cpx-header"><div><small>YOUR PERSONAL SETUP</small><h1 id="cpx-title">Preferences</h1></div><button type="button" class="cpx-close" aria-label="Close preferences">×</button></header><div class="cpx-search-wrap"><span aria-hidden="true">⌕</span><input id="cpx-search" type="search" aria-label="Search preferences" placeholder="Search settings and colors…" autocomplete="off"></div><div class="cpx-scroll" tabindex="-1"><div id="cpx-content"></div><div id="cpx-controls" hidden></div></div><footer class="cpx-footer"><span id="cpx-status" role="status" aria-live="polite">Your settings, ready when you are.</span><span class="cpx-local">SAVED ON THIS DEVICE</span></footer></main></div>';
@@ -3592,7 +3592,7 @@
       if(item.choices&&!item.choices.some(x=>x[0]===value))throw Error('Choose one of the available options');
       if(item.type==='color'){const probe=document.createElement('span');probe.style.color=String(value);if(!probe.style.color)throw Error('Enter a valid CSS color');}
       if(item.name==='backgroundImage'&&value){const u=new URL(value);if(!['http:','https:'].includes(u.protocol))throw Error('Use an http or https image URL');}
-      if(item.owner===this){this.ui[item.name]=value;Storage.set('crestUI',item.name,value);this.applyUI();}
+      if(item.owner===this){this.ui[item.name]=value;Storage.set('crestUI',item.name,value);Storage.set('crestUI','config',{...this.ui});this.applyUI();}
       else if(item.owner===Settings)Settings.saveSettings(item.name,item.scale?value/item.scale:value);
       else if(item.owner===Theme)Theme.saveTheme(item.name,value);
       else Mouse.saveMouseOptions(item.name,value);
