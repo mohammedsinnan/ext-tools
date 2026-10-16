@@ -4308,15 +4308,15 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
  <header class="mo-menu-header"><div class="mo-brand"><b>CREST<span>●</span></b><small>YOUR NEXT ARENA</small></div>
  <div class="mo-menu-actions"><div id="nav-menu">
                     <div id="control-container">
-                        <a id="button-settings" class="nav-buttons" title="Settings" aria-label="Settings">
-                            <i class="material-icons fa-fw">tune</i>
-                        <span class="crest-tool-label">Settings</span></a>
+                        <a id="button-settings" class="nav-buttons crest-preferences-launch" title="Preferences" aria-label="Preferences">
+                            <i class="material-icons fa-fw">tune</i><span class="crest-preferences-tool-label">Preferences</span>
+                        </a>
                         <a id="button-inputs" class="nav-buttons" title="Controls" aria-label="Controls">
                             <i class="material-icons fa-fw">keyboard</i>
-                        <span class="crest-tool-label">Controls</span></a>
+                        </a>
                         <a id="button-theme" class="nav-buttons" title="Theme" aria-label="Theme">
                             <i class="material-icons fa-fw">color_lens</i>
-                        <span class="crest-tool-label">Appearance</span></a>
+                        </a>
                     </div>
                     <a class="nav-buttons" href="" target="_blank">
                         <i class="fas fa-smile-wink" style="padding-left: 6px;"></i>
@@ -4371,8 +4371,10 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         <div id="account-tab2" style="color:#aaa;font-size:11px;font-family:ubuntu;text-align:center;margin:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tab1: none&nbsp;&nbsp;|&nbsp;&nbsp;Tab2: none</div>
                     </div></div></section>
 </div>
-<div id="settings" class="menu-panel"><header class="crest-panel-heading"><small>CREST / SETTINGS</small><h2>Your game. Your way.</h2><p>Fine-tune your camera, cell animation and arena display.</p></header><label class="crest-panel-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search settings…" aria-label="Search settings…" autocomplete="off" spellcheck="false"></label>
-                <button type="button" class="settings-close" aria-label="Close settings">×</button>
+<div id="settings" class="menu-panel">
+                <div class="settings-close">
+                    <i class="fa fa-times" aria-hidden="true"></i>
+                </div>
                 <div class="settings-container">
                     <div class="row">
                         <span class="title" data="html.settingMenu.language">Language</span>
@@ -4382,7 +4384,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">ARENA & MOTION</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title">MO arena style</span>
                         <span class="settings-options" type="options" name="moArenaStyle">
@@ -4432,7 +4434,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">CAMERA</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.zoomSpeed">Zoom speed</span>
                         <span class="settings-options" type="range" name="zoomSpeed">
@@ -4473,7 +4475,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">VISIBILITY</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.autoHideText">Auto hide text</span>
                         <span class="settings-options" type="options" name="autoHideText">
@@ -4501,7 +4503,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">CELL LABELS</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.cellNick">Cell Nick</span>
                         <span class="settings-options" type="options" name="cellNick">
@@ -4541,7 +4543,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">SKINS</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.urlSkins">Skins</span>
                         <span class="settings-options" type="options" name="urlSkins">
@@ -4560,7 +4562,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">BACKGROUND</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.vanillaGrid">Vanilla grid</span>
                         <span class="settings-options" type="options" name="vanillaGrid">
@@ -4589,7 +4591,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         <span class="title" data="html.settingMenu.bgImageUrl">Background image URL</span>
                         <input id="bgImageUrl" class="menu-inputs" style="width:100%;background-color:#000;margin-top:5px;margin-bottom:0px;" type="text" placeholder="https://example.com/image.png">
                     </div>
-                    <div class="row divider">FOOD</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.food">Food</span>
                         <span class="settings-options" type="options" name="food">
@@ -4600,7 +4602,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">TEAM & MULTIBOX</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.cursorLine">Cursor lines</span>
                         <span class="settings-options" type="options" name="cursorLine">
@@ -4646,7 +4648,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
-                    <div class="row divider">CHAT</div>
+                    <div class="row divider"></div>
                     <div class="row">
                         <span class="title" data="html.settingMenu.chatType">Chat type</span>
                         <span class="settings-options" type="options" name="chatType">
@@ -4657,8 +4659,8 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         </span>
                     </div>
                 </div>
-            <p class="crest-empty" hidden>No matching options. Try another search.</p><footer class="crest-panel-foot"><b>● Saved as you change</b><span>CREST / PERSONAL PREFERENCES</span></footer></div>
-            <div id="inputs" class="menu-panel"><header class="crest-panel-heading"><small>CREST / CONTROLS</small><h2>Make every move yours.</h2><p>Keep your shortcuts close. Bind the keys that feel right.</p></header><label class="crest-panel-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Find a key or action…" aria-label="Find a key or action…" autocomplete="off" spellcheck="false"></label>
+            </div>
+            <div id="inputs" class="menu-panel">
                 <div class="inputs-tab-bar">
                     <span class="inputs-tab active" target="#hotkeys">
                         <i class="fa fa-keyboard-o"></i>
@@ -4917,9 +4919,9 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         </div>
                     </div>
                 </div>
-            <p class="crest-empty" hidden>No matching options. Try another search.</p><footer class="crest-panel-foot"><b>● Saved as you change</b><span>CREST / PERSONAL PREFERENCES</span></footer></div>
-            <div id="theme" class="menu-panel"><header class="crest-panel-heading"><small>CREST / APPEARANCE</small><h2>Set the atmosphere.</h2><p>Personalize colors, text and the little details around your arena.</p></header><label class="crest-panel-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Find a color or detail…" aria-label="Find a color or detail…" autocomplete="off" spellcheck="false"></label>
-                <button type="button" class="theme-close" aria-label="Close appearance">×</button>
+            </div>
+            <div id="theme" class="menu-panel">
+                <div class="theme-close">X</div>
                 <div class="theme-container">
                     <div class="row">
                         <span class="title" data="html.themeMenu.selectedPreset">Theme preset</span>
@@ -5257,7 +5259,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                         </span>
                     </div>
                 </div>
-            <p class="crest-empty" hidden>No matching options. Try another search.</p><footer class="crest-panel-foot"><b>● Saved as you change</b><span>CREST / PERSONAL PREFERENCES</span></footer></div>
+            </div>
         </div>
 
         <script>
@@ -5323,169 +5325,10 @@ document.addEventListener("DOMContentLoaded", function () {
         </script>
         <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"2626e7892f8141219f2a73abf265c8a4","r":1}' crossorigin="anonymous"></script>
     <!-- CREST — Chunk 1: unified settings shell -->
-<div id="crest-settings" style="display: none;">
-    <div id="crest-settings-header">
-        <span class="crest-settings-title">
-            <i class="material-icons">tune</i>
-            SETTINGS
-        </span>
-        <span id="crest-settings-close">✕</span>
-    </div>
-    <div id="crest-settings-tabs">
-        <span class="crest-settings-tab active" data-tab="settings">SETTINGS</span>
-        <span class="crest-settings-tab" data-tab="controls">CONTROLS</span>
-        <span class="crest-settings-tab" data-tab="theme">THEME</span>
-        <span class="crest-settings-tab" data-tab="chat">CHAT</span>
-    </div>
-    <div id="crest-settings-body">
-    <div class="crest-settings-tab-content active" data-tab="settings">
-    </div>
-    <div class="crest-settings-tab-content" data-tab="controls">
-    </div>
-    <div class="crest-settings-tab-content" data-tab="theme">
-    </div>
-    <div class="crest-settings-tab-content" data-tab="chat">
-    </div>
-</div>    
-        </div>
-        <div class="crest-settings-tab-content" data-tab="controls">
-            <div id="hotkeys" class="inputs-menu active">
-                        <div class="row" name="toggleMenuKey">
-                            <span class="title" data="html.hkMenu.toggleMenuKey">Show / hide menu</span>
-                            <input class="key" value="ESC">
-                        </div>
-                        <div class="row" name="respawnKey">
-                            <span class="title" data="html.hkMenu.respawnKey">Quick respawn</span>
-                            <input class="key" type="text" value="K">
-                        </div>
-                        <div class="row" name="multiboxTab">
-                            <span class="title" data="html.hkMenu.multiboxTab">Multibox switch</span>
-                            <input class="key" value="TAB">
-                        </div>
-                        <div class="row" name="togglemultiboxRing">
-                            <span class="title" data="html.hkMenu.togglemultiboxRing">Toggle Multibox ring</span>
-                            <input class="key" value="L">
-                        </div>
-                        <div class="row" name="feedKey">
-                            <span class="title" data="html.hkMenu.feedKey">Feed</span>
-                            <input class="key" value="W">
-                        </div>
-                        <div class="row" name="macroFeedKey">
-                            <span class="title" data="html.hkMenu.macroFeedKey">Macro feed</span>
-                            <input class="key" value="Q">
-                        </div>
-                        <div class="row" name="splitKey">
-                            <span class="title" data="html.hkMenu.splitKey">Split</span>
-                            <input class="key" value="SPACE">
-                        </div>
-                        <div class="row" name="doubleSplitKey">
-                            <span class="title" data="html.hkMenu.doubleSplitKey">Double split</span>
-                            <input class="key" value="E">
-                        </div>
-                        <div class="row" name="split16Key">
-                            <span class="title" data="html.hkMenu.split16Key">Split 16</span>
-                            <input class="key" value="R">
-                        </div>
-                        <div class="row" name="stopKey">
-                            <span class="title" data="html.hkMenu.stopKey">Cell pause</span>
-                            <input class="key" value="S">
-                        </div>
-                        <div class="row" name="chatKey">
-                            <span class="title" data="html.hkMenu.chatKey">Chat key</span>
-                            <input class="key" value="Enter">
-                        </div>
-                        <div class="row" name="freeSpectateKey">
-                            <span class="title" data="html.hkMenu.freeSpectateKey">Toggle spectate mode</span>
-                            <input class="key" value="Y">
-                        </div>
-                        <div class="row" name="toggleNick">
-                            <span class="title" data="html.hkMenu.toggleNick">Toggle Cell nick</span>
-                            <input class="key" value="N">
-                        </div>
-                        <div class="row" name="toggleMass">
-                            <span class="title" data="html.hkMenu.toggleMass">Toggle cell mass</span>
-                            <input class="key" value="M">
-                        </div>
-                        <div class="row" name="toggleSkin">
-                            <span class="title" data="html.hkMenu.toggleSkin">Toggle Skin</span>
-                            <input class="key" value="A">
-                        </div>
-                        <div class="row" name="toggleCustomSkin">
-                            <span class="title" data="html.hkMenu.toggleCustomSkin">Toggle Custom Skin</span>
-                            <input class="key" value="X">
-                        </div>
-                        <div class="row" name="toggleFood">
-                            <span class="title" data="html.hkMenu.toggleFood">Toggle food</span>
-                            <input class="key" value="F">
-                        </div>
-                        <div class="row" name="command0Key">
-                            <span class="title" data="html.hkMenu.command0Key">Command 0</span>
-                            <input class="key" value="0">
-                        </div>
-                        <div class="row" name="command1Key">
-                            <span class="title" data="html.hkMenu.command1Key">Command 1</span>
-                            <input class="key" value="1">
-                        </div>
-                        <div class="row" name="command2Key">
-                            <span class="title" data="html.hkMenu.command2Key">Command 2</span>
-                            <input class="key" value="2">
-                        </div>
-                        <div class="row" name="command3Key">
-                            <span class="title" data="html.hkMenu.command3Key">Command 3</span>
-                            <input class="key" value="3">
-                        </div>
-                        <div class="row" name="command4Key">
-                            <span class="title" data="html.hkMenu.command4Key">Command 4</span>
-                            <input class="key" value="4">
-                        </div>
-                        <div class="row" name="command5Key">
-                            <span class="title" data="html.hkMenu.command5Key">Command 5</span>
-                            <input class="key" value="5">
-                        </div>
-                        <div class="row" name="command6Key">
-                            <span class="title" data="html.hkMenu.command6Key">Command 6</span>
-                            <input class="key" value="6">
-                        </div>
-                        <div class="row" name="command7Key">
-                            <span class="title" data="html.hkMenu.command7Key">Command 7</span>
-                            <input class="key" value="7">
-                        </div>
-                        <div class="row" name="command8Key">
-                            <span class="title" data="html.hkMenu.command8Key">Command 8</span>
-                            <input class="key" value="8">
-                        </div>
-                        <div class="row" name="command9Key">
-                            <span class="title" data="html.hkMenu.command9Key">Command 9</span>
-                            <input class="key" value="9">
-                        </div>
-                        <div class="row" name="zoom1key">
-                            <span class="title" data="html.hkMenu.zoom1key">Zoom level 1</span>
-                            <input class="key" value="ALT+1">
-                        </div>
-                        <div class="row" name="zoom2key">
-                            <span class="title" data="html.hkMenu.zoom2key">Zoom level 2</span>
-                            <input class="key" value="ALT+2">
-                        </div>
-                        <div class="row" name="zoom3key">
-                            <span class="title" data="html.hkMenu.zoom3key">Zoom level 3</span>
-                            <input class="key" value="ALT+3">
-                        </div>
-                        <div class="row" name="zoom4key">
-                            <span class="title" data="html.hkMenu.zoom4key">Zoom level 4</span>
-                            <input class="key" value="ALT+4">
-                        </div>
-                        <div class="row" name="zoom5key">
-                            <span class="title" data="html.hkMenu.zoom5key">Zoom level 5</span>
-                            <input class="key" value="ALT+5">
-                        </div>
-                    </div>
-        </div>
-        <div class="crest-settings-tab-content" data-tab="theme">
-            <p style="opacity:0.5;text-align:center;padding:40px;">Theme rows will appear here.</p>
-        </div>
-        <div class="crest-settings-tab-content" data-tab="chat">
-            <p style="opacity:0.5;text-align:center;padding:40px;">Chat rows will appear here.</p>
-        </div>
+
+        
+        
+        
     </div>
 </div>
     <script>
@@ -5600,44 +5443,56 @@ document.addEventListener("DOMContentLoaded", function () {
 #crest-start-retry{border:1px solid #a7dbc842;border-radius:10px;background:#16322b;color:#def1e7;padding:10px 22px;margin:20px 0 0;cursor:pointer;font:600 13px Segoe UI,sans-serif}#crest-start-retry[hidden]{display:none}
 .crest-entry-help{display:block;margin-top:28px;color:#6f9385;font-size:11px;text-decoration:none}.crest-entry-help:hover{color:#bfdfcf}.crest-entry button:focus-visible,.crest-entry a:focus-visible{outline:2px solid #bde8d3;outline-offset:4px}
 @keyframes crest-breathe{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.crest-entry-track span{animation:none}#loading-screen{transition:none}}
-</style><span id="crest-dom-ready" hidden></span><style id="crest-preferences-style">#settings,#inputs,#theme{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;width:min(720px,calc(100vw - 32px))!important;height:min(740px,calc(100dvh - 48px))!important;box-sizing:border-box!important;padding:0!important;border:1px solid #9ed9cd30!important;border-radius:24px!important;background:linear-gradient(140deg,#10282d,#0c1926 65%)!important;box-shadow:0 30px 100px #0009,0 0 0 100vmax #030b13c9!important;color:#e5f3f2!important;z-index:50!important;font-family:Segoe UI,Arial,sans-serif!important;overflow:hidden!important;text-align:left!important;}
-.crest-panel-heading{padding:30px 32px 20px;border-bottom:1px solid #b9d9e412;background:linear-gradient(120deg,#8fe4c40b,transparent)}
-.crest-panel-heading small{display:block;font-size:10px;font-weight:700;letter-spacing:.23em;color:#89dbc4;margin-bottom:11px}.crest-panel-heading h2{font:600 30px/1.2 Segoe UI,Arial,sans-serif;margin:0 46px 9px 0;color:#f1fbfa;letter-spacing:-.8px}.crest-panel-heading p{font-size:12px;line-height:1.7;color:#96afbf;margin:0;max-width:520px}
-#settings .settings-close,#theme .theme-close,#inputs .inputs-tab.close{position:absolute!important;right:22px!important;top:24px!important;float:none!important;width:34px!important;height:34px!important;display:grid!important;place-items:center!important;padding:0!important;margin:0!important;border-radius:10px!important;border:1px solid #aac7da25!important;background:#aec9d20b!important;color:#9dbbc8!important;cursor:pointer!important;font:20px Segoe UI,sans-serif!important;transform:none!important;text-shadow:none!important;box-sizing:border-box!important;}
-#settings .settings-close:hover,#theme .theme-close:hover,#inputs .inputs-tab.close:hover{color:#fff!important;background:#9edbc622!important;}
-.crest-panel-search{position:relative;display:flex;align-items:center;gap:12px;margin:18px 24px 12px;padding:0 14px;border-radius:11px;border:1px solid #b7dbe822;background:#06131d70;color:#84a9b9;font-size:20px;}
-.crest-panel-search input{height:42px;min-width:0;width:100%;color:#e0eff2!important;background:transparent!important;border:0!important;box-shadow:none!important;outline:none!important;font:13px Segoe UI,sans-serif!important;padding:0!important;margin:0!important;}.crest-panel-search input::placeholder{color:#698c9f!important;}.crest-panel-search:focus-within{border-color:#8adbc4;box-shadow:0 0 0 2px #82dabe12}
-#settings .settings-container,#theme .theme-container,#inputs .inputs-menu-container{position:relative!important;width:auto!important;height:calc(100% - 244px)!important;margin:0 16px 16px!important;padding:0 8px 16px!important;box-sizing:border-box!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;background:transparent!important;scrollbar-color:#345563 transparent;scrollbar-width:thin;border-radius:0!important;}
-#inputs .inputs-menu-container{height:calc(100% - 288px)!important;}#inputs .inputs-menu{position:relative!important;height:auto!important;width:100%!important;}
-#settings .row,#theme .row,#inputs .row{box-sizing:border-box!important;margin:7px 0!important;padding:14px 16px!important;min-height:55px!important;border:1px solid #b8d5e314!important;border-radius:12px!important;background:#98b5d008!important;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#cee1e9!important;transform:none!important;}
-#settings .row:hover,#theme .row:hover,#inputs .row:hover{background:#a0d6ce0e!important;border-color:#a3dacc2b!important;}
-#settings .row .title,#theme .row .title,#inputs .row .title{font:500 13px/1.5 Segoe UI,Arial,sans-serif!important;color:#cbdfe7!important;text-transform:none!important;letter-spacing:0!important;}
-#settings .row.divider,#theme .row.divider{border:0!important;min-height:0!important;display:block;padding:16px 2px 4px!important;background:transparent!important;margin:8px 0 0!important;font:700 10px Segoe UI,sans-serif!important;letter-spacing:.17em!important;color:#729ba8!important;}
-#settings .settings-options,#theme .theme-options,#inputs .mouse-options{float:none!important;margin:0!important;display:flex!important;align-items:center;gap:12px;font:600 11px Segoe UI,sans-serif!important;text-transform:none!important;transform:none!important;color:#a6e5d2!important;}
-#settings .settings-options i,#theme .theme-options i,#inputs .mouse-options i{display:grid;place-items:center;min-width:27px;min-height:27px;border:1px solid #92b6c52a;border-radius:8px;color:#a8c5d1;cursor:pointer;animation:none!important;font-size:10px!important;}
-#settings .settings-options b.active,#theme .theme-options b.active,#inputs .mouse-options b.active{min-width:70px;text-align:center;color:#b1e8d5!important;}
-#settings .settings-options span.outer,#theme .theme-options span.outer{width:100px!important;height:5px!important;padding:0!important;transform:none!important;border-radius:5px!important;background:#85b9ac24!important;}
-#settings .settings-options span.inner,#theme .theme-options span.inner{height:5px!important;background:#8bdcc2!important;border-radius:5px!important;transition:none!important;}
-#settings .range-value,#theme .range-value{color:#7d9fad;font:11px Segoe UI,sans-serif!important;min-width:30px;}
-#inputs .key,#inputs input[type=text],#theme input,#settings input.menu-inputs,#inputs .command{background:#091924!important;color:#caeae6!important;border:1px solid #9bc7ce35!important;border-radius:8px!important;padding:9px 12px!important;box-shadow:none!important;transform:none!important;box-sizing:border-box!important;}
-#inputs input.key{margin:0!important;min-width:70px;width:80px!important;text-align:center;font:600 12px Segoe UI,sans-serif!important;}
-#theme .minicolors,#theme .minicolors-input{max-width:130px;}#theme .minicolors-input{padding-left:30px!important;}
-#inputs .inputs-tab-bar{height:40px!important;display:flex;gap:6px;padding:0 24px;margin-bottom:9px;align-items:center;font-family:Segoe UI,sans-serif!important;}
-#inputs .inputs-tab:not(.close){border:1px solid #a3c6d520!important;border-radius:8px!important;padding:8px 13px!important;background:#a4c3d009!important;color:#8fabbc!important;font-size:11px!important;}
-#inputs .inputs-tab.active{background:#81dcc520!important;border-color:#8be0cc50!important;color:#b9f3df!important;}
-.crest-panel-foot{position:absolute;bottom:0;left:0;right:0;border-top:1px solid #bddbe713;padding:13px 28px;background:#0b1a26;font:10px Segoe UI,sans-serif;color:#7495a6;display:flex;align-items:center;justify-content:space-between;}.crest-panel-foot b{font-weight:500;color:#a6d8c7}.crest-empty{position:absolute;top:280px;left:20px;right:20px;pointer-events:none;color:#92b2c3;text-align:center;padding:22px;font:13px Segoe UI,sans-serif;}
-#settings .crest-filtered,#inputs .crest-filtered,#theme .crest-filtered{display:none!important;}
-#menu-overlay #control-container{padding:4px!important;border:1px solid #b5d9e61a!important;border-radius:14px!important;background:#91c4d108!important;gap:3px!important;}
-#menu-overlay #control-container .nav-buttons{width:auto!important;min-width:38px!important;height:34px!important;line-height:34px!important;padding:0 10px!important;display:flex!important;align-items:center;justify-content:center;gap:7px!important;border:0!important;background:transparent!important;color:#9cb6c8!important;border-radius:9px!important;}
-#menu-overlay #control-container .nav-buttons:hover{background:#8ad8c41a!important;color:#c7f2e3!important;}.crest-tool-label{font:500 11px Segoe UI,sans-serif;}
-#streamMode{position:relative;}#streamMode::after{content:'Privacy';display:none;position:absolute;top:44px;right:0;padding:6px 9px;background:#142b39;border:1px solid #a8d5da30;border-radius:6px;color:#bcd2df;font:11px Segoe UI,sans-serif;}#streamMode:hover::after,#streamMode:focus-visible::after{display:block;}
-#settings button:focus-visible,#theme button:focus-visible,#inputs [tabindex]:focus-visible,#inputs input:focus-visible,#settings input:focus-visible,#theme input:focus-visible{outline:2px solid #94e1ca!important;outline-offset:3px!important;}
-@media(max-width:650px){.crest-tool-label{display:none;}.crest-panel-heading{padding:22px 22px 16px}.crest-panel-heading h2{font-size:25px}.crest-panel-heading p{max-width:85%;font-size:11px}.crest-panel-search{margin:14px 16px 12px}#settings,#inputs,#theme{height:calc(100dvh - 24px)!important;border-radius:18px!important;}#settings .settings-container,#theme .theme-container{height:calc(100% - 231px)!important;margin-left:8px!important;margin-right:8px!important;}#inputs .inputs-menu-container{height:calc(100% - 280px)!important;margin:0 8px 16px!important;}#settings .row,#theme .row,#inputs .row{padding:12px!important;gap:10px;}#settings .row .title,#theme .row .title{font-size:12px!important;}.crest-panel-foot{padding:13px 20px}.crest-panel-foot span{display:none;}}
+</style><span id="crest-dom-ready" hidden></span><style id="crest-studio-style">#crest-preferences-studio{--cpx-accent:#9ce0c8;--cpx-ink:#182e39;--cpx-line:#dce5e5;position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;background:#03101bce;backdrop-filter:blur(12px);font-family:Segoe UI,Arial,sans-serif;color:var(--cpx-ink);text-align:left;font-size:14px;box-sizing:border-box;}
+#crest-preferences-studio[hidden],#crest-preferences-studio [hidden]{display:none!important;}
+#crest-preferences-studio *{box-sizing:border-box;text-shadow:none;}
+#crest-preferences-studio[data-accent=amber]{--cpx-accent:#efc780}#crest-preferences-studio[data-accent=ice]{--cpx-accent:#a7d9f0}#crest-preferences-studio[data-accent=violet]{--cpx-accent:#ceb6ed}
+#crest-preferences-studio .cpx-dialog{display:grid;grid-template-columns:206px minmax(0,1fr);width:min(1090px,100%);height:min(770px,calc(100dvh - 40px));overflow:hidden;border-radius:22px;background:#f4f7f5;box-shadow:0 30px 100px #0008;border:1px solid #c7dfe329;}
+#crest-preferences-studio .cpx-sidebar{background:linear-gradient(155deg,#152e37,#0b1e2a);padding:30px 16px;color:#d5e4e7;display:flex;flex-direction:column;}
+#crest-preferences-studio .cpx-brand{padding:0 16px 30px;font-size:22px;font-weight:700;letter-spacing:2px;color:#f2f7f5;}#crest-preferences-studio .cpx-brand>span{color:var(--cpx-accent);font-size:29px;vertical-align:-2px;margin-right:4px;}#crest-preferences-studio .cpx-brand small{display:block;font-size:8px;letter-spacing:2.8px;margin-top:7px;color:#7899a4;margin-left:2px;}
+#crest-preferences-studio nav{display:flex;flex-direction:column;gap:6px;}#crest-preferences-studio nav button{display:flex;align-items:center;gap:13px;border:1px solid transparent;border-radius:10px;padding:12px;color:#92adb7;background:transparent;text-align:left;font:500 12px Segoe UI,sans-serif;cursor:pointer;}#crest-preferences-studio nav button:hover{color:#e7f5f0;background:#a9d8ce0a;}#crest-preferences-studio nav button[aria-current=page]{background:var(--cpx-accent);color:#183b3e;border-color:#d8fff05e;box-shadow:0 6px 16px #0001;}#crest-preferences-studio .cpx-nav-index{font-size:9px;opacity:.6;font-family:Consolas,monospace;}
+#crest-preferences-studio .cpx-sidebar-note{margin-top:auto;padding:30px 16px 5px;color:#d4e4e7;font-size:20px;font-weight:300;line-height:1.4;}#crest-preferences-studio .cpx-sidebar-note span{display:block;color:#618594;font-size:10px;margin-top:10px;}
+#crest-preferences-studio .cpx-main{min-width:0;min-height:0;display:grid;grid-template-rows:106px 62px minmax(0,1fr) 43px;background:#f4f7f5;}
+#crest-preferences-studio .cpx-header{padding:25px 32px 19px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--cpx-line);background:#fbfcfa;}#crest-preferences-studio .cpx-header small{display:block;font:600 9px Segoe UI,sans-serif;letter-spacing:1.7px;color:#6f8b91;margin-bottom:7px;}#crest-preferences-studio .cpx-header h1{font:600 29px/1.1 Segoe UI,sans-serif;letter-spacing:-1px;color:#1c333e;margin:0;}
+#crest-preferences-studio .cpx-close{border:1px solid #d8e3e3;border-radius:10px;background:transparent;width:34px;height:34px;font:22px Segoe UI,sans-serif;color:#6b8a96;cursor:pointer;}#crest-preferences-studio .cpx-close:hover{background:#eaf0ed;color:#203d47;}
+#crest-preferences-studio .cpx-search-wrap{display:flex;align-items:center;gap:12px;margin:14px 32px 9px;padding:0 12px;background:#e9efec;border:1px solid #dde6e2;border-radius:8px;color:#79938f;}#crest-preferences-studio .cpx-search-wrap input{width:100%;min-width:0;height:36px;padding:0;background:transparent;border:0;box-shadow:none;outline:none;font:12px Segoe UI,sans-serif;color:#284752;margin:0;}#crest-preferences-studio .cpx-search-wrap input::placeholder{color:#7d969b;}#crest-preferences-studio .cpx-search-wrap:focus-within{border-color:#5b9f91;box-shadow:0 0 0 2px #83b9a81c;}
+#crest-preferences-studio .cpx-scroll{overflow:auto;overscroll-behavior:contain;min-height:0;padding:14px 32px 30px;scrollbar-width:thin;scrollbar-color:#b8c9c4 transparent;}
+#crest-preferences-studio .cpx-section-intro{margin-bottom:23px;}#crest-preferences-studio .cpx-section-intro h2{font:600 19px Segoe UI,sans-serif;letter-spacing:-.5px;margin:0 0 6px;color:#213b46;}#crest-preferences-studio .cpx-section-intro p{font:12px/1.6 Segoe UI,sans-serif;color:#72898f;margin:0;}
+#crest-preferences-studio .cpx-hero{background:linear-gradient(115deg,#17383f,#244d4d);border:1px solid #35605c;border-radius:16px;padding:27px 30px;display:flex;justify-content:space-between;align-items:center;min-height:207px;color:#f0f5e9;margin-bottom:26px;overflow:hidden;position:relative;}#crest-preferences-studio .cpx-hero small{font:600 8px Segoe UI,sans-serif;letter-spacing:1.7px;color:var(--cpx-accent);}#crest-preferences-studio .cpx-hero h2{font:500 34px/1.13 Segoe UI,sans-serif;letter-spacing:-1.2px;margin:10px 0;color:#edf4e9;}#crest-preferences-studio .cpx-hero p{font:11px Segoe UI,sans-serif;color:#8fb3b1;margin:0;}
+#crest-preferences-studio .cpx-orbit{position:relative;width:158px;height:158px;border:1px solid #bce3cd22;border-radius:50%;display:grid;place-items:center;flex-shrink:0;margin-right:18px;}#crest-preferences-studio .cpx-orbit::before{content:'';position:absolute;inset:14px;border-radius:50%;border:1px dashed #c5e7d233;transform:rotate(-25deg);}#crest-preferences-studio .cpx-orbit span{position:absolute;inset:30px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#ebf4c5,var(--cpx-accent) 45%,#398c7b);box-shadow:0 0 40px #a4ddbd14,inset -10px -10px 20px #0b3d4944;}#crest-preferences-studio .cpx-orbit b{position:relative;font:35px Segoe UI,sans-serif;color:#1d524b;}#crest-preferences-studio .cpx-orbit i{position:absolute;right:0;top:30px;width:15px;height:15px;border-radius:50%;background:#efc487;box-shadow:0 0 0 7px #efc4870b;}
+#crest-preferences-studio h3{font:600 12px Segoe UI,sans-serif;color:#49666d;margin:0 0 12px;}#crest-preferences-studio .cpx-quality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:21px;}#crest-preferences-studio .cpx-quality button{position:relative;text-align:left;padding:18px 15px 15px;border:1px solid #d4e1db;background:#fbfcfa;border-radius:12px;cursor:pointer;color:#284852;min-height:110px;}#crest-preferences-studio .cpx-quality button[aria-pressed=true]{background:#e0eee6;border-color:#75a994;box-shadow:inset 0 0 0 1px #75a99422;}#crest-preferences-studio .cpx-quality span{display:block;font:600 13px Segoe UI,sans-serif;margin:0 0 8px;}#crest-preferences-studio .cpx-quality small{display:block;font:11px/1.6 Segoe UI,sans-serif;color:#6e888b;max-width:140px;}#crest-preferences-studio .cpx-quality b{position:absolute;top:15px;right:13px;font-size:12px;color:#72958b;}
+#crest-preferences-studio .cpx-shortcuts{display:flex;gap:9px;flex-wrap:wrap;margin:20px 0;}#crest-preferences-studio .cpx-shortcuts button{border:1px solid #d5e2dc;border-radius:7px;background:transparent;color:#55736e;padding:9px 11px;font:11px Segoe UI,sans-serif;cursor:pointer;}
+#crest-preferences-studio .cpx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;}#crest-preferences-studio .cpx-card{position:relative;border:1px solid var(--cpx-line);border-radius:12px;padding:20px;background:#fdfefb;min-width:0;box-shadow:0 3px 0 #1d3f3902;}#crest-preferences-studio .cpx-label{display:block;font:600 13px/1.4 Segoe UI,sans-serif;color:#274650;letter-spacing:0;}#crest-preferences-studio .cpx-card p{font:11px/1.7 Segoe UI,sans-serif;color:#789196;margin:6px 0 17px;max-width:260px;min-height:36px;}
+#crest-preferences-studio .cpx-card select,#crest-preferences-studio .cpx-card input[type=text]{max-width:100%;width:100%;height:37px;font:12px Segoe UI,sans-serif;color:#3b5e65;border:1px solid #d4e1dc;border-radius:7px;background:#f4f8f4;padding:0 10px;box-shadow:none;outline:none;}
+#crest-preferences-studio .cpx-toggle-card{padding-right:70px;min-height:118px;}#crest-preferences-studio .cpx-toggle-card p{margin-bottom:0;}
+#crest-preferences-studio .cpx-switch{position:absolute;top:21px;right:18px;width:34px;height:20px;}#crest-preferences-studio .cpx-switch input{position:absolute;inset:0;width:34px;height:20px;opacity:0;cursor:pointer;z-index:2;margin:0;}#crest-preferences-studio .cpx-switch span{display:block;width:34px;height:20px;border-radius:20px;background:#cad8d4;box-shadow:inset 0 0 0 1px #b0c9bf33;}#crest-preferences-studio .cpx-switch span::after{content:'';display:block;position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#f9fffb;box-shadow:0 2px 4px #0001;}#crest-preferences-studio .cpx-switch input:checked+span{background:#3b8977;}#crest-preferences-studio .cpx-switch input:checked+span::after{transform:translateX(14px);}#crest-preferences-studio .cpx-switch input:focus-visible+span{outline:2px solid #246d60;outline-offset:4px;}
+#crest-preferences-studio .cpx-range{display:flex;gap:15px;align-items:center;}#crest-preferences-studio .cpx-range input{min-width:0;flex:1;accent-color:#3f8b77;cursor:pointer;}#crest-preferences-studio .cpx-range output{min-width:43px;text-align:center;padding:6px 7px;background:#edf3ee;border:1px solid #dbe7de;border-radius:6px;font:600 11px Consolas,monospace;color:#648378;}
+#crest-preferences-studio .cpx-text-line{display:flex;gap:9px;align-items:center;}#crest-preferences-studio input[type=color]{width:38px;height:35px;border:1px solid #cadcd2;background:#f4f8f4;border-radius:7px;padding:3px;flex-shrink:0;cursor:pointer;}
+#crest-preferences-studio .cpx-footer{background:#edf2ee;border-top:1px solid var(--cpx-line);padding:13px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#5d7b75;font:10px Segoe UI,sans-serif;}#crest-preferences-studio .cpx-local{color:#9aacaa;font-size:8px;letter-spacing:1.3px;}#crest-preferences-studio #cpx-status[data-error=true]{color:#a03131;}#crest-preferences-studio .cpx-no-results{font-size:13px;line-height:1.7;color:#658382;}
+#crest-preferences-studio button:focus-visible,#crest-preferences-studio select:focus-visible,#crest-preferences-studio input:focus-visible{outline:2px solid #3b8573;outline-offset:3px;}
+#crest-preferences-studio #inputs{display:block!important;position:static!important;transform:none!important;width:100%!important;height:auto!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;overflow:visible!important;}
+#crest-preferences-studio #inputs>.crest-panel-heading,#crest-preferences-studio #inputs>.crest-panel-search,#crest-preferences-studio #inputs>.crest-panel-foot,#crest-preferences-studio #inputs>.crest-empty,#crest-preferences-studio #inputs .inputs-tab.close{display:none!important;}
+#crest-preferences-studio #inputs .inputs-menu-container{height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;}
+#crest-preferences-studio #inputs .inputs-tab-bar{padding:0!important;margin:0 0 17px!important;gap:8px!important;height:42px!important;}
+#crest-preferences-studio #inputs .inputs-tab:not(.close){padding:10px 18px!important;border-radius:8px!important;background:#e7eeea!important;color:#6b8789!important;border:1px solid #d7e3dc!important;font:12px Segoe UI,sans-serif!important;}
+#crest-preferences-studio #inputs .inputs-tab.active{background:#1b4547!important;color:#d4eee1!important;border-color:#1b4547!important;}
+#crest-preferences-studio #inputs .inputs-menu{position:static!important;height:auto!important;overflow:visible!important;background:transparent!important;}
+#crest-preferences-studio #inputs .row{display:flex!important;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 18px!important;background:#fdfefb!important;border:1px solid #dce5e0!important;border-radius:10px!important;margin:0 0 9px!important;min-height:55px!important;}
+#crest-preferences-studio #inputs .row .title{font:500 12px Segoe UI,sans-serif!important;color:#385963!important;}
+#crest-preferences-studio #inputs .row input.key{border:1px solid #b9cec2!important;color:#3e7866!important;background:#eef6ed!important;box-shadow:0 3px 0 #c6d9ca!important;font:600 11px Consolas,monospace!important;padding:8px 12px!important;width:90px!important;transform:none!important;}
+#crest-preferences-studio #inputs .row.cpx-mouse-row{display:block!important;}#crest-preferences-studio #inputs .cpx-mouse-row .cpx-label{color:#365a63!important;}#crest-preferences-studio #inputs .cpx-mouse-row select{width:100%;background:#edf5ed;color:#355f59;border:1px solid #cbddd1;padding:10px;border-radius:7px;}
+#crest-preferences-studio #commands .command-input-box{display:flex!important;align-items:center;width:100%;gap:10px;}#crest-preferences-studio #commands .command-input-box input{flex:1;background:#f5f9f4!important;color:#38565e!important;border:1px solid #cbddd1!important;border-radius:6px!important;padding:10px!important;box-shadow:none!important;}#crest-preferences-studio #commands .command-input-box i{font:12px Consolas,monospace;color:#81988e;}
+#crest-preferences-studio #inputs .row.cpx-filtered{display:none!important;}
+#crest-preferences-studio[data-density=compact] .cpx-card{padding:14px;}#crest-preferences-studio[data-density=compact] .cpx-toggle-card{padding-right:65px;min-height:98px;}#crest-preferences-studio[data-density=compact] .cpx-grid{gap:9px;}#crest-preferences-studio[data-density=compact] .cpx-card p{margin:5px 0 10px;min-height:30px;}
+#crest-preferences-studio[data-large=true] .cpx-label{font-size:16px;}#crest-preferences-studio[data-large=true] .cpx-card p{font-size:13px;}#crest-preferences-studio[data-large=true] .cpx-card select,#crest-preferences-studio[data-large=true] .cpx-card input{font-size:14px;}#crest-preferences-studio[data-large=true] nav button{font-size:14px;}
+#crest-preferences-studio[data-contrast=true]{--cpx-ink:#071a22;--cpx-line:#6b8c87;}#crest-preferences-studio[data-contrast=true] .cpx-card p,#crest-preferences-studio[data-contrast=true] .cpx-section-intro p{color:#354e54;}#crest-preferences-studio[data-contrast=true] .cpx-label{color:#071c25;}#crest-preferences-studio[data-contrast=true] .cpx-sidebar button{color:#c8dedf;}
+body[data-crest-motion=reduced] #menu-overlay,body[data-crest-motion=reduced] #menu-overlay *{animation:none!important;transition:none!important;}
+@media(max-width:760px){#crest-preferences-studio{padding:10px;}#crest-preferences-studio .cpx-dialog{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);height:calc(100dvh - 20px);border-radius:16px;}#crest-preferences-studio .cpx-sidebar{padding:12px 14px;}#crest-preferences-studio .cpx-brand{padding:0 4px 10px;font-size:16px;display:flex;align-items:center;gap:6px;}#crest-preferences-studio .cpx-brand small{display:none;}#crest-preferences-studio .cpx-brand>span{font-size:20px;}#crest-preferences-studio nav{flex-direction:row;overflow:auto;gap:5px;}#crest-preferences-studio nav button{flex-shrink:0;padding:8px 10px;font-size:10px;}#crest-preferences-studio .cpx-nav-index,#crest-preferences-studio .cpx-sidebar-note{display:none;}#crest-preferences-studio .cpx-main{grid-template-rows:83px 59px minmax(0,1fr) 43px;}#crest-preferences-studio .cpx-header{padding:16px 20px;}#crest-preferences-studio .cpx-header h1{font-size:24px;}#crest-preferences-studio .cpx-search-wrap{margin:12px 20px 8px;}#crest-preferences-studio .cpx-scroll{padding:14px 20px 24px;}#crest-preferences-studio .cpx-hero{padding:22px;min-height:170px;}#crest-preferences-studio .cpx-hero h2{font-size:28px;}#crest-preferences-studio .cpx-orbit{width:110px;height:110px;margin:0 0 0 12px;}#crest-preferences-studio .cpx-orbit span{inset:20px;}#crest-preferences-studio .cpx-orbit b{font-size:24px;}#crest-preferences-studio .cpx-local{display:none;}#crest-preferences-studio .cpx-footer{padding:12px 20px;}#crest-preferences-studio .cpx-grid{grid-template-columns:1fr;}#crest-preferences-studio .cpx-quality{gap:7px;}#crest-preferences-studio .cpx-quality button{padding:14px 10px;min-height:100px;}#crest-preferences-studio .cpx-quality small{font-size:10px;}#crest-preferences-studio .cpx-quality b{display:none;}#crest-preferences-studio .cpx-quality span{font-size:11px;}#crest-preferences-studio .cpx-hero p{max-width:150px;line-height:1.6;}#crest-preferences-studio #inputs .inputs-tab:not(.close){padding:9px 12px!important;}}
+#crest-preferences-studio[data-large=true] #inputs .row .title{font-size:15px!important;}#crest-preferences-studio[data-large=true] #inputs .row input.key{font-size:14px!important;}#crest-preferences-studio[data-contrast=true] .cpx-sidebar button[aria-current=page]{color:#102b32;}#crest-preferences-studio[data-contrast=true] .cpx-card{background:#fff;}
+#crest-preferences-studio #cpx-controls[data-query=true] .inputs-menu{display:block!important;}#crest-preferences-studio #cpx-controls[data-query=true] .inputs-tab-bar{display:none!important;}
+#crest-preferences-studio #inputs .row input.key{border-radius:7px!important;text-align:center!important;}#crest-preferences-studio #inputs .ps__scrollbar-x-rail,#crest-preferences-studio #inputs .ps__scrollbar-y-rail,#crest-preferences-studio #inputs .ps__rail-x,#crest-preferences-studio #inputs .ps__rail-y{display:none!important;}
+#crest-preferences-studio .cpx-dialog,#crest-preferences-studio .cpx-sidebar,#crest-preferences-studio nav{min-width:0;max-width:100%;}#crest-preferences-studio nav{overscroll-behavior-x:contain;}@media(max-width:760px){#crest-preferences-studio .cpx-dialog{grid-template-columns:minmax(0,1fr);}#crest-preferences-studio nav{width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#3e626a transparent;}}
 
-#settings .row,#settings .row *,#theme .row,#theme .row *,#inputs .row,#inputs .row *{text-shadow:none!important;}
-</style><script id="crest-preferences-ui">(function(){function init(){for(const id of ['settings','inputs','theme']){const panel=document.getElementById(id);if(!panel||panel.dataset.crestReady)continue;panel.dataset.crestReady='true';const search=panel.querySelector('.crest-panel-search input');const empty=panel.querySelector('.crest-empty');if(search)search.addEventListener('input',function(){const query=this.value.trim().toLocaleLowerCase();let count=0;panel.querySelectorAll('.row').forEach(row=>{const label=row.querySelector('.title');const match=!query||((label?.textContent||'')+' '+(row.getAttribute('name')||'')+' '+(row.querySelector('[name]')?.getAttribute('name')||'')).toLocaleLowerCase().includes(query);row.classList.toggle('crest-filtered',row.classList.contains('divider')?Boolean(query):!match);if(match&&!row.classList.contains('divider'))count++});if(empty)empty.hidden=count>0});}
-for(const el of document.querySelectorAll('#control-container a,#streamMode,#inputs .inputs-tab')){el.setAttribute('role','button');el.setAttribute('tabindex','0');el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}})}
-const privacy=document.getElementById('streamMode');if(privacy){privacy.title='Privacy: show or hide your name and tag';privacy.setAttribute('aria-label','Privacy: show or hide your name and tag')}
-}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init()})();
-</script></body>
+#menu-overlay .crest-preferences-launch{width:auto!important;padding:0 13px!important;display:flex!important;align-items:center;gap:8px!important;background:#85d5bd1c!important;color:#b2e7d5!important;} .crest-preferences-tool-label{font:600 11px Segoe UI,sans-serif;}
+</style></body>
 </html>

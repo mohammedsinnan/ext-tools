@@ -3547,6 +3547,78 @@
       preview.parentElement.classList.toggle("has-skin", Boolean(background));
     }
   }
+  class CrestPreferences {
+    static categories=[['overview','Overview','A comfortable place to tune your session.'],['movement','Movement','Camera and animation, tuned to how you play.'],['arena','Arena','The atmosphere around your cells.'],['cells','Cells & labels','Keep your cells readable and recognizable.'],['appearance','Colors & style','Make every detail feel like yours.'],['hud','HUD & chat','Choose what you see around the arena.'],['controls','Controls','Your existing keyboard, mouse and chat bindings.'],['comfort','Interface','New options for a more comfortable settings experience.']];
+    static defaults={density:'comfortable',accent:'mint',largeText:false,highContrast:false,reduceMotion:false,remember:true};
+    static init(){
+      if(this.root)return;
+      this.ui={};for(const [key,value]of Object.entries(this.defaults)){const stored=Storage.get('crestUI',key);this.ui[key]=typeof stored===typeof value?stored:value}
+      if(!['comfortable','compact'].includes(this.ui.density))this.ui.density='comfortable';if(!['mint','amber','ice','violet'].includes(this.ui.accent))this.ui.accent='mint';
+      this.descriptors=[];this.fields=[];this.root=document.createElement('div');this.root.id='crest-preferences-studio';this.root.hidden=true;
+      this.root.innerHTML='<div class="cpx-dialog" role="dialog" aria-modal="true" aria-labelledby="cpx-title"><aside class="cpx-sidebar"><div class="cpx-brand"><span>◈</span> CREST<small>MAKE IT YOURS</small></div><nav aria-label="Preference categories"></nav><div class="cpx-sidebar-note">Your arena.<br>Your rhythm.<span>One setup, made for you.</span></div></aside><main class="cpx-main"><header class="cpx-header"><div><small>YOUR PERSONAL SETUP</small><h1 id="cpx-title">Preferences</h1></div><button type="button" class="cpx-close" aria-label="Close preferences">×</button></header><div class="cpx-search-wrap"><span aria-hidden="true">⌕</span><input id="cpx-search" type="search" aria-label="Search preferences" placeholder="Search settings and colors…" autocomplete="off"></div><div class="cpx-scroll" tabindex="-1"><div id="cpx-content"></div><div id="cpx-controls" hidden></div></div><footer class="cpx-footer"><span id="cpx-status" role="status" aria-live="polite">Your settings, ready when you are.</span><span class="cpx-local">SAVED ON THIS DEVICE</span></footer></main></div>';
+      document.getElementById('menu-overlay').appendChild(this.root);
+      this.content=this.root.querySelector('#cpx-content');this.controls=this.root.querySelector('#cpx-controls');this.search=this.root.querySelector('#cpx-search');this.status=this.root.querySelector('#cpx-status');
+      for(const [index,[id,label]]of this.categories.entries()){const button=document.createElement('button');button.type='button';button.dataset.category=id;button.innerHTML='<span class="cpx-nav-index">'+String(index+1).padStart(2,'0')+'</span><span>'+label+'</span>';button.onclick=()=>this.show(id);this.root.querySelector('nav').appendChild(button)}
+      for(const [owner,selector]of [[Settings,'#settings .settings-options'],[Theme,'#theme .theme-options'],[Mouse,'#mouse .mouse-options']])for(const source of document.querySelectorAll(selector)){
+        const type=source.getAttribute('type'),input=source.querySelector('input');const name=source.getAttribute('name')||input?.id;if(!name||owner===Theme&&['virusColor','virusBorderColor','virusBorderWidth'].includes(name))continue;
+        let label=source.closest('.row')?.querySelector('.title')?.textContent.trim()||name;label=({moArenaStyle:'Arena theme',moMotionStyle:'Movement style',CellAnimation:'Animation smoothing',eatAnimation:'Cell eating animation',cameraSpeed:'Camera smoothing',arbSkins:'Original game skins'}[name]||label);
+        const item={owner,source,name,label,type,category:this.category(owner,name),description:this.describe(name)};
+        if(type==='options'){item.choices=[...source.querySelectorAll('b[value]')].map(x=>[x.getAttribute('value'),x.textContent.trim()]);if(name==='moMotionStyle')item.choices=[['classic','Classic'],['smooth','Smooth'],['cinematic','Cinematic'],['fluid','Fluid'],['snappy','Snappy']];}
+        if(type==='range'){const span=source.querySelector('span.outer');item.min=Number(span.getAttribute('min'));item.max=Number(span.getAttribute('max'));item.step=Number(span.getAttribute('step'));}
+        if(type==='colorpicker')item.type='color';
+        if(type==='range'){const saved=Storage.get(owner===Theme?'theme':owner===Mouse?'mouse':'settings',name);if(typeof saved==='number'&&Number.isFinite(saved)&&saved>=item.min&&saved<=item.max){owner[name]=saved;owner.handleRange(source,2);}}this.descriptors.push(item);
+      }
+      this.descriptors.push({owner:Settings,name:'moArenaEffects',label:'Arena detail intensity',type:'range',min:0,max:100,step:1,scale:100,category:'arena',description:'Controls decorative scenery. Performance mode may hide it.'});
+      this.descriptors.push({owner:Theme,name:'backgroundImage',label:'Background image URL',type:'text',category:'arena',description:'Used when the original background image option is selected.'});
+      const native=document.getElementById('inputs');this.controls.appendChild(native);for(const input of native.querySelectorAll('input.key'))input.setAttribute('aria-label',input.closest('.row').querySelector('.title').textContent.trim());const empty=document.createElement('p');empty.className='cpx-no-results';empty.hidden=true;empty.textContent='No matching controls. Try another search.';this.controls.appendChild(empty);for(const input of native.querySelectorAll('#commands input'))$(input).off('blur').on('blur',()=>Commands.setCommand(input.id,input.value));
+      // Keep native input handlers, and preserve intentionally cleared bindings.
+      for(const input of native.querySelectorAll('#hotkeys .key')){const name=input.closest('.row').getAttribute('name');if(Storage.get('hotkeys',name)===''){Hotkeys[name]='';input.value='';}}
+      for(const input of native.querySelectorAll('#commands input'))if(Storage.get('commands',input.id)===''){Commands[input.id]='';input.value='';}
+      const tabs=[...native.querySelectorAll('.inputs-tab:not(.close)')];native.querySelector('.inputs-tab-bar').setAttribute('role','tablist');native.querySelector('.inputs-tab-bar').setAttribute('aria-label','Input type');for(const [index,tab]of tabs.entries()){tab.setAttribute('role','tab');tab.setAttribute('aria-controls',tab.getAttribute('target').slice(1));tab.setAttribute('aria-selected',String(tab.classList.contains('active')));tab.tabIndex=tab.classList.contains('active')?0:-1;tab.addEventListener('click',()=>tabs.forEach(t=>{t.setAttribute('aria-selected',String(t===tab));t.tabIndex=t===tab?0:-1}));tab.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();tab.click()}else if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const next=tabs[(index+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];next.click();next.focus()}})}
+      // Only replace the mouse arrow view.
+      for(const item of this.descriptors.filter(x=>x.owner===Mouse)){const host=item.source.closest('.row');const card=this.card(item);host.replaceChildren(...card.childNodes);host.classList.add('cpx-mouse-row');}
+      this.root.querySelector('.cpx-close').onclick=()=>this.close();this.root.addEventListener('click',e=>{if(e.target===this.root)this.close()});
+      this.root.addEventListener('keydown',e=>{e.stopPropagation();const keyField=e.target.matches('#hotkeys input');if(e.key==='Escape'&&!keyField){e.preventDefault();e.stopPropagation();this.close();return}if(e.key==='Tab'){const focusable=[...this.root.querySelectorAll('button,input,select,a[href],[tabindex="0"]')].filter(x=>!x.disabled&&!x.closest('[hidden]')&&x.getClientRects().length);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&e.target===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&e.target===last){e.preventDefault();first?.focus()}}});
+      this.search.oninput=()=>this.render();this.applyUI();
+    }
+    static category(owner,name){if(owner===Mouse)return'controls';if(owner===Theme){if(['chatFontSize','lbSize','minimapSize','indicatorSize'].includes(name))return'hud';if(['foodSize','virusBorderWidth','gridWidth','gridTextSize','gridTextFont'].includes(name))return'arena';return'appearance'}if(['moMotionStyle','CellAnimation','eatAnimation','cellTextAnimation','zoomSpeed','cameraSpeed','autoZoom','pairCamera'].includes(name))return'movement';if(['moArenaStyle','food','vanillaGrid','bgSectors'].includes(name))return'arena';if(['language','chatType'].includes(name))return'hud';return'cells'}
+    static describe(name){return {"language":"Language used by the existing game menus.","moMotionStyle":"Choose the feel of cell transitions.","CellAnimation":"Higher values create softer visual transitions.","eatAnimation":"Animate a cell drawing inward when it is eaten.","cellTextAnimation":"Choose how name and mass labels resize as cells grow.","zoomSpeed":"Adjust how quickly camera zoom responds.","cameraSpeed":"Control how gently the camera follows your cells.","autoZoom":"Let the existing camera choose its zoom.","pairCamera":"Use the existing near/far camera behavior for two players.","moArenaStyle":"Choose Space, Nebula, Aurora or the original arena.","autoHideText":"Hide small labels automatically when space is limited.","hideOwnNick":"Hide the nickname on your own cells.","hideOwnMass":"Hide mass labels on your own cells.","cellNick":"Display player names on cells.","nickShadow":"Choose the shadow drawn behind player names.","cellMass":"Show full mass, shortened mass, or no mass label.","massShadow":"Choose the shadow drawn behind mass labels.","urlSkins":"Display player skins supplied by image URLs.","arbSkins":"Display the original game skin collection.","vanillaGrid":"Display the original arena grid.","bgSectors":"Choose the original background decoration. Space themes use their own scenery.","food":"Choose single-color food, rainbow food, or hide it.","cursorLine":"Draw the existing guide toward your mouse position.","multiboxRing":"Highlight the player you are controlling.","multiboxCellColor":"Use active and inactive colors on your own cell bodies.","teamIndicator":"Show the existing indicator for recognized teammates.","commander":"Display your team’s existing commander markers.","chatType":"Choose the existing chat display mode.","selectedPreset":"A preset can change several supported colors and display options.","chatFontSize":"Change the text size used in chat.","lbSize":"Resize the leaderboard.","minimapSize":"Resize the minimap.","cellTransparencyStyle":"Choose a flat fill or a radiant cell fill.","cellTransparency":"Control cell body opacity. Custom skin artwork stays separate.","lightenCellColor":"Adjust the brightness of the original cell body colors.","borderColor":"Used by the original border. Space themes use their own palette.","borderWidth":"Adjust the width of the arena boundary.","borderStyle":"Choose a fixed or animated arena border.","gridColor":"Color of the original grid when it is enabled.","gridTextColor":"Color of the original sector labels.","gridTextSize":"Resize the original sector labels.","gridTextFont":"Typeface used by the original sector labels.","gridWidth":"Adjust the original grid line width.","nickColor":"Fill color for player names.","nickStrokeColor":"Outline color around player names.","cellNickSize":"Resize player names on cells.","nickFont":"Typeface used for player names.","massColor":"Fill color for mass labels.","massStrokeColor":"Outline color around mass labels.","cellMassSize":"Resize mass labels on cells.","massFont":"Typeface used for mass labels.","foodColor":"Color of single-color food. Themed halos can use the arena palette.","foodSize":"Adjust the size of food artwork.","backgroundColor":"Page background behind the arena canvas.","commanderColor":"Color of your team commander marker.","indicatorSize":"Resize teammate indicators.","multiboxActive":"Color used for your active player highlight.","multiboxInactive":"Color used for your other player highlight.","multiboxRingWidth":"Adjust the active player ring width.","team1color":"Team one color in the existing double-tag mode.","team2color":"Team two color in the existing double-tag mode.","leftClick":"Choose the action assigned to your left mouse button.","middleClick":"Choose the action assigned to your middle mouse button.","rightClick":"Choose the action assigned to your right mouse button."}[name]||''}
+    static get(item){if(item.owner===this)return this.ui[item.name];return item.owner[item.name]}
+    static open(page='overview'){this.init();this.returnFocus=document.activeElement;const last=Storage.get('crestUI','lastPage');if(page==='overview'&&this.ui.remember&&this.categories.some(x=>x[0]===last))page=last;this.root.hidden=false;this.show(page);this.root.querySelector('.cpx-close').focus()}
+    static close(restore=true){if(!this.root||this.root.hidden)return;this.root.hidden=true;Inputs.isOpened=false;if(restore&&this.returnFocus?.isConnected)this.returnFocus.focus()}
+    static show(page){if(!this.categories.some(x=>x[0]===page))page='overview';this.page=page;this.search.value='';this.root.querySelectorAll('[data-category]').forEach(x=>x.setAttribute('aria-current',x.dataset.category===page?'page':'false'));Inputs.isOpened=page==='controls';if(page==='controls')$(this.controls.querySelector('#inputs')).stop(true,true).show().css('opacity',1);if(this.ui.remember)Storage.set('crestUI','lastPage',page);this.render();this.root.querySelector('.cpx-scroll').scrollTop=0}
+    static applyUI(){if(!this.root)return;this.root.dataset.density=this.ui.density;this.root.dataset.accent=this.ui.accent;this.root.dataset.large=String(this.ui.largeText);this.root.dataset.contrast=String(this.ui.highContrast);document.body.dataset.crestMotion=this.ui.reduceMotion?'reduced':'normal'}
+    static commit(item,value){try{if(item.type==='range'){value=Number(value);if(!Number.isFinite(value))throw Error('Enter a valid number');value=Math.min(item.max,Math.max(item.min,item.min+Math.round((value-item.min)/item.step)*item.step));}
+      if(item.choices&&!item.choices.some(x=>x[0]===value))throw Error('Choose one of the available options');
+      if(item.type==='color'){const probe=document.createElement('span');probe.style.color=String(value);if(!probe.style.color)throw Error('Enter a valid CSS color');}
+      if(item.name==='backgroundImage'&&value){const u=new URL(value);if(!['http:','https:'].includes(u.protocol))throw Error('Use an http or https image URL');}
+      if(item.owner===this){this.ui[item.name]=value;Storage.set('crestUI',item.name,value);this.applyUI();}
+      else if(item.owner===Settings)Settings.saveSettings(item.name,item.scale?value/item.scale:value);
+      else if(item.owner===Theme)Theme.saveTheme(item.name,value);
+      else Mouse.saveMouseOptions(item.name,value);
+      if(item.source&&item.owner!==Mouse){if(item.type==='options')item.owner.handleOptions(item.source,2);if(item.type==='range')item.owner.handleRange(item.source,2);}
+      this.status.textContent='Saved · '+item.label;this.status.dataset.error='false';this.sync();return true;
+    }catch(error){this.status.textContent='Could not save: '+String(error.message||error);this.status.dataset.error='true';this.sync();return false}}
+    static sync(){for(const field of this.fields){let value=this.get(field.item);if(field.item.scale)value=Math.round(value*field.item.scale);if(field.input.type==='checkbox')field.input.checked=field.item.type==='boolean'?Boolean(value):value==='on';else field.input.value=value??'';if(field.output)field.output.textContent=String(value??'');if(field.swatch){let hex=String(value||'');if(/^#[0-9a-f]{3}$/i.test(hex))hex='#'+[...hex.slice(1)].map(c=>c+c).join('');if(/^#[0-9a-f]{6}$/i.test(hex))field.swatch.value=hex;}}
+      this.root.querySelectorAll('[data-quality]').forEach(b=>b.setAttribute('aria-pressed',String(Settings.moPerformance===b.dataset.quality)))}
+    static card(item){const card=document.createElement('article');card.className='cpx-card';card.dataset.setting=item.name;const label=document.createElement('label'),id='cpx-field-'+(item.owner===Theme?'theme-':item.owner===Mouse?'mouse-':item.owner===this?'ui-':'settings-')+item.name;label.htmlFor=id;label.className='cpx-label';label.textContent=item.label;const description=document.createElement('p');description.textContent=item.description||'';card.append(label,description);
+      let input,output,swatch;const binary=item.type==='boolean'||item.type==='options'&&item.choices.length===2&&item.choices.some(x=>x[0]==='on')&&item.choices.some(x=>x[0]==='off');
+      if(binary){card.classList.add('cpx-toggle-card');const wrap=document.createElement('div');wrap.className='cpx-switch';input=document.createElement('input');input.type='checkbox';input.setAttribute('role','switch');const track=document.createElement('span');track.setAttribute('aria-hidden','true');wrap.append(input,track);card.append(wrap);input.onchange=()=>this.commit(item,item.type==='boolean'?input.checked:input.checked?'on':'off');}
+      else if(item.choices){input=document.createElement('select');for(const [value,text]of item.choices){const option=document.createElement('option');option.value=value;option.textContent=text;input.append(option)}card.append(input);input.onchange=()=>this.commit(item,input.value);}
+      else if(item.type==='range'){const line=document.createElement('div');line.className='cpx-range';input=document.createElement('input');input.type='range';input.min=item.min;input.max=item.max;input.step=item.step;output=document.createElement('output');output.htmlFor=id;line.append(input,output);card.append(line);input.oninput=()=>output.textContent=input.value;input.onchange=()=>this.commit(item,Number(input.value));}
+      else{const wrap=document.createElement('div');wrap.className='cpx-text-line';input=document.createElement('input');input.type='text';if(item.type==='color'){swatch=document.createElement('input');swatch.type='color';swatch.setAttribute('aria-label',item.label+' picker');swatch.oninput=()=>input.value=swatch.value;swatch.onchange=()=>this.commit(item,swatch.value);wrap.append(swatch)}wrap.append(input);card.append(wrap);input.onchange=()=>this.commit(item,input.value.trim());}
+      input.id=id;input.setAttribute('aria-label',item.label);this.fields.push({item,input,output,swatch});return card;
+    }
+    static uiItems(){return[{name:'density',label:'Layout density',type:'options',choices:[['comfortable','Comfortable'],['compact','Compact']],description:'Choose how much space sits between settings.'},{name:'accent',label:'Accent color',type:'options',choices:[['mint','Mint'],['amber','Amber'],['ice','Ice blue'],['violet','Violet']],description:'A personal accent for this settings workspace.'},{name:'largeText',label:'Larger settings text',type:'boolean',description:'Give labels and controls a little more room.'},{name:'highContrast',label:'Stronger contrast',type:'boolean',description:'Darker text and clearer boundaries in settings.'},{name:'reduceMotion',label:'Reduce menu motion',type:'boolean',description:'Reduce decorative CSS animation in the menu.'},{name:'remember',label:'Remember my last page',type:'boolean',description:'Reopen Preferences where you left off.'}].map(x=>({...x,owner:this,category:'comfort'}))}
+    static quality(){const section=document.createElement('div');section.className='cpx-quality';for(const [id,label,description]of [['quality','Quality','All the atmosphere. Full cosmetic effects.'],['balanced','Balanced','A lighter load, with the details you love.'],['performance','Performance','Keep it lean. Minimum decoration.']]){const b=document.createElement('button');b.type='button';b.dataset.quality=id;b.innerHTML='<span>'+label+'</span><small>'+description+'</small><b aria-hidden="true">↗</b>';b.onclick=()=>{try{MoPerformance.select(id);this.status.textContent='Saved · '+label+' graphics';this.status.dataset.error='false';this.sync()}catch(error){this.status.textContent='Could not save: '+String(error.message||error);this.status.dataset.error='true';this.sync()}};section.append(b)}return section}
+    static render(){const query=this.search.value.trim().toLowerCase();this.fields=this.fields.filter(x=>x.item.owner===Mouse);this.content.replaceChildren();this.controls.hidden=this.page!=='controls';this.content.hidden=this.page==='controls';this.search.placeholder=this.page==='controls'?'Find a shortcut or action…':'Search settings and colors…';if(this.page==='controls'){this.controls.dataset.query=String(Boolean(query));let count=0;for(const row of this.controls.querySelectorAll('.row')){const match=!query||((row.querySelector('.title')?.textContent||'')+' '+(row.getAttribute('name')||'')+' '+(row.querySelector('input')?.placeholder||'')).toLowerCase().includes(query);row.classList.toggle('cpx-filtered',!match);if(match)count++;}this.controls.querySelector('.cpx-no-results').hidden=count>0;this.sync();return}
+      const selected=this.categories.find(x=>x[0]===this.page);const intro=document.createElement('div');intro.className='cpx-section-intro';const title=document.createElement('h2');title.textContent=query?'Search results':selected[1];const desc=document.createElement('p');desc.textContent=query?'Matching preferences from every category.':selected[2];intro.append(title,desc);this.content.append(intro);
+      if(this.page==='overview'&&!query){const hero=document.createElement('div');hero.className='cpx-hero';hero.innerHTML='<div><small>PLAY YOUR OWN WAY</small><h2>Built around<br>your play.</h2><p>Fine-tune the feel. Make room for focus.</p></div><div class="cpx-orbit" aria-hidden="true"><span></span><i></i><b>◈</b></div>';this.content.append(hero);const h=document.createElement('h3');h.textContent='Choose your graphics workload';this.content.append(h,this.quality());const links=document.createElement('div');links.className='cpx-shortcuts';for(const[id,label]of [['movement','Tune movement'],['controls','Edit controls'],['comfort','Make it comfortable']]){const b=document.createElement('button');b.type='button';b.textContent=label+' ↗';b.onclick=()=>this.show(id);links.append(b)}this.content.append(links);}
+      let items=[...this.descriptors.filter(x=>x.owner!==Mouse),...this.uiItems()];if(query)items=items.filter(x=>(x.label+' '+x.name+' '+x.description).toLowerCase().includes(query));else items=items.filter(x=>x.category===this.page);if(this.page==='arena'&&!query)this.content.append(this.quality());
+      const qualityMatch=query&&/graphics|quality|balanced|performance/.test(query);if(qualityMatch)this.content.append(this.quality());const grid=document.createElement('div');grid.className='cpx-grid';for(const item of items)grid.append(this.card(item));this.content.append(grid);if(query&&!items.length&&!qualityMatch){const p=document.createElement('p');p.className='cpx-no-results';p.textContent='No matching settings. Try “camera”, “color” or “text”.';this.content.append(p)}this.sync();
+    }
+  }
+
   class MainMenu {
     static ["init"]() {
       Notifications.init();
@@ -3568,11 +3640,12 @@
       this.toggleStreammode();
       this.buttons();
       MoMenu.init();
+      CrestPreferences.init();
     }
     static ["buttons"]() {
       $("#button-settings").click(() => {
         this.closeSubMenus();
-        Settings.toggle();
+        CrestPreferences.open('overview');
       });
       $("#button-play").click(() => {
         this.play();
@@ -3600,11 +3673,11 @@
       });
       $("#button-inputs").click(() => {
         this.closeSubMenus();
-        Inputs.toggle();
+        CrestPreferences.open('controls');
       });
       $("#button-theme").click(() => {
         this.closeSubMenus();
-        Theme.toggle();
+        CrestPreferences.open('appearance');
       });
       $("#normal-tag").click(() => {
         this.normalTag();
@@ -3686,6 +3759,7 @@
       }
     }
     static ["closeSubMenus"]() {
+      CrestPreferences.close(false);
       MoMenu.setAccount(false, false);
       Inputs.close();
       Settings.close();
@@ -3699,6 +3773,7 @@
       }
     }
     static ["close"]() {
+      CrestPreferences.close(false);
       MoMenu.setAccount(false, false);
       this.isOpened = false;
       this.div.fadeOut(250);
