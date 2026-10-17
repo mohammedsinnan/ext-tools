@@ -931,6 +931,9 @@
       const savedCosmeticKey=Storage.get('hotkeys','toggleOrbitSkins');
       this.toggleOrbitSkins=typeof savedCosmeticKey==='string'?savedCosmeticKey:(Object.values(this).includes('H')?'':'H');
       if(!document.querySelector('#hotkeys [name="toggleOrbitSkins"]')){const row=document.createElement('div');row.className='row';row.setAttribute('name','toggleOrbitSkins');row.innerHTML='<span class="title">Hide / show custom skins &amp; rings</span><input class="key" type="text" readonly aria-label="Hide / show custom skins and rings">';document.getElementById('hotkeys').appendChild(row);}
+      const savedProfileKey=Storage.get('hotkeys','cycleMotionProfile');
+      this.cycleMotionProfile=typeof savedProfileKey==='string'?savedProfileKey:(Object.values(this).includes('V')?'':'V');
+      if(!document.querySelector('#hotkeys [name="cycleMotionProfile"]')){const row=document.createElement('div');row.className='row';row.setAttribute('name','cycleMotionProfile');row.innerHTML='<span class="title">Cycle movement profile</span><input class="key" type="text" readonly aria-label="Cycle movement profile">';document.getElementById('hotkeys').appendChild(row);}
       this.pressedKeys = new Map();
       this.setDomKeys();
       this.addEvents();
@@ -1004,6 +1007,8 @@
                                           ? void Actions.toggleGameFood()
                                           : hj === this.toggleSkin
                                             ? void Actions.toggleSkin()
+                                            : hj === this.cycleMotionProfile
+                                              ? void MoMotionTuning.cycle()
                                             : hj === this.toggleOrbitSkins
                                               ? void (MoInventory.hiddenCosmetics=!MoInventory.hiddenCosmetics)
                                             : hj === this.toggleCustomSkin
@@ -1069,7 +1074,7 @@
     }
     static ["alreadyBinded"](pe) {
       let afo = false;
-      if (pe === this.toggleOrbitSkins) {
+      if (pe === this.cycleMotionProfile) {afo='cycleMotionProfile';} else if (pe === this.toggleOrbitSkins) {
         afo = 'toggleOrbitSkins';
       } else if (pe === this.toggleMenuKey) {
         afo = "toggleMenuKey";
@@ -3428,7 +3433,7 @@
       MoCustomize.init(this);
     }
     static refresh(){if(!this.root)return;this.previewAt=null;const c=this.config(this.slot);this.root.querySelectorAll('[data-player]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.player)===this.slot)));this.root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===c.mode)));this.cards.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ring===c.ring)));this.root.querySelector('#moi-water-color').value=c.waterColor;this.root.querySelector('#moi-water-color-row').hidden=c.skinType!=='water';this.root.querySelector('#moi-body').value=c.skinType;this.root.querySelector('#moi-skin').disabled=c.skinType!=='standard';this.root.querySelector('#moi-white').checked=c.whiteInactive;this.root.querySelector('#moi-skin').checked=c.matchingSkin;this.root.querySelector('#moi-speed').value=c.speed;this.root.querySelector('#moi-glow').value=c.glow;this.root.querySelector('#moi-selected').textContent=c.skinType==='water'?'Water balloon':c.skinType==='thunder'?'Thunderstorm':c.skinType==='fire'?'Blazing Fire':c.skinType==='dragon'?'Cosmic Dragon':c.skinType==='ghost'?'Haunted Ghost':c.skinType==='molten'?'Molten Core':c.skinType==='skeleton'?'Dancing Skeleton':this.styles.find(x=>x[0]===c.ring)[1]}
-    static setOpen(open){cancelAnimationFrame(this.frame);if(open){MoMenu.setAccount(false,false);this.slot=Player.typeID===2?2:1;this.refresh()}this.root.hidden=!open;this.toggle.setAttribute('aria-expanded',String(open));if(open){this.root.querySelector('.moi-close').focus();MoCustomize.show('inventory')}else{this.toggle.focus()}}
+    static setOpen(open){cancelAnimationFrame(this.frame);MoMotionTuning.stop();if(open){MoMenu.setAccount(false,false);this.slot=Player.typeID===2?2:1;this.refresh()}this.root.hidden=!open;this.toggle.setAttribute('aria-expanded',String(open));if(open){this.root.querySelector('.moi-close').focus();MoCustomize.show('inventory')}else{this.toggle.focus()}}
     static animate(){if(this.root.hidden)return;const now=performance.now();if(this.previewAt!=null&&now-this.previewAt<1000/(MoPerformance.full()?30:15)){this.frame=requestAnimationFrame(()=>this.animate());return}this.previewAt=now;const c=this.config(this.slot),time=performance.now()/1000;for(const card of this.cards)this.preview(card.querySelector('canvas'),card.dataset.ring,c,time);if(c.skinType==='water'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoWaterSkin.paint(ctx,cv.width*.39,time,Math.sin(time)*.8,0,false,c.waterColor);ctx.restore()}else if(MoCreatureSkin.types.includes(c.skinType)){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoCreatureSkin.paint(ctx,cv.width*.39,time,c.skinType,false,c.speed,c.glow);ctx.restore()}else if(c.skinType==='skeleton'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoSkeletonSkin.paint(ctx,cv.width*.39,time,false,c.speed,c.glow);ctx.restore()}else if(c.skinType==='fire'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoFireSkin.paint(ctx,cv.width*.39,time);ctx.restore()}else if(c.skinType==='thunder'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoThunderSkin.paint(ctx,cv.width*.39,time);ctx.restore()}else this.preview(this.root.querySelector('.moi-live canvas'),c.ring,c,time);this.frame=requestAnimationFrame(()=>this.animate())}
     static preview(canvas,id,c,time){const ctx=canvas.getContext('2d'),size=canvas.width,r=size*.39;ctx.clearRect(0,0,size,size);ctx.save();ctx.translate(size/2,size/2);ctx.fillStyle='#172d41';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();if(c.matchingSkin)ctx.drawImage(this.skin(id),-r,-r,r*2,r*2);else{ctx.fillStyle='#98c3d8';ctx.font='600 '+size*.13+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MO',0,0)}this.paint(ctx,id,r,time,c);ctx.restore()}
     static sprite(id,layer){this.sprites=this.sprites||new Map();const key=id+layer;if(this.sprites.has(key))return this.sprites.get(key);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.translate(256,256);const palettes={aurora:['#9efff0','#38bfdd','#143d69'],solar:['#fff4ba','#ffb32d','#673a12'],eclipse:['#e1bcff','#ad57ff','#361554'],prism:['#ffadee','#65e8ff','#662764'],cipher:['#f3f8ff','#a9bfd7','#294456']};const colors=palettes[id]||palettes.aurora;ctx.lineJoin='round';ctx.lineCap='round';ctx.shadowColor=colors[1];ctx.shadowBlur=10;
@@ -3504,7 +3509,7 @@
       const css=document.createElement('style');css.textContent='.moc-loadout{display:flex;gap:12px;flex-wrap:wrap}.moc-slot{width:72px;height:72px;border-radius:18px;background:#ffffff07;border:1px dashed #94d7e442;display:grid;place-items:center;color:#91abba;font-size:11px}.moc-slot img{width:58px;height:58px;object-fit:contain;border-radius:50%}.moi-tools [role=tab][aria-selected=true]{background:#22524d;border-color:#78ecd07a;color:#adffe7}';document.head.appendChild(css);MoGameplay.init(this);MoMap.init(this);MoPerformance.init(this);this.refresh();this.show('inventory');
     }
     static refresh(){this.cards.forEach(b=>b.setAttribute('aria-pressed',String(this.ids.includes(b.dataset.emote))));const slots=this.views.emotes.querySelector('.moc-loadout');slots.replaceChildren();for(let i=0;i<5;i++){const slot=document.createElement('div');slot.className='moc-slot';const face=MoEmotes.library().find(x=>x.id===this.ids[i]);if(face){const img=document.createElement('img');img.src=face.src;img.alt=face.label;slot.appendChild(img)}else slot.textContent='Empty '+(i+1);slots.appendChild(slot)}}
-    static show(id){for(const key of ['inventory','emotes','gameplay','map','performance']){this.views[key].hidden=key!==id;this.tabs[key].setAttribute('aria-selected',String(key===id))}cancelAnimationFrame(this.inventory.frame);if(id==='inventory'&&!this.inventory.root.hidden)this.inventory.animate()}
+    static show(id){for(const key of ['inventory','emotes','gameplay','map','performance']){this.views[key].hidden=key!==id;this.tabs[key].setAttribute('aria-selected',String(key===id))}cancelAnimationFrame(this.inventory.frame);MoMotionTuning.stop();if(id==='gameplay'&&!this.inventory.root.hidden)MoMotionTuning.start();if(id==='inventory'&&!this.inventory.root.hidden)this.inventory.animate()}
   }
 
   class MoSharedCosmetics {
@@ -3536,28 +3541,69 @@
     static atmosphere(){ /* Scenery is baked into world-anchored tiles. */ }
   }
 
+  class MoMotionTuning {
+    static styles=['cinematic','fluid','snappy','agar'];
+    static keys=['glide','split','camera','zoom'];
+    static neutral={glide:50,split:50,camera:50,zoom:50};
+    static presets={competitive:{glide:20,split:15,camera:25,zoom:30},relaxed:{glide:75,split:70,camera:80,zoom:80}};
+    static labels={competitive:'Competitive',relaxed:'Relaxed',custom:'Custom'};
+    static clean(value){const out={};for(const k of this.keys)out[k]=typeof value?.[k]==='number'&&Number.isFinite(value[k])?Math.max(0,Math.min(100,Math.round(value[k]))):50;return out}
+    static load(){if(this.data)return;let saved;try{saved=Storage.get('motionTuning','config')}catch(_){}this.data={styles:{}};for(const style of this.styles){const old=saved?.styles?.[style];this.data.styles[style]={active:['competitive','relaxed','custom'].includes(old?.active)?old.active:'custom',custom:this.clean(old?.custom)}}}
+    static entry(){this.load();return this.data.styles[Settings.moMotionStyle]||null}
+    static values(){const e=this.entry();return e?(e.active==='custom'?e.custom:this.presets[e.active]):this.neutral}
+    static factor(name){const style=Settings.moMotionStyle;if(this.cachedStyle!==style||!this.cachedFactors){this.cachedStyle=style;const values=this.values();this.cachedFactors={};for(const k of this.keys)this.cachedFactors[k]=2**((values[k]-50)/50)}return this.cachedFactors[name]||1}
+    static save(){this.cachedFactors=null;Storage.set('motionTuning','config',this.data);this.refresh()}
+    static choose(id){const e=this.entry();if(!e||!['competitive','relaxed','custom'].includes(id))return;e.active=id;this.save()}
+    static edit(name,value){const e=this.entry();value=Number(value);if(!e||!this.keys.includes(name)||!Number.isFinite(value))return;if(e.active!=='custom')e.custom={...this.values()};e.active='custom';e.custom[name]=Math.max(0,Math.min(100,Math.round(value)));this.save()}
+    static reset(){const e=this.entry();if(!e)return;e.active='custom';e.custom={...this.neutral};this.save()}
+    static cycle(){const e=this.entry();if(!e)return;const ids=['competitive','relaxed','custom'];this.choose(ids[(ids.indexOf(e.active)+1)%ids.length]);if(!this.toast){this.toast=document.createElement('div');this.toast.setAttribute('role','status');this.toast.style.cssText='position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:100001;pointer-events:none;background:#0e2434ed;color:#b8f5df;border:1px solid #91ddc655;border-radius:12px;padding:10px 18px;font:600 13px Arial,sans-serif';document.body.appendChild(this.toast)}this.toast.textContent=({agar:'Agar · Silk',cinematic:'Cinematic',fluid:'Fluid',snappy:'Snappy'})[Settings.moMotionStyle]+' · '+this.labels[e.active];this.toast.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast.hidden=true},1800)}
+    static follow(camera,x,y,dt,tau){if(!Number.isFinite(dt))return;const a=dt>250?1:-Math.expm1(-dt/Math.max(8,tau));camera.x+=(x-camera.x)*a;camera.y+=(y-camera.y)*a}
+    static zoom(camera,target,dt,tau){if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/Math.max(8,tau)))}
+    static legacyCameraTau(){const speed=Math.max(1.01,Number(Settings.cameraSpeed)||20);return -(1000/60)/Math.log1p(-1/speed)}
+    static followGame(camera){this.follow(camera,Player.x,Player.y,MoGameplay.silkDelta(camera,'_moTuneFollowAt'),this.legacyCameraTau()*this.factor('camera'))}
+    static zoomGame(camera,target){this.zoom(camera,target,MoGameplay.silkDelta(camera,'_moTuneZoomAt'),(-(1000/60)/Math.log(7/8))*this.factor('zoom'))}
+    static attach(panel){
+      this.panel=panel;const wrap=document.createElement('section');wrap.className='mom-tuning';wrap.setAttribute('aria-label','Movement tuning');
+      wrap.innerHTML='<div class="mom-head"><div><small>MOTION STUDIO</small><h3>Your movement. Your rhythm.</h3><p>Separate tuning for each gameplay style. Your current animation stays unchanged at 50.</p></div><button type="button" data-motion-reset>Reset tuning</button></div><div class="mom-profiles" role="group" aria-label="Movement profile"><button type="button" data-motion-profile="competitive">Competitive<small>Tighter follow · faster settling</small></button><button type="button" data-motion-profile="relaxed">Relaxed<small>Softer glide · weighted camera</small></button><button type="button" data-motion-profile="custom">Custom<small>Your saved personal tuning</small></button></div><div class="mom-layout"><div class="mom-sliders"></div><div class="mom-preview"><canvas width="720" height="240" aria-label="Live movement and split preview"></canvas><p>Simulated cells · live animation preview</p></div></div><div class="mom-foot" role="status"></div>';
+      const css=document.createElement('style');css.textContent='.mom-tuning{margin-top:24px;padding:22px;border:1px solid #9fdec737;border-radius:18px;background:linear-gradient(135deg,#163b3d55,#0a162a88)}.mom-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.mom-head small{font-size:10px;letter-spacing:2px;color:#95e3c9}.mom-head h3{font-size:21px;margin:8px 0;color:#e9f8f2}.mom-tuning p,.mom-foot{font-size:11px;color:#93adbd;line-height:1.6}.mom-tuning button{cursor:pointer;border:1px solid #8fcbbb3c;border-radius:9px;background:#132a3a;color:#cbeadf;padding:10px 13px;font:600 12px Arial,sans-serif}.mom-profiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0}.mom-profiles button{text-align:left}.mom-profiles small{display:block;font-size:10px;font-weight:400;line-height:1.5;margin-top:6px;color:#8da9b8}.mom-profiles [aria-pressed=true]{background:#215046;border-color:#a0e9cf}.mom-layout{display:grid;grid-template-columns:1fr 1.2fr;gap:24px;align-items:center}.mom-slider{display:block;margin:14px 0;color:#d2e8e4;font-size:12px}.mom-slider span{display:flex;justify-content:space-between;gap:8px}.mom-slider input{width:100%;accent-color:#9de4cf;cursor:pointer;margin:9px 0 4px}.mom-slider small{display:flex;justify-content:space-between;color:#7996a8;font-size:10px}.mom-preview{border:1px solid #85c9c324;background:#0b1b29;border-radius:13px;overflow:hidden}.mom-preview canvas{display:block;width:100%;height:auto}.mom-preview p{padding:0 12px;margin:0 0 10px}.mom-foot{margin-top:16px;border-top:1px solid #82d2c123;padding-top:14px}.mom-tuning button:focus-visible,.mom-tuning input:focus-visible{outline:2px solid #b6f2df;outline-offset:3px}@media(max-width:740px){.mom-layout{grid-template-columns:1fr}.mom-profiles{grid-template-columns:1fr}.mom-tuning{padding:15px}.mom-head{flex-wrap:wrap}}';document.head.appendChild(css);
+      const labels=[['glide','Glide softness','Tight','Soft'],['split','Split settling','Quick','Gentle'],['camera','Camera weight','Direct','Weighted'],['zoom','Zoom smoothness','Quick','Gradual']];
+      for(const [id,label,left,right]of labels){const host=document.createElement('label');host.className='mom-slider';host.innerHTML='<span>'+label+'<output></output></span><input type="range" min="0" max="100" step="1" data-motion-tune="'+id+'" aria-label="'+label+'"><small><b>'+left+'</b><b>'+right+'</b></small>';host.querySelector('input').addEventListener('input',e=>this.edit(id,e.target.value));wrap.querySelector('.mom-sliders').appendChild(host)}
+      wrap.querySelectorAll('[data-motion-profile]').forEach(b=>b.addEventListener('click',()=>this.choose(b.dataset.motionProfile)));wrap.querySelector('[data-motion-reset]').addEventListener('click',()=>this.reset());panel.appendChild(wrap);this.root=wrap;this.refresh();
+    }
+    static refresh(){if(!this.root)return;const entry=this.entry(),values=this.values();this.root.querySelectorAll('[data-motion-profile]').forEach(b=>{b.disabled=!entry;b.setAttribute('aria-pressed',String(entry?.active===b.dataset.motionProfile))});this.root.querySelectorAll('[data-motion-tune]').forEach(input=>{input.disabled=!entry;input.value=values[input.dataset.motionTune];input.previousElementSibling.querySelector('output').textContent=input.value});this.root.querySelector('[data-motion-reset]').disabled=!entry;const key=typeof Hotkeys!=='undefined'?Hotkeys.cycleMotionProfile:'';this.root.querySelector('.mom-foot').textContent=entry?this.labels[entry.active]+' profile · saves automatically for this style. '+(key?'Press '+key+' in gameplay to cycle profiles.':'Assign “Cycle movement profile” in Settings → Controls → Keyboard.'):'Choose Cinematic, Fluid, Snappy or Agar · Silk to use movement tuning.'}
+    static stop(){cancelAnimationFrame(this.frame);this.frame=null;this.previewState=null;this.lastPaint=undefined}
+    static start(){this.stop();this.refresh();if(!this.root||this.panel.hidden||MoInventory.root?.hidden)return;this.frame=requestAnimationFrame(t=>this.preview(t))}
+    static preview(now){if(!this.root||this.panel.hidden||MoInventory.root?.hidden){this.stop();return}this.frame=requestAnimationFrame(t=>this.preview(t));if(document.hidden)return;if(this.lastPaint!==undefined&&now-this.lastPaint<1000/(MoPerformance.full()?30:15))return;this.lastPaint=now;
+      const style=Settings.moMotionStyle;if(!this.previewState||this.previewState.style!==style){const cell=new Cell(-1,1);Object.assign(cell,{x:-100,y:0,radius:40,animX:-100,animY:0,animRadius:40,lastUpdateTime:now});this.previewState={style,born:now,phase:0,cells:[cell],camera:{x:0,y:0,viewport:1},at:now};this.refresh()}
+      const s=this.previewState,dt=now-s.at;s.at=now;const age=(now-s.born)/1000,phase=age%6;if(phase<2&&s.phase>=2){s.cells=s.cells.slice(0,1);s.cells[0].radius=40}if(phase>=2&&s.phase<2){s.cells[0].radius=28;const child=new Cell(-2,1);Object.assign(child,{x:100,y:0,radius:28,animX:s.cells[0].animX,animY:0,animRadius:4,lastUpdateTime:now});s.cells.push(child)}s.phase=phase;
+      let target=0;for(let i=0;i<s.cells.length;i++){const cell=s.cells[i];cell.x=Math.sin(age*.85)*145+(i?75:-75);cell.y=i?18:-18;cell.animate(now);target+=cell.animX}target/=s.cells.length;
+      const cameraTau=(style==='agar'?125*Math.max(.5,Math.min(2,(Number(Settings.cameraSpeed)||20)/20)):this.legacyCameraTau())*this.factor('camera');this.follow(s.camera,target,0,dt,cameraTau);this.zoom(s.camera,s.cells.length>1?.85:1,dt,(style==='agar'?180:-(1000/60)/Math.log(7/8))*this.factor('zoom'));
+      const cv=this.root.querySelector('canvas'),c=cv.getContext('2d');c.clearRect(0,0,720,240);c.save();c.translate(360,118);c.scale(s.camera.viewport,s.camera.viewport);c.translate(-s.camera.x,0);c.strokeStyle='#7bbdaf14';c.lineWidth=1;for(let x=-600;x<=600;x+=65){c.beginPath();c.moveTo(x,-200);c.lineTo(x,200);c.stroke()}for(const [i,cell]of s.cells.entries()){c.save();c.translate(cell.animX,cell.animY);if(['cinematic','fluid','snappy'].includes(style)){const stretch=cell._moStretch||0;c.rotate(Math.atan2(cell._moVY||0,cell._moVX||0));c.scale(1+stretch,1/(1+stretch))}c.fillStyle=i?'#a4a0e2':'#8ce0c8';c.beginPath();c.arc(0,0,cell.animRadius+5,0,Math.PI*2);c.fill();c.strokeStyle='#18393b';c.lineWidth=1.5;c.stroke();c.restore()}c.restore();c.fillStyle='#9abebd';c.font='12px Arial,sans-serif';c.fillText(phase<2?'GLIDE':'SPLIT & FOLLOW',16,222);
+    }
+  }
+
   class MoGameplay {
-    static animateSilk(cell){
-      const now=GameLoop.time,previous=cell._moMotionTime===undefined?cell.lastUpdateTime:cell._moMotionTime,dt=Math.max(0,now-previous);
+    static animateSilk(cell,now=GameLoop.time){
+      const previous=cell._moMotionTime===undefined?cell.lastUpdateTime:cell._moMotionTime,dt=Math.max(0,now-previous);
       if(!Number.isFinite(dt)||![cell.x,cell.y,cell.radius,cell.animX,cell.animY,cell.animRadius].every(Number.isFinite))return;
       cell._moMotionTime=cell.lastUpdateTime=now;cell._moStretch=0;cell._moVX=cell._moVY=0;
       if(!dt)return;
       if(dt>250){cell.animX=cell.x;cell.animY=cell.y;cell.animRadius=cell.radius;cell._silkVX=cell._silkVY=0;return}
-      const delay=Math.max(40,Number(Settings.CellAnimation)||160),tau=Math.max(20,Math.min(65,delay*.28)),omega=1/tau,decay=Math.exp(-omega*dt);
+      const delay=Math.max(40,Number(Settings.CellAnimation)||160),tau=Math.max(20,Math.min(65,delay*.28))*MoMotionTuning.factor('glide'),omega=1/tau,decay=Math.exp(-omega*dt);
       // Exact critically damped visual follow. Server positions and radii are untouched.
       this.silkAxis(cell,'animX','x','_silkVX',omega,decay,dt);this.silkAxis(cell,'animY','y','_silkVY',omega,decay,dt);
-      const shrinking=cell.radius<cell.animRadius,sizeTau=Math.max(30,Math.min(190,delay*(shrinking?.46:.9)));
+      const shrinking=cell.radius<cell.animRadius,sizeTau=Math.max(30,Math.min(190,delay*(shrinking?.46:.9)))*MoMotionTuning.factor('split');
       cell.animRadius+=(cell.radius-cell.animRadius)*-Math.expm1(-dt/sizeTau);
     }
     static silkAxis(cell,key,axis,velocity,omega,decay,dt){const target=cell[axis],start=cell[key],offset=start-target,v=cell[velocity]||0,j=v+omega*offset;let next=target+(offset+j*dt)*decay,nextV=(v-omega*j*dt)*decay;const bounded=Math.max(Math.min(start,target),Math.min(Math.max(start,target),next));if(bounded!==next||start===target){next=bounded;nextV=0}cell[key]=next;cell[velocity]=nextV}
     static silkDelta(camera,key){const now=GameLoop.time,last=camera[key];camera[key]=now;return last===undefined?1000/60:Math.max(0,now-last)}
-    static silkCamera(camera){const dt=this.silkDelta(camera,'_silkFollowAt');if(!Number.isFinite(dt))return;const tau=125*Math.max(.5,Math.min(2,(Number(Settings.cameraSpeed)||20)/20)),a=dt>250?1:-Math.expm1(-dt/tau);camera.x+=(Player.x-camera.x)*a;camera.y+=(Player.y-camera.y)*a}
-    static silkZoom(camera,target){const dt=this.silkDelta(camera,'_silkZoomAt');if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/180))}
+    static silkCamera(camera){const dt=this.silkDelta(camera,'_silkFollowAt');if(!Number.isFinite(dt))return;const tau=125*Math.max(.5,Math.min(2,(Number(Settings.cameraSpeed)||20)/20))*MoMotionTuning.factor('camera'),a=dt>250?1:-Math.expm1(-dt/tau);camera.x+=(Player.x-camera.x)*a;camera.y+=(Player.y-camera.y)*a}
+    static silkZoom(camera,target){const dt=this.silkDelta(camera,'_silkZoomAt');if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/(180*MoMotionTuning.factor('zoom'))))}
     static silkEdge(cell,origin,opacity){if(Settings.moMotionStyle!=='agar'||cell.isVirus||cell.isFood||cell.isEjected||!(opacity>0))return;const r=cell.animRadius+5;if(!Number.isFinite(r)||r<2||r*Camera.viewport<8)return;const c=Renderer.ctx,width=Math.min(r*.035,2.5/(Camera.viewport||1));c.save();try{c.globalAlpha=Math.min(1,opacity)*.45;c.strokeStyle='#07111d';c.lineWidth=width;c.beginPath();c.arc(cell.animX-origin.x,cell.animY-origin.y,r-width/2,0,Math.PI*2);c.stroke()}finally{c.restore()}}
 
-    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));this.refresh()}
+    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));MoMotionTuning.attach(panel);this.refresh()}
     static select(style){if(!['cinematic','fluid','snappy','agar'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
-    static refresh(){if(!this.hub)return;const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
+    static refresh(){if(!this.hub)return;MoMotionTuning.refresh();const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
   }
 
   class MoMenu {
@@ -4175,16 +4221,16 @@
       this.colorObject.b = je;
       this.colorHex = "#" + (16777216 + (jp << 16) + (aci << 8) + je).toString(16).slice(1);
     }
-    ["animate"]() {
-      if(Settings.moMotionStyle==="agar"&&!this.isVirus&&!this.isFood&&!this.isEjected){MoGameplay.animateSilk(this);return}
+    ["animate"](moNow=GameLoop.time) {
+      if(Settings.moMotionStyle==="agar"&&!this.isVirus&&!this.isFood&&!this.isEjected){MoGameplay.animateSilk(this,moNow);return}
       if(this._silkVX!==undefined)this._silkVX=this._silkVY=0;
       if (Settings.moMotionStyle === "classic" || this.isVirus || this.isFood || this.isEjected) {
-        let aah = (GameLoop.time - this.lastUpdateTime) / Settings.CellAnimation;
+        let aah = (moNow - this.lastUpdateTime) / Settings.CellAnimation;
         aah = 0 > aah ? 0 : 1 < aah ? 1 : aah;
         this.animX = aah * (this.x - this.animX) + this.animX;
         this.animY = aah * (this.y - this.animY) + this.animY;
         this.animRadius = aah * (this.radius - this.animRadius) + this.animRadius;
-        this.lastUpdateTime = GameLoop.time;
+        this.lastUpdateTime = moNow;
         this._moMotionTime = undefined;
         this._moStretch = 0;
         this._moVX = this._moVY = 0;
@@ -4192,7 +4238,7 @@
       }
       // Render timing is independent of packet timing. Multiple passes in
       // one frame (pair camera, packet handling, drawing) advance only once.
-      const now = GameLoop.time;
+      const now = moNow;
       const previous = this._moMotionTime === undefined ? this.lastUpdateTime : this._moMotionTime;
       const dt = Math.max(0, now - previous);
       if (!Number.isFinite(dt)) return;
@@ -4203,8 +4249,8 @@
       const resumed = dt > 250;
       const fluid = Settings.moMotionStyle === "fluid";
       const snappy = Settings.moMotionStyle === "snappy";
-      const moveBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.45 : fluid ? 0.95 : 0.75)));
-      const sizeBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.35 : fluid ? 0.85 : 0.55)));
+      const moveBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.45 : fluid ? 0.95 : 0.75)*MoMotionTuning.factor('glide')));
+      const sizeBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.35 : fluid ? 0.85 : 0.55)*MoMotionTuning.factor('split')));
       const dx = (this.x - this.animX) * moveBlend;
       const dy = (this.y - this.animY) * moveBlend;
       this.animX += dx;
@@ -4996,6 +5042,8 @@
       if (Player.isAlive) {
         if(Settings.moMotionStyle==="agar"){MoGameplay.silkCamera(this);return}
         this._silkFollowAt=undefined;
+        if(MoMotionTuning.factor('camera')!==1){MoMotionTuning.followGame(this);return}
+        this._moTuneFollowAt=undefined;
         this.x += (Player.x - this.x) / Settings.cameraSpeed;
         this.y += (Player.y - this.y) / Settings.cameraSpeed;
       } else if (this.isSpectating) {
@@ -5009,7 +5057,7 @@
         aq *= this.autoZoomViewport;
       }
       if(Settings.moMotionStyle==="agar"&&Player.isAlive)MoGameplay.silkZoom(this,aq);
-      else {this._silkZoomAt=undefined;this.viewport += (aq - this.viewport) / 8;}
+      else {this._silkZoomAt=undefined;if(Player.isAlive&&MoMotionTuning.factor('zoom')!==1)MoMotionTuning.zoomGame(this,aq);else {this._moTuneZoomAt=undefined;this.viewport += (aq - this.viewport) / 8;}}
       const aer = Renderer.canvas.width / 2 / this.viewport;
       const aag = Renderer.canvas.height / 2 / this.viewport;
       this.viewBounds.left = Math.max(-aer + this.x, WorldData.left);
