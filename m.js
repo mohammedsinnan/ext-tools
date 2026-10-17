@@ -389,7 +389,7 @@
       this.language = Storage.get("settings", "language") || Language.browser;
       this.CellAnimation = ~~Storage.get("settings", "CellAnimation") || 160;
       const motionStyle = Storage.get("settings", "moMotionStyle");
-      this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid", "snappy"].includes(motionStyle) ? motionStyle : "cinematic";
+      this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid", "snappy", "agar"].includes(motionStyle) ? motionStyle : "cinematic";
       this.eatAnimation = Storage.get("settings", "eatAnimation") || "on";
       this.zoomSpeed = ~~Storage.get("settings", "zoomSpeed") || 92;
       this.cameraSpeed = ~~Storage.get("settings", "cameraSpeed") || 20;
@@ -3537,9 +3537,27 @@
   }
 
   class MoGameplay {
-    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));this.refresh()}
-    static select(style){if(!['cinematic','fluid','snappy'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
-    static refresh(){if(!this.hub)return;const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
+    static animateSilk(cell){
+      const now=GameLoop.time,previous=cell._moMotionTime===undefined?cell.lastUpdateTime:cell._moMotionTime,dt=Math.max(0,now-previous);
+      if(!Number.isFinite(dt)||![cell.x,cell.y,cell.radius,cell.animX,cell.animY,cell.animRadius].every(Number.isFinite))return;
+      cell._moMotionTime=cell.lastUpdateTime=now;cell._moStretch=0;cell._moVX=cell._moVY=0;
+      if(!dt)return;
+      if(dt>250){cell.animX=cell.x;cell.animY=cell.y;cell.animRadius=cell.radius;cell._silkVX=cell._silkVY=0;return}
+      const delay=Math.max(40,Number(Settings.CellAnimation)||160),tau=Math.max(20,Math.min(65,delay*.28)),omega=1/tau,decay=Math.exp(-omega*dt);
+      // Exact critically damped visual follow. Server positions and radii are untouched.
+      this.silkAxis(cell,'animX','x','_silkVX',omega,decay,dt);this.silkAxis(cell,'animY','y','_silkVY',omega,decay,dt);
+      const shrinking=cell.radius<cell.animRadius,sizeTau=Math.max(30,Math.min(190,delay*(shrinking?.46:.9)));
+      cell.animRadius+=(cell.radius-cell.animRadius)*-Math.expm1(-dt/sizeTau);
+    }
+    static silkAxis(cell,key,axis,velocity,omega,decay,dt){const target=cell[axis],start=cell[key],offset=start-target,v=cell[velocity]||0,j=v+omega*offset;let next=target+(offset+j*dt)*decay,nextV=(v-omega*j*dt)*decay;const bounded=Math.max(Math.min(start,target),Math.min(Math.max(start,target),next));if(bounded!==next||start===target){next=bounded;nextV=0}cell[key]=next;cell[velocity]=nextV}
+    static silkDelta(camera,key){const now=GameLoop.time,last=camera[key];camera[key]=now;return last===undefined?1000/60:Math.max(0,now-last)}
+    static silkCamera(camera){const dt=this.silkDelta(camera,'_silkFollowAt');if(!Number.isFinite(dt))return;const tau=125*Math.max(.5,Math.min(2,(Number(Settings.cameraSpeed)||20)/20)),a=dt>250?1:-Math.expm1(-dt/tau);camera.x+=(Player.x-camera.x)*a;camera.y+=(Player.y-camera.y)*a}
+    static silkZoom(camera,target){const dt=this.silkDelta(camera,'_silkZoomAt');if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/180))}
+    static silkEdge(cell,origin,opacity){if(Settings.moMotionStyle!=='agar'||cell.isVirus||cell.isFood||cell.isEjected||!(opacity>0))return;const r=cell.animRadius+5;if(!Number.isFinite(r)||r<2||r*Camera.viewport<8)return;const c=Renderer.ctx,width=Math.min(r*.035,2.5/(Camera.viewport||1));c.save();try{c.globalAlpha=Math.min(1,opacity)*.45;c.strokeStyle='#07111d';c.lineWidth=width;c.beginPath();c.arc(cell.animX-origin.x,cell.animY-origin.y,r-width/2,0,Math.PI*2);c.stroke()}finally{c.restore()}}
+
+    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));this.refresh()}
+    static select(style){if(!['cinematic','fluid','snappy','agar'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
+    static refresh(){if(!this.hub)return;const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
   }
 
   class MoMenu {
@@ -3612,7 +3630,7 @@
         const type=source.getAttribute('type'),input=source.querySelector('input');const name=source.getAttribute('name')||input?.id;if(!name||owner===Theme&&['virusColor','virusBorderColor','virusBorderWidth'].includes(name))continue;
         let label=source.closest('.row')?.querySelector('.title')?.textContent.trim()||name;label=({moArenaStyle:'Arena theme',moMotionStyle:'Movement style',CellAnimation:'Animation smoothing',eatAnimation:'Cell eating animation',cameraSpeed:'Camera smoothing',arbSkins:'Original game skins'}[name]||label);
         const item={owner,source,name,label,type,category:this.category(owner,name),description:this.describe(name)};
-        if(type==='options'){item.choices=[...source.querySelectorAll('b[value]')].map(x=>[x.getAttribute('value'),x.textContent.trim()]);if(name==='moMotionStyle')item.choices=[['classic','Classic'],['smooth','Smooth'],['cinematic','Cinematic'],['fluid','Fluid'],['snappy','Snappy']];}
+        if(type==='options'){item.choices=[...source.querySelectorAll('b[value]')].map(x=>[x.getAttribute('value'),x.textContent.trim()]);if(name==='moMotionStyle')item.choices=[['classic','Classic'],['smooth','Smooth'],['cinematic','Cinematic'],['fluid','Fluid'],['snappy','Snappy'],['agar','Agar · Silk']];}
         if(type==='range'){const span=source.querySelector('span.outer');item.min=Number(span.getAttribute('min'));item.max=Number(span.getAttribute('max'));item.step=Number(span.getAttribute('step'));}
         if(type==='colorpicker')item.type='color';
         if(type==='range'){const saved=Storage.get(owner===Theme?'theme':owner===Mouse?'mouse':'settings',name);if(typeof saved==='number'&&Number.isFinite(saved)&&saved>=item.min&&saved<=item.max){owner[name]=saved;owner.handleRange(source,2);}}this.descriptors.push(item);
@@ -4158,6 +4176,8 @@
       this.colorHex = "#" + (16777216 + (jp << 16) + (aci << 8) + je).toString(16).slice(1);
     }
     ["animate"]() {
+      if(Settings.moMotionStyle==="agar"&&!this.isVirus&&!this.isFood&&!this.isEjected){MoGameplay.animateSilk(this);return}
+      if(this._silkVX!==undefined)this._silkVX=this._silkVY=0;
       if (Settings.moMotionStyle === "classic" || this.isVirus || this.isFood || this.isEjected) {
         let aah = (GameLoop.time - this.lastUpdateTime) / Settings.CellAnimation;
         aah = 0 > aah ? 0 : 1 < aah ? 1 : aah;
@@ -4974,6 +4994,8 @@
     }
     static ["move"]() {
       if (Player.isAlive) {
+        if(Settings.moMotionStyle==="agar"){MoGameplay.silkCamera(this);return}
+        this._silkFollowAt=undefined;
         this.x += (Player.x - this.x) / Settings.cameraSpeed;
         this.y += (Player.y - this.y) / Settings.cameraSpeed;
       } else if (this.isSpectating) {
@@ -4986,7 +5008,8 @@
       if ("on" === Settings.autoZoom) {
         aq *= this.autoZoomViewport;
       }
-      this.viewport += (aq - this.viewport) / 8;
+      if(Settings.moMotionStyle==="agar"&&Player.isAlive)MoGameplay.silkZoom(this,aq);
+      else {this._silkZoomAt=undefined;this.viewport += (aq - this.viewport) / 8;}
       const aer = Renderer.canvas.width / 2 / this.viewport;
       const aag = Renderer.canvas.height / 2 / this.viewport;
       this.viewBounds.left = Math.max(-aer + this.x, WorldData.left);
@@ -8588,7 +8611,7 @@
         amh.closePath();
         if (aeq.isVirus) {
           MoVirusGlow.draw(aeq,w,gu);
-        } else if ("radiant" === Theme.cellTransparencyStyle) {
+        } else if ("radiant" === Theme.cellTransparencyStyle && Settings.moMotionStyle!=="agar") {
           const mn = 0 | (aeq.colorObject.r * no);
           const ajn = 0 | (aeq.colorObject.g * no);
           const aih = 0 | (aeq.colorObject.b * no);
@@ -8649,8 +8672,9 @@
           this.drawMoCellLight(aeq, w, afc * gu);
         }
         if (gu === 1) { MoInventory.drawSkin(aeq, w, afc); MoInventory.drawInactive(aeq, w, afc, dk || akw); }
+        if(!moCover)MoGameplay.silkEdge(aeq,w,afc*gu);
         if (moCover) MoEmotes.draw(aeq, w, afc);
-        if (!moCover && aeq.isMine && nl && aeq.cellType === Player.typeID && Settings.moMotionStyle !== "classic" && MoInventory.config(aeq.cellType).mode !== "still" && !MoInventory.ring(aeq.cellType)) {
+        if (!moCover && aeq.isMine && nl && aeq.cellType === Player.typeID && !["classic","agar"].includes(Settings.moMotionStyle) && MoInventory.config(aeq.cellType).mode !== "still" && !MoInventory.ring(aeq.cellType)) {
           this.drawMoActiveGlow(aeq, w, afc * gu, ph);
         }
         if (!moCover && aeq.isMine && nl) {

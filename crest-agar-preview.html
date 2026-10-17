@@ -1,0 +1,146 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CREST · Agar Silk</title><style>*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0,#183a3d,#081421 65%);color:#e8f7f3;font:14px Segoe UI,Arial,sans-serif;padding:28px 22px}.shell{max-width:1130px;margin:auto}.brand{font-size:11px;letter-spacing:3px;color:#a6e9d6}h1{font-size:36px;letter-spacing:-1px;margin:17px 0 9px}.intro{font-size:13px;color:#92adbb;line-height:1.7;margin-bottom:21px}.moi-muted{font-size:12px;color:#8fabb9;line-height:1.6}.moi-grid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:12px;margin-bottom:16px}.moi-card{font:inherit;color:#c5dee4;background:#10233599;border:1px solid #86c9cd30;border-radius:16px;padding:12px 13px;text-align:left;cursor:pointer}.moi-card strong{display:block;margin-bottom:9px;font-size:15px}.moi-card small{color:#92adbb;line-height:1.5;font-size:11px;display:block}.moi-card[aria-pressed=true]{border-color:#9eeed5!important;box-shadow:0 0 0 2px #9eeed522}.moi-note{font-size:12px;color:#b7e9d8;background:#8fdfc10e;border:1px solid #8fdfc122;padding:12px 15px;border-radius:10px;margin:12px 0}canvas{display:block;width:100%;height:auto;border:1px solid #8ac7c82b;border-radius:18px;background:#0b1926;margin-top:21px}.foot{font-size:11px;color:#7895a7;margin:15px 0;line-height:1.7}.bar{display:flex;justify-content:space-between;align-items:center}.badge{font-size:10px;color:#b7eadb;border:1px solid #87d8c544;border-radius:20px;padding:7px 12px}@media(max-width:700px){.moi-grid{grid-template-columns:repeat(2,1fr)!important}h1{font-size:28px}}</style></head><body><main class="shell"><div class="bar"><div class="brand">◈ CREST / MOTION LAB</div><span class="badge">NEW · AGAR SILK</span></div><h1>A familiar rhythm. A different glide.</h1><p class="intro">Agar-inspired round cells with a CREST motion profile: damped follow, clean split settling and steady zoom.<br>Compare the four presets below. The demonstration uses simulated position updates and the actual client animation code.</p><section id="gameplay" aria-label="Gameplay style presets"></section><canvas id="demo" width="1100" height="310" aria-label="Animated cell split and camera demonstration"></canvas><p class="foot">In game: Customize → Gameplay → Agar · Silk. Also available in Settings → Movement.<br>Preview only. It does not open a game connection or change your saved game settings.</p></main><script>const Settings={moMotionStyle:'agar',CellAnimation:160,cameraSpeed:20,autoZoom:'on'},GameLoop={time:0},Storage={set(){}},Player={isAlive:true,x:0,y:0},Renderer={ctx:document.getElementById('demo').getContext('2d'),canvas:document.getElementById('demo')},WorldData={left:-10000,right:10000,top:-10000,bottom:10000};class MoGameplay {
+    static animateSilk(cell){
+      const now=GameLoop.time,previous=cell._moMotionTime===undefined?cell.lastUpdateTime:cell._moMotionTime,dt=Math.max(0,now-previous);
+      if(!Number.isFinite(dt)||![cell.x,cell.y,cell.radius,cell.animX,cell.animY,cell.animRadius].every(Number.isFinite))return;
+      cell._moMotionTime=cell.lastUpdateTime=now;cell._moStretch=0;cell._moVX=cell._moVY=0;
+      if(!dt)return;
+      if(dt>250){cell.animX=cell.x;cell.animY=cell.y;cell.animRadius=cell.radius;cell._silkVX=cell._silkVY=0;return}
+      const delay=Math.max(40,Number(Settings.CellAnimation)||160),tau=Math.max(20,Math.min(65,delay*.28)),omega=1/tau,decay=Math.exp(-omega*dt);
+      // Exact critically damped visual follow. Server positions and radii are untouched.
+      this.silkAxis(cell,'animX','x','_silkVX',omega,decay,dt);this.silkAxis(cell,'animY','y','_silkVY',omega,decay,dt);
+      const shrinking=cell.radius<cell.animRadius,sizeTau=Math.max(30,Math.min(190,delay*(shrinking?.46:.9)));
+      cell.animRadius+=(cell.radius-cell.animRadius)*-Math.expm1(-dt/sizeTau);
+    }
+    static silkAxis(cell,key,axis,velocity,omega,decay,dt){const target=cell[axis],start=cell[key],offset=start-target,v=cell[velocity]||0,j=v+omega*offset;let next=target+(offset+j*dt)*decay,nextV=(v-omega*j*dt)*decay;const bounded=Math.max(Math.min(start,target),Math.min(Math.max(start,target),next));if(bounded!==next||start===target){next=bounded;nextV=0}cell[key]=next;cell[velocity]=nextV}
+    static silkDelta(camera,key){const now=GameLoop.time,last=camera[key];camera[key]=now;return last===undefined?1000/60:Math.max(0,now-last)}
+    static silkCamera(camera){const dt=this.silkDelta(camera,'_silkFollowAt');if(!Number.isFinite(dt))return;const tau=125*Math.max(.5,Math.min(2,(Number(Settings.cameraSpeed)||20)/20)),a=dt>250?1:-Math.expm1(-dt/tau);camera.x+=(Player.x-camera.x)*a;camera.y+=(Player.y-camera.y)*a}
+    static silkZoom(camera,target){const dt=this.silkDelta(camera,'_silkZoomAt');if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/180))}
+    static silkEdge(cell,origin,opacity){if(Settings.moMotionStyle!=='agar'||cell.isVirus||cell.isFood||cell.isEjected||!(opacity>0))return;const r=cell.animRadius+5;if(!Number.isFinite(r)||r<2||r*Camera.viewport<8)return;const c=Renderer.ctx,width=Math.min(r*.035,2.5/(Camera.viewport||1));c.save();try{c.globalAlpha=Math.min(1,opacity)*.45;c.strokeStyle='#07111d';c.lineWidth=width;c.beginPath();c.arc(cell.animX-origin.x,cell.animY-origin.y,r-width/2,0,Math.PI*2);c.stroke()}finally{c.restore()}}
+
+    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));this.refresh()}
+    static select(style){if(!['cinematic','fluid','snappy','agar'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
+    static refresh(){if(!this.hub)return;const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
+  }
+class Camera {
+    static ["init"]() {
+      const mo = {
+        left: -960,
+        right: 0x3c0,
+        top: -540,
+        bottom: 0x21c,
+      };
+      const xi = {
+        x: 0x0,
+        y: 0x0,
+      };
+      this.x = 0;
+      this.y = 0;
+      this.targetViewport = 1;
+      this.autoZoomViewport = 1;
+      this.viewport = 1;
+      this.viewBounds = mo;
+      this.spectatePoint = xi;
+      this._isSpectating = false;
+      this._freeSpectate = false;
+      Targeting.init();
+    }
+    static get ["isSpectating"]() {
+      return this._isSpectating;
+    }
+    static get ["freeSpectate"]() {
+      return this._freeSpectate;
+    }
+    static set ["isSpectating"](aec) {
+      this._isSpectating = aec;
+      if (!Player.isAlive && aec) {
+        TargetingHud.show();
+      } else {
+        TargetingHud.hide();
+      }
+    }
+    static set ["freeSpectate"](pf) {
+      this._freeSpectate = pf;
+      if (pf) {
+        TargetingHud.mouseViewport();
+      } else {
+        TargetingHud.topViewport();
+      }
+    }
+    static ["update"]() {
+      if (this.isSpectating) {
+        Targeting.update();
+      }
+      this.move();
+      this.updateView();
+    }
+    static ["move"]() {
+      if (Player.isAlive) {
+        if(Settings.moMotionStyle==="agar"){MoGameplay.silkCamera(this);return}
+        this._silkFollowAt=undefined;
+        this.x += (Player.x - this.x) / Settings.cameraSpeed;
+        this.y += (Player.y - this.y) / Settings.cameraSpeed;
+      } else if (this.isSpectating) {
+        this.x = (29 * this.x + this.spectatePoint.x) / 30;
+        this.y = (29 * this.y + this.spectatePoint.y) / 30;
+      }
+    }
+    static ["updateView"]() {
+      let aq = this.targetViewport;
+      if ("on" === Settings.autoZoom) {
+        aq *= this.autoZoomViewport;
+      }
+      if(Settings.moMotionStyle==="agar"&&Player.isAlive)MoGameplay.silkZoom(this,aq);
+      else {this._silkZoomAt=undefined;this.viewport += (aq - this.viewport) / 8;}
+      const aer = Renderer.canvas.width / 2 / this.viewport;
+      const aag = Renderer.canvas.height / 2 / this.viewport;
+      this.viewBounds.left = Math.max(-aer + this.x, WorldData.left);
+      this.viewBounds.right = Math.min(aer + this.x, WorldData.right);
+      this.viewBounds.top = Math.max(-aag + this.y, WorldData.top);
+      this.viewBounds.bottom = Math.min(aag + this.y, WorldData.bottom);
+    }
+  }
+class DemoCell{["animate"]() {
+      if(Settings.moMotionStyle==="agar"&&!this.isVirus&&!this.isFood&&!this.isEjected){MoGameplay.animateSilk(this);return}
+      if(this._silkVX!==undefined)this._silkVX=this._silkVY=0;
+      if (Settings.moMotionStyle === "classic" || this.isVirus || this.isFood || this.isEjected) {
+        let aah = (GameLoop.time - this.lastUpdateTime) / Settings.CellAnimation;
+        aah = 0 > aah ? 0 : 1 < aah ? 1 : aah;
+        this.animX = aah * (this.x - this.animX) + this.animX;
+        this.animY = aah * (this.y - this.animY) + this.animY;
+        this.animRadius = aah * (this.radius - this.animRadius) + this.animRadius;
+        this.lastUpdateTime = GameLoop.time;
+        this._moMotionTime = undefined;
+        this._moStretch = 0;
+        this._moVX = this._moVY = 0;
+        return;
+      }
+      // Render timing is independent of packet timing. Multiple passes in
+      // one frame (pair camera, packet handling, drawing) advance only once.
+      const now = GameLoop.time;
+      const previous = this._moMotionTime === undefined ? this.lastUpdateTime : this._moMotionTime;
+      const dt = Math.max(0, now - previous);
+      if (!Number.isFinite(dt)) return;
+      this._moMotionTime = now;
+      this.lastUpdateTime = now;
+      if (dt === 0) return;
+      const delay = Math.max(40, Number(Settings.CellAnimation) || 160);
+      const resumed = dt > 250;
+      const fluid = Settings.moMotionStyle === "fluid";
+      const snappy = Settings.moMotionStyle === "snappy";
+      const moveBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.45 : fluid ? 0.95 : 0.75)));
+      const sizeBlend = resumed ? 1 : -Math.expm1(-dt / (delay * (snappy ? 0.35 : fluid ? 0.85 : 0.55)));
+      const dx = (this.x - this.animX) * moveBlend;
+      const dy = (this.y - this.animY) * moveBlend;
+      this.animX += dx;
+      this.animY += dy;
+      this.animRadius += (this.radius - this.animRadius) * sizeBlend;
+      const velocityBlend = -Math.expm1(-dt / (snappy ? 40 : fluid ? 90 : 65));
+      const vx = resumed ? 0 : dx / dt;
+      const vy = resumed ? 0 : dy / dt;
+      this._moVX = (this._moVX || 0) + (vx - (this._moVX || 0)) * velocityBlend;
+      this._moVY = (this._moVY || 0) + (vy - (this._moVY || 0)) * velocityBlend;
+      const speed = Math.hypot(this._moVX, this._moVY);
+      const target = resumed ? 0 : Math.min(snappy ? 0.008 : fluid ? 0.02 : 0.035, speed * 2 / Math.max(20, this.animRadius));
+      this._moStretch = (this._moStretch || 0) + (target - (this._moStretch || 0)) * velocityBlend;
+      if (resumed) this._moVX = this._moVY = this._moStretch = 0;
+    }};Object.assign(Camera,{x:0,y:0,viewport:1,targetViewport:1,autoZoomViewport:1,viewBounds:{}});MoGameplay.init({views:{gameplay:document.getElementById('gameplay')}});let cycle=-1,phase=-1,cells=[];function cell(x,y,r,ax,ar){return Object.assign(new DemoCell(),{x,y,radius:r,animX:ax,animY:y,animRadius:ar,lastUpdateTime:GameLoop.time,isMine:true})}function draw(now){GameLoop.time=now;const s=now/1000,round=Math.floor(s/7),p=s%7;if(round!==cycle){cycle=round;phase=0;cells=[cell(-80,0,64,-80,64)]}if(p>=2&&phase===0){phase=1;cells[0].radius=45;cells.push(cell(100,0,45,cells[0].animX,5))}if(p>=4.5&&phase===1){phase=2;for(const c of cells)c.radius=32;cells.push(cell(170,-30,32,cells[1].animX,5),cell(30,30,32,cells[0].animX,5))}cells.forEach((c,i)=>{c.x=(i%2?80:-80)+Math.sin(s*.8)*85+(i>1?80:0);c.y=i<2?Math.sin(s*.65)*25:(i===2?-55:55);c.animate()});Player.x=cells.reduce((a,c)=>a+c.animX,0)/cells.length;Player.y=cells.reduce((a,c)=>a+c.animY,0)/cells.length;Camera.targetViewport=phase===0?1:phase===1?.9:.78;Camera.move();Camera.updateView();const c=Renderer.ctx;c.clearRect(0,0,1100,310);c.save();c.translate(550,150);c.scale(Camera.viewport,Camera.viewport);c.translate(-Camera.x,-Camera.y);c.fillStyle='#a4d9ce';for(let i=0;i<50;i++){const x=(i*137%1100)-550,y=(i*83%380)-190;c.globalAlpha=.22;c.beginPath();c.arc(x,y,1.8,0,Math.PI*2);c.fill()}c.globalAlpha=1;for(const [i,cell]of cells.entries()){const r=cell.animRadius+5;c.save();if(Settings.moMotionStyle!=='agar'){const stretch=cell._moStretch||0;c.translate(cell.animX,cell.animY);c.rotate(Math.atan2(cell._moVY||0,cell._moVX||0));c.scale(1+stretch,1/(1+stretch));c.translate(-cell.animX,-cell.animY)}c.fillStyle=i%2?'#9a95de':'#77d7c4';c.beginPath();c.arc(cell.animX,cell.animY,r,0,Math.PI*2);c.fill();MoGameplay.silkEdge(cell,{x:0,y:0},1);c.fillStyle='#103b43';c.textAlign='center';c.font='600 '+Math.max(10,r*.23)+'px Segoe UI';c.fillText('CREST',cell.animX,cell.animY+4);c.restore()}c.restore();c.fillStyle='#789baa';c.font='11px Segoe UI';c.textAlign='left';c.fillText('VISUAL DEMO / '+(phase===0?'GLIDE':phase===1?'SPLIT SETTLING':'MULTI-CELL FOLLOW'),20,287);requestAnimationFrame(draw)}requestAnimationFrame(draw);</script></body></html>
