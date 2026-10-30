@@ -408,7 +408,8 @@
       this.food = Storage.get("settings", "food") || "monoColored";
       this.bgSectors = Storage.get("settings", "bgSectors") || "image";
       const moPerformance = Storage.get("settings", "moPerformance");
-      this.moPerformance = ["quality","balanced","performance"].includes(moPerformance) ? moPerformance : "quality";
+      const moRenderScale=Storage.get("settings","moRenderScale");this.moRenderScale=["1","0.85","0.7"].includes(moRenderScale)?moRenderScale:"auto";
+      this.moPerformance = ["auto","quality","balanced","performance"].includes(moPerformance) ? moPerformance : "auto";
       const arenaStyle = Storage.get("settings", "moArenaStyle");
       this.moArenaStyle = ["classic","space","abyss","obsidian"].includes(arenaStyle) ? arenaStyle : "space";
       const arenaEffects = Storage.get("settings", "moArenaEffects");
@@ -3124,7 +3125,7 @@
       return Player.movementPaused ? "[" + this.iconPause + " " + (Language.current.huds.paused || "Paused") + "]   " : "";
     }
     static get ["fps"]() {
-      const kc = this.fpsCount;
+      const kc = MoPerformance.renderedFps ?? "…";
       this.fpsCount = 0;
       return "FPS: " + kc + "   ";
     }
@@ -3279,16 +3280,24 @@
     }
   }
   class MoPerformance {
-    static mode(){const mode=typeof Settings!=='undefined'?Settings.moPerformance:'quality';return ['quality','balanced','performance'].includes(mode)?mode:'quality'}
-    static full(){return this.mode()==='quality'}
-    static low(){return this.mode()==='performance'}
+    static mode(){const mode=typeof Settings!=='undefined'?Settings.moPerformance:'quality';return ['auto','quality','balanced','performance'].includes(mode)?mode:'quality'}
+    static effective(){return this.mode()==='auto'?(this.autoLevel||'balanced'):this.mode()}
+    static full(){return this.effective()==='quality'}
+    static low(){return this.effective()==='performance'}
     static animated(){return !this.low()}
     static foodLimit(){return this.full()?400:this.low()?0:100}
-    static shouldRender(now=performance.now()){if(this.full()){this.lastFrame=null;return true}const interval=1000/60;if(this.lastFrame==null||now<this.lastFrame||now-this.lastFrame>250){this.lastFrame=now;return true}const elapsed=now-this.lastFrame;if(elapsed+0.001<interval)return false;this.lastFrame+=Math.floor((elapsed+0.001)/interval)*interval;return true}
-    static init(hub){this.hub=hub;const p=hub.views.performance;p.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose the graphics workload that suits your device.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-performance="quality"><strong>Quality</strong><small>Full effects and smooth cosmetic animation. Rendering follows your display.</small></button><button type="button" class="moi-card" data-performance="balanced"><strong>Balanced</strong><small>60 FPS render limit, fewer food halos, simpler animated skins and less cell lighting.</small></button><button type="button" class="moi-card" data-performance="performance"><strong>Performance</strong><small>60 FPS render limit, still cosmetic skins, no food halos or background decoration. Bright spiked viruses stay visible.</small></button></div><div class="moi-note" id="mo-performance-status" role="status"></div><div class="moi-muted">Try Performance if your device struggles, or Balanced to keep more effects. Your choice saves on this device.</div>';p.querySelectorAll('[data-performance]').forEach(b=>b.addEventListener('click',()=>this.select(b.dataset.performance)));this.refresh()}
-    static select(mode){if(!['quality','balanced','performance'].includes(mode))return;Settings.moPerformance=mode;Storage.set('settings','moPerformance',mode);this.lastFrame=null;this.refresh()}
-    static refresh(){if(!this.hub)return;const p=this.hub.views.performance,mode=this.mode();p.querySelectorAll('[data-performance]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.performance===mode)));p.querySelector('#mo-performance-status').textContent=({quality:'Quality active · full graphics',balanced:'Balanced active · lighter graphics',performance:'Performance active · minimum decoration'}[mode])}
+    static scale(){const value=typeof Settings!=='undefined'?Settings.moRenderScale:'auto';if(['1','0.85','0.7'].includes(value))return Number(value);return this.full()?1:this.low()?.7:.85}
+    static shouldRender(now=performance.now()){if(this.full()){this.lastFrame=null;return true}const interval=1000/60;if(this.lastFrame==null||now<this.lastFrame||now-this.lastFrame>250){this.lastFrame=now;return true}const elapsed=now-this.lastFrame;if(elapsed+.001<interval)return false;this.lastFrame+=Math.floor((elapsed+.001)/interval)*interval;return true}
+    static begin(renderer){renderer.moDisplayCtx=renderer.moDisplayCtx||renderer.ctx;const scale=this.scale();renderer.ctx=renderer.moDisplayCtx;if(scale===1)return;const w=Math.max(1,Math.round(renderer.canvas.width*scale)),h=Math.max(1,Math.round(renderer.canvas.height*scale));if(!renderer.moBackCanvas){renderer.moBackCanvas=document.createElement('canvas');renderer.moBackCtx=renderer.moBackCanvas.getContext('2d')}const cv=renderer.moBackCanvas;if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}renderer.ctx=renderer.moBackCtx;renderer.ctx.setTransform(w/renderer.canvas.width,0,0,h/renderer.canvas.height,0,0)}
+    static finish(renderer,start){try{if(renderer.ctx!==renderer.moDisplayCtx){const display=renderer.moDisplayCtx;display.save();try{display.setTransform(1,0,0,1,0,0);display.clearRect(0,0,renderer.canvas.width,renderer.canvas.height);display.imageSmoothingEnabled=true;display.drawImage(renderer.moBackCanvas,0,0,renderer.canvas.width,renderer.canvas.height)}finally{display.restore()}}}finally{renderer.ctx=renderer.moDisplayCtx;this.sample(start,performance.now())}}
+    static sample(start,end){if(!Number.isFinite(start)||!Number.isFinite(end)||end<start)return;const gap=this.lastPresented===undefined?0:start-this.lastPresented;this.lastPresented=start;if(gap>250||gap<0){this.windowAt=start;this.frameCount=this.costSum=this.gapSum=this.gapCount=0}if(this.windowAt===undefined){this.windowAt=start;this.frameCount=this.costSum=this.gapSum=this.gapCount=0}this.frameCount++;this.costSum+=end-start;if(gap>0&&gap<=250){this.gapSum+=gap;this.gapCount++}const elapsed=end-this.windowAt;if(elapsed<1000)return;this.renderedFps=Math.round(this.frameCount*1000/elapsed);this.drawMs=this.costSum/this.frameCount;this.presentMs=this.gapCount?this.gapSum/this.gapCount:0;if(this.mode()==='auto'){const since=end-(this.autoChanged||0);if(this.effective()==='balanced'&&since>1200&&(this.drawMs>12||this.presentMs>23)){this.autoLevel='performance';this.autoChanged=end}else if(this.effective()==='performance'&&since>8000&&this.drawMs<6&&this.presentMs>0&&this.presentMs<19){this.autoLevel='balanced';this.autoChanged=end}}this.windowAt=end;this.frameCount=this.costSum=this.gapSum=this.gapCount=0;if(this.hub&&!this.hub.views.performance.hidden)this.refresh()}
+    static init(hub){this.hub=hub;const p=hub.views.performance;p.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Start with Auto. It reduces visual workload when rendered frames remain slow.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-performance="auto"><strong>Auto · recommended</strong><small>Targets 60 rendered FPS. Switches between Balanced and Performance as graphics load changes.</small></button><button type="button" class="moi-card" data-performance="quality"><strong>Quality</strong><small>Full effects, native resolution and display-rate rendering.</small></button><button type="button" class="moi-card" data-performance="balanced"><strong>Balanced</strong><small>60 FPS limit, 85% automatic resolution and lighter animated effects.</small></button><button type="button" class="moi-card" data-performance="performance"><strong>Performance</strong><small>60 FPS limit, 70% automatic resolution, still skins and minimal decoration. Cells and viruses remain visible.</small></button></div><label class="moi-muted" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:22px 0">Render resolution<select aria-label="Render resolution" id="mo-render-resolution" style="background:#142b3a;color:#dbf0e6;padding:10px;border:1px solid #9bd8c744;border-radius:9px"><option value="auto">Automatic · follows graphics mode</option><option value="1">100% · sharpest</option><option value="0.85">85% · balanced</option><option value="0.7">70% · lightest</option></select></label><div class="moi-note" id="mo-performance-status" role="status"></div><button type="button" class="moi-close" id="mo-show-performance-report" style="margin:12px 0">Show performance report</button><textarea id="mo-performance-report" aria-label="Performance report" readonly hidden style="width:100%;height:145px;background:#091824;color:#d2e6ea;border:1px solid #8fc7c744;border-radius:10px;padding:12px"></textarea><div class="moi-muted">Resolution affects image sharpness, not your field of view, mouse coordinates or gameplay updates. Graphics settings cannot fix network delay. Choices save on this device.</div>';p.querySelectorAll('[data-performance]').forEach(b=>b.addEventListener('click',()=>this.select(b.dataset.performance)));p.querySelector('select').addEventListener('change',e=>this.selectScale(e.target.value));p.querySelector('#mo-show-performance-report').addEventListener('click',()=>{const report=p.querySelector('textarea');report.hidden=!report.hidden;if(!report.hidden)report.value=this.report()});this.refresh()}
+    static select(mode){if(!['auto','quality','balanced','performance'].includes(mode))return;Settings.moPerformance=mode;Storage.set('settings','moPerformance',mode);this.autoLevel='balanced';this.autoChanged=performance.now();this.lastFrame=null;this.windowAt=undefined;this.lastPresented=undefined;this.refresh()}
+    static selectScale(value){if(!['auto','1','0.85','0.7'].includes(value))return;Settings.moRenderScale=value;Storage.set('settings','moRenderScale',value);this.refresh()}
+    static report(){const canvas=typeof Renderer!=='undefined'?Renderer.canvas:null;return 'CREST graphics report\nMode: '+this.mode()+' / effective: '+this.effective()+'\nRender resolution: '+Math.round(this.scale()*100)+'%\nRendered FPS: '+(this.renderedFps??'measuring')+'\nAverage drawing time: '+(Number.isFinite(this.drawMs)?this.drawMs.toFixed(1)+' ms':'measuring')+'\nCanvas: '+(canvas?canvas.width+' x '+canvas.height:'not initialized')+'\nMeasures client rendering; does not measure network latency.'}
+    static refresh(){if(!this.hub)return;const p=this.hub.views.performance,mode=this.mode();p.querySelectorAll('[data-performance]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.performance===mode)));p.querySelector('select').value=['1','0.85','0.7'].includes(Settings.moRenderScale)?Settings.moRenderScale:'auto';p.querySelector('#mo-performance-status').textContent=(mode==='auto'?'Auto → '+this.effective():({quality:'Quality',balanced:'Balanced',performance:'Performance'}[mode]))+' · '+Math.round(this.scale()*100)+'% render resolution · '+(this.renderedFps===undefined?'measuring rendered FPS':this.renderedFps+' rendered FPS');const report=p.querySelector('textarea');if(!report.hidden)report.value=this.report()}
   }
+
 
   class MoMadridSkin {
     static types=['madridwhite','madridnight'];
@@ -3750,7 +3759,7 @@
       input.id=id;input.setAttribute('aria-label',item.label);this.fields.push({item,input,output,swatch});return card;
     }
     static uiItems(){return[{name:'density',label:'Layout density',type:'options',choices:[['comfortable','Comfortable'],['compact','Compact']],description:'Choose how much space sits between settings.'},{name:'accent',label:'Accent color',type:'options',choices:[['mint','Mint'],['amber','Amber'],['ice','Ice blue'],['violet','Violet']],description:'A personal accent for this settings workspace.'},{name:'largeText',label:'Larger settings text',type:'boolean',description:'Give labels and controls a little more room.'},{name:'highContrast',label:'Stronger contrast',type:'boolean',description:'Darker text and clearer boundaries in settings.'},{name:'reduceMotion',label:'Reduce menu motion',type:'boolean',description:'Reduce decorative CSS animation in the menu.'},{name:'remember',label:'Remember my last page',type:'boolean',description:'Reopen Preferences where you left off.'}].map(x=>({...x,owner:this,category:'comfort'}))}
-    static quality(){const section=document.createElement('div');section.className='cpx-quality';for(const [id,label,description]of [['quality','Quality','All the atmosphere. Full cosmetic effects.'],['balanced','Balanced','A lighter load, with the details you love.'],['performance','Performance','Keep it lean. Minimum decoration.']]){const b=document.createElement('button');b.type='button';b.dataset.quality=id;b.innerHTML='<span>'+label+'</span><small>'+description+'</small><b aria-hidden="true">↗</b>';b.onclick=()=>{try{MoPerformance.select(id);this.status.textContent='Saved · '+label+' graphics';this.status.dataset.error='false';this.sync()}catch(error){this.status.textContent='Could not save: '+String(error.message||error);this.status.dataset.error='true';this.sync()}};section.append(b)}return section}
+    static quality(){const section=document.createElement('div');section.className='cpx-quality';for(const [id,label,description]of [['auto','Auto · recommended','Adapts effects and resolution to graphics load.'],['quality','Quality','All the atmosphere. Full cosmetic effects.'],['balanced','Balanced','A lighter load, with the details you love.'],['performance','Performance','Keep it lean. Minimum decoration.']]){const b=document.createElement('button');b.type='button';b.dataset.quality=id;b.innerHTML='<span>'+label+'</span><small>'+description+'</small><b aria-hidden="true">↗</b>';b.onclick=()=>{try{MoPerformance.select(id);this.status.textContent='Saved · '+label+' graphics';this.status.dataset.error='false';this.sync()}catch(error){this.status.textContent='Could not save: '+String(error.message||error);this.status.dataset.error='true';this.sync()}};section.append(b)}return section}
     static render(){const query=this.search.value.trim().toLowerCase();this.fields=this.fields.filter(x=>x.item.owner===Mouse);this.content.replaceChildren();this.controls.hidden=this.page!=='controls';this.content.hidden=this.page==='controls';this.search.placeholder=this.page==='controls'?'Find a shortcut or action…':'Search settings and colors…';if(this.page==='controls'){this.controls.dataset.query=String(Boolean(query));let count=0;for(const row of this.controls.querySelectorAll('.row')){const match=!query||((row.querySelector('.title')?.textContent||'')+' '+(row.getAttribute('name')||'')+' '+(row.querySelector('input')?.placeholder||'')).toLowerCase().includes(query);row.classList.toggle('cpx-filtered',!match);if(match)count++;}this.controls.querySelector('.cpx-no-results').hidden=count>0;this.sync();return}
       const selected=this.categories.find(x=>x[0]===this.page);const intro=document.createElement('div');intro.className='cpx-section-intro';const title=document.createElement('h2');title.textContent=query?'Search results':selected[1];const desc=document.createElement('p');desc.textContent=query?'Matching preferences from every category.':selected[2];intro.append(title,desc);this.content.append(intro);
       if(this.page==='overview'&&!query){const hero=document.createElement('div');hero.className='cpx-hero';hero.innerHTML='<div><small>PLAY YOUR OWN WAY</small><h2>Built around<br>your play.</h2><p>Fine-tune the feel. Make room for focus.</p></div><div class="cpx-orbit" aria-hidden="true"><span></span><i></i><b>◈</b></div>';this.content.append(hero);const h=document.createElement('h3');h.textContent='Choose your graphics workload';this.content.append(h,this.quality());const links=document.createElement('div');links.className='cpx-shortcuts';for(const[id,label]of [['movement','Tune movement'],['controls','Edit controls'],['comfort','Make it comfortable']]){const b=document.createElement('button');b.type='button';b.textContent=label+' ↗';b.onclick=()=>this.show(id);links.append(b)}this.content.append(links);}
@@ -8509,8 +8518,8 @@
       this.canvas.width = 0 | window.innerWidth;
       this.canvas.height = 0 | window.innerHeight;
     }
-    static ["run"]() {
-      if(!MoPerformance.shouldRender())return;
+    static ["run"]() {if(!MoPerformance.shouldRender())return;const moFrameStarted=performance.now();MoPerformance.begin(this);try{
+      
       MoEmotes.sync();
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.save();
@@ -8533,7 +8542,7 @@
       } finally {
         this.ctx.restore();
       }
-    }
+    }finally{MoPerformance.finish(this,moFrameStarted)}}
     static ["vanillaGrid"]() {
       if ("off" !== Settings.vanillaGrid) {
         const ahx = this.ctx;
@@ -8561,7 +8570,7 @@
       }
     }
     static ["border"]() {
-      if ("default" === Theme.borderStyle) {
+      if ("default" === Theme.borderStyle || MoPerformance.low()) {
         const sy = this.ctx;
         const dw = Theme.borderWidth >> 1;
         sy.strokeStyle = MoMap.palette()?.border || Theme.borderColor;
@@ -8686,7 +8695,7 @@
         amh.closePath();
         if (aeq.isVirus) {
           MoVirusGlow.draw(aeq,w,gu);
-        } else if ("radiant" === Theme.cellTransparencyStyle && Settings.moMotionStyle!=="agar") {
+        } else if ("radiant" === Theme.cellTransparencyStyle && !MoPerformance.low() && Settings.moMotionStyle!=="agar") {
           const mn = 0 | (aeq.colorObject.r * no);
           const ajn = 0 | (aeq.colorObject.g * no);
           const aih = 0 | (aeq.colorObject.b * no);
