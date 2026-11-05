@@ -2263,7 +2263,7 @@
                 left: 5px;
                 width: 250px;
                 transition: all 1s;
-                font-size: 14px
+                font-size: var(--crest-chat-font-size, 14px)
             }
 
             #notifications img {
@@ -2372,7 +2372,7 @@
                 left: 50%;
                 transform: translateX(-50%);
                 font-family: raleway;
-                font-size: 13px!important;
+                font-size: var(--crest-chat-font-size, 14px);
                 font-weight: 600!important;
                 transition: all .5s;
                 box-shadow: 0 0 0 #000
@@ -4074,6 +4074,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
             #leaderboard-hud { width: 226px; right: 18px; padding: 13px 11px 10px; margin-top: 18px; box-sizing: border-box; }
             #leaderboard-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 5px 12px; margin-bottom: 3px; border-bottom: 1px solid #9bbfe51a; text-align: left; }
             .mo-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #79dab3; box-shadow: 0 0 8px #79dab340; }
+            #leaderboard-head .mo-hud-label { font-size: .45em; }
             #leaderboard-positions { text-align: left; font-family: Inter, Ubuntu, sans-serif; font-variant-numeric: tabular-nums; }
             #leaderboard-positions .mo-lb-row { display: flex; align-items: center; gap: 9px; min-height: 30px; padding: 3px 6px; box-sizing: border-box; border-radius: 8px; margin: 3px 0; }
             #leaderboard-positions .mo-lb-row:nth-child(odd) { background: rgba(160,196,240,.035); }
@@ -4087,14 +4088,14 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
             #chatroom { width: 300px; max-width: calc(100vw - 36px); height: 262px; max-height: 32vh; left: 18px; bottom: 62px; border-radius: 16px; unicode-bidi: normal; box-sizing: border-box; }
             #chat-mode-switch { position: sticky; top: 0; height: 34px; flex-shrink: 0; margin: 0; padding: 8px 11px; box-sizing: border-box; background: #111f32; border-radius: 15px 15px 0 0; border-bottom: 1px solid #9bbfe51a; z-index: 2; }
             #chat-mode-switch .chat-mode-btn, #chat-mode-switch .chat-mode-btn.active { font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1.1px; text-transform: uppercase; padding: 0; border: 0; background: transparent; color: #bad5f3; }
-            #chatroom .chatroom-row { margin: 7px 10px; padding: 8px 9px; background: rgba(137,174,221,.045); border-radius: 9px; font: 12px/1.5 Inter, Ubuntu, sans-serif; overflow-wrap: anywhere; text-align: start; unicode-bidi: plaintext; }
+            #chatroom .chatroom-row { margin: 7px 10px; padding: 8px 9px; background: rgba(137,174,221,.045); border-radius: 9px; font: var(--crest-chat-font-size, 14px)/1.5 Inter, Ubuntu, sans-serif; overflow-wrap: anywhere; text-align: start; unicode-bidi: plaintext; }
             #chatroom .chatroom-row[data-channel="system"] { background: transparent; border-left: 2px solid #6f94c24d; padding-left: 8px; }
-            #chatroom .chatroom-row .nick { font: 600 12px Inter, Ubuntu, sans-serif; color: #accfff; }
-            #chatroom .chatroom-row .message { font: 400 12px/1.5 Inter, Ubuntu, sans-serif; color: #d9e3f1; }
-            #chatroom .chatroom-row .chattime { font-size: 9px; color: #778ca6; margin-right: 4px; font-variant-numeric: tabular-nums; }
-            #chatroom .chatroom-row i { color: #8ba9ca; font-size: 11px; }
+            #chatroom .chatroom-row .nick { font: 600 var(--crest-chat-font-size, 14px)/1.5 Inter, Ubuntu, sans-serif; color: #accfff; }
+            #chatroom .chatroom-row .message { font: 400 var(--crest-chat-font-size, 14px)/1.5 Inter, Ubuntu, sans-serif; color: #d9e3f1; }
+            #chatroom .chatroom-row .chattime { font-size: .75em; color: #778ca6; margin-right: 4px; font-variant-numeric: tabular-nums; }
+            #chatroom .chatroom-row i { color: #8ba9ca; font-size: .9em; }
             #chatroom .ps__scrollbar-y { background: #7495ba !important; box-shadow: none !important; }
-            #message { border: 1px solid #9abfeb40; border-radius: 14px; height: 42px; box-sizing: border-box; width: min(420px, calc(100vw - 36px)); background: #0d192bea; color: #edf5ff; padding: 11px 15px; transition: border-color .15s; }
+            #message { border: 1px solid #9abfeb40; border-radius: 14px; height: max(42px, calc(var(--crest-chat-font-size, 14px) + 28px)); font-size: var(--crest-chat-font-size, 14px); box-sizing: border-box; width: min(420px, calc(100vw - 36px)); background: #0d192bea; color: #edf5ff; padding: 11px 15px; transition: border-color .15s; }
             #message:focus { border: 1px solid #8dc4ff; background: #142239; box-shadow: 0 0 0 3px #80bfff15; }
             #message-hud { z-index: 104; bottom: 20px; }
             #minimap-hud { right: 18px; bottom: 18px; border-radius: 16px; background: linear-gradient(145deg,#112038ed,#081424ed); box-shadow: 0 0 0 1px #9abfeb30, 0 8px 26px #0004; overflow: hidden; }
@@ -4391,6 +4392,8 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <i class="fa fa-chevron-left" aria-hidden="true"></i>
                             <b value="classic">Classic</b>
                             <b value="space" class="active">Space</b>
+                            <b value="abyss">Nebula</b>
+                            <b value="obsidian">Aurora</b>
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
@@ -4401,6 +4404,9 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                             <b value="classic">Classic</b>
                             <b value="smooth">Smooth</b>
                             <b value="cinematic" class="active">Cinematic</b>
+                            <b value="fluid">Fluid</b>
+                            <b value="snappy">Snappy</b>
+                            <b value="agar">Agar · Silk</b>
                             <i class="fa fa-chevron-right" aria-hidden="true"></i>
                         </span>
                     </div>
