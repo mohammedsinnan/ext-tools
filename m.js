@@ -4603,13 +4603,13 @@
     }
     static set ["tag"](ry) {
       this._tag = ry;
-      RelaySender.tag();
       // Tag is meant to work standalone, no party/invite needed - two
       // players who set the same tag should just see each other. Only
       // takes effect when not already in a native party (see
       // RelayWs.computeRoom()), which stays the higher-priority,
       // explicit grouping while active.
       RelayWs.updateRoom();
+      RelaySender.tag();
     }
     static get ["tag"]() {
       return this._tag;
@@ -7887,19 +7887,7 @@
       this.ip = "";
       this.ws = null;
       this.connected = false;
-      // Plain browser WebSocket now (was socket.io-client) - every
-      // Socket.IO-specific bug hunted down this session (version/EIO
-      // handshake mismatches, ping/pong tuning, the Manager's own opaque
-      // reconnect state machine dropping in-flight sends) was a symptom of
-      // that abstraction layer, not the actual network. A raw WebSocket
-      // has none of that hidden machinery - what you see here IS the
-      // connection logic. MUST be wss:// (not https://): 3rb.io is
-      // loaded over HTTPS, and browsers silently drop any plain ws://
-      // connection an HTTPS page tries to open (mixed content) - the
-      // socket just never opens, no error is ever thrown. If this is
-      // pointed at a self-signed cert, open that URL once directly in this
-      // browser first and click through the "not secure" warning,
-      // otherwise this will never connect.
+      // Keep TLS validation enabled; the relay must offer trusted WSS.
       this.url = "wss://157.180.84.143:8443";
       // The relay is a single shared deployment - everyone who connects
       // without a room ends up seeing everyone else. Tab 1 + tab 2 share
@@ -7926,33 +7914,80 @@
       return zn;
     }
     static ["connect"]() {
-      if ("undefined" === typeof WebSocket) {
-        return console.log("Multibox sync: WebSocket is not available in this page, cannot connect to " + this.url);
-      }
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-      const lk = this.url + "?room=" + encodeURIComponent(this.room);
-      this.ws = new WebSocket(lk);
-      this.ws.binaryType = "arraybuffer";
-      this.ws.onopen = () => {
-        console.log("Multibox sync: connected to " + this.url);
+      if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+      this.setStatus("connecting");
+      if (typeof WebSocket === "undefined") { this.setStatus("unavailable"); return; }
+      const url = this.url + "?room=" + encodeURIComponent(this.room);
+      let socket;
+      try { socket = new WebSocket(url); }
+      catch (_) { this.scheduleReconnect(); return; }
+      this.ws = socket;
+      socket.binaryType = "arraybuffer";
+      this.connectTimer = setTimeout(() => {
+        if (this.ws !== socket || this.connected) return;
+        this.disconnect();
+        this.scheduleReconnect();
+      }, 8000);
+      socket.onopen = () => {
+        if (this.ws !== socket) return;
+        this.stopConnectTimer();
         this.reconnectAttempt = 0;
         this.onOpen();
+        this.setStatus("connected");
       };
-      this.ws.onmessage = (xm) => {
-        this.onMessage(xm);
-      };
-      this.ws.onclose = (lc) => {
-        console.log("Multibox sync: disconnected (code " + lc.code + ")");
+      socket.onmessage = event => { if (this.ws === socket) this.onMessage(event); };
+      socket.onclose = event => {
+        if (this.ws !== socket) return;
+        this.stopConnectTimer();
+        this.ws = null;
         this.onClose();
+        this.clearRoomData();
         this.scheduleReconnect();
       };
-      this.ws.onerror = (dp) => {
-        console.log("Multibox sync: socket error", dp);
+      socket.onerror = () => {
+        if (this.ws !== socket) return;
         this.onError();
+        this.setStatus("unavailable");
       };
+    }
+    static stopConnectTimer() {
+      if (this.connectTimer != null) clearTimeout(this.connectTimer);
+      this.connectTimer = null;
+    }
+    static clearRoomData() {
+      RelayData.teamPlayers?.clear();
+      RelayData.selfID = -1;
+      RelayData.biggestIsOn = false;
+      for (const team of Object.values(RelayData.teamData || {})) {
+        team.totalMass = team.alive = team.spectate = 0;
+      }
+      MoSharedCosmetics.rebuild();
+    }
+    static setStatus(state = this.state) {
+      this.state = state;
+      const field = document.getElementById("tag");
+      if (!field) return;
+      if (!this.status) {
+        this.status = document.createElement("small");
+        this.status.id = "crest-tag-status";
+        this.status.setAttribute("role", "status");
+        this.status.style.cssText = "display:block;color:#9db6c9;font-size:11px;line-height:1.4;margin-top:5px";
+        field.insertAdjacentElement("afterend", this.status);
+        const ids = (field.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        field.setAttribute("aria-describedby", [...new Set([...ids, this.status.id])].join(" "));
+      }
+      const tag = String(Player.tag || "").trim();
+      const party = PartyManager.inParty && this.sanitize("P_", PartyManager.code);
+      let message = "";
+      if (tag && party) message = "Party takes priority over team tag.";
+      else if (tag && !this.sanitize("T_", tag)) message = "Team tag needs a letter A–Z, a number, _ or -.";
+      else if (tag) message = state === "connected" ? "Tag relay connected · use the same tag and server."
+        : state === "connecting" ? "Connecting to tag relay…"
+        : state === "retrying" ? "Tag relay unavailable · retrying."
+        : "Tag relay unavailable.";
+      if (this.status.textContent !== message) this.status.textContent = message;
+      this.status.hidden = !message;
+      this.status.style.display = message ? "block" : "none";
     }
     static ["scheduleReconnect"]() {
       if (this.reconnectTimer) {
@@ -7962,6 +7997,7 @@
       // no library-internal heuristics deciding when/whether to retry.
       const sc = Math.min(1000 * Math.pow(2, this.reconnectAttempt), 15000);
       this.reconnectAttempt++;
+      this.setStatus("retrying");
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null;
         this.connect();
@@ -8005,18 +8041,21 @@
     }
     static ["updateRoom"]() {
       this.switchRoom(this.computeRoom());
+      this.setStatus();
     }
     static ["disconnect"]() {
       // Strip handlers before closing so a late event from the old socket
       // (e.g. its "close" firing after switchRoom() has already opened a
       // new one) can't stomp on the new connection's state through onOpen/
       // onClose, which both write to this same static class either way.
+      this.stopConnectTimer();
       if (this.ws) {
         this.ws.onopen = this.ws.onmessage = this.ws.onclose = this.ws.onerror = null;
         this.ws.close();
       }
       this.ws = null;
       this.connected = false;
+      this.clearRoomData();
     }
     static ["isOpen"]() {
       return !!(this.ws && this.connected && this.ws.readyState === WebSocket.OPEN);
@@ -8241,6 +8280,8 @@
       this.color();
       this.ip();
       this.aliveStatus();
+      // A new room needs a position snapshot even when the player has not moved.
+      if (Player.isAlive) this.positionMass();
       this.rgbMode();
       if (RelayData.isSpectator) {
         this.spectator(true);
