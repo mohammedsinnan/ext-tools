@@ -7888,7 +7888,7 @@
       this.ws = null;
       this.connected = false;
       // Keep TLS validation enabled; the relay must offer trusted WSS.
-      this.url = "wss://157.180.84.143:8443";
+      this.url = "wss://crest-tag-relay.onrender.com";
       // The relay is a single shared deployment - everyone who connects
       // without a room ends up seeing everyone else. Tab 1 + tab 2 share
       // one relay connection (see RelaySender), so a private per-browser room
