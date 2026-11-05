@@ -1,0 +1,4 @@
+node_modules
+*.test.cjs
+*.zip
+.git

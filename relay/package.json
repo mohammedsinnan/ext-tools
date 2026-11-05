@@ -1,0 +1,1 @@
+{"name":"crest-tag-relay","version":"1.0.0","private":true,"description":"Standalone CREST team-tag relay","engines":{"node":">=22"},"scripts":{"start":"node relay.cjs","test":"node --test relay.test.cjs"},"dependencies":{"ws":"8.22.0"}}
