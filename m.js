@@ -388,8 +388,6 @@
       this.div = $("#settings");
       this.language = Storage.get("settings", "language") || Language.browser;
       this.CellAnimation = ~~Storage.get("settings", "CellAnimation") || 160;
-      const splitSignature = Storage.get("settings", "moSplitSignature");
-      this.moSplitSignature = MoSplitSignature.modes.includes(splitSignature) ? splitSignature : "off";
       const motionStyle = Storage.get("settings", "moMotionStyle");
       this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid", "snappy", "agar", "slipstream"].includes(motionStyle) ? motionStyle : "cinematic";
       this.eatAnimation = Storage.get("settings", "eatAnimation") || "on";
@@ -3826,133 +3824,6 @@
     }
   }
 
-  class MoSplitSignature {
-    static modes = ["off", "subtle", "bright"];
-    static pending = new Map();
-    static effects = new WeakMap();
-    static duration = 260;
-
-    static init(panel) {
-      const section = document.createElement("section");
-      section.className = "moi-note";
-      section.innerHTML = `
-        <strong>Split Signature · Prism Cut</strong>
-        <p>A short streak of icy light follows your new split cells.</p>
-        <div class="moi-grid" role="group" aria-label="Split Signature">
-          <button type="button" class="moi-card" data-split-signature="off"><strong>Off</strong></button>
-          <button type="button" class="moi-card" data-split-signature="subtle"><strong>Subtle</strong></button>
-          <button type="button" class="moi-card" data-split-signature="bright"><strong>Bright</strong></button>
-        </div>`;
-      panel.querySelector("#mo-gameplay-status").after(section);
-      const buttons = section.querySelectorAll("[data-split-signature]");
-      const refresh = () => {
-        for (const button of buttons) {
-          button.setAttribute("aria-pressed", String(button.dataset.splitSignature === Settings.moSplitSignature));
-        }
-      };
-      for (const button of buttons) {
-        button.addEventListener("click", () => {
-          const mode = button.dataset.splitSignature;
-          Settings.moSplitSignature = mode;
-          Storage.set("settings", "moSplitSignature", mode);
-          if (mode === "off") {
-            this.pending.clear();
-            this.effects = new WeakMap();
-          }
-          refresh();
-        });
-      }
-      refresh();
-    }
-
-    static socket(slot) {
-      return slot === 1 ? WsConnection.ws : WsConnection.ws2;
-    }
-
-    static record(slot) {
-      if (Settings.moSplitSignature === "off") return;
-      const socket = this.socket(slot);
-      const cells = slot === 1 ? CellData.myCells : CellData.myCells2;
-      if (!socket || !cells.size) return;
-      const sources = Array.from(cells.values(), cell => ({ cell, x: cell.x, y: cell.y }));
-      const target = Player.movementPaused
-        ? { x: Player.x, y: Player.y }
-        : { x: Mouse.canvasX, y: Mouse.canvasY };
-      this.pending.set(slot, { socket, cells, sources, target, time: Date.now() });
-    }
-
-    static confirm(cell, slot, time) {
-      const launch = this.pending.get(slot);
-      if (!launch) return;
-      if (time - launch.time > 850 || launch.socket !== this.socket(slot)) {
-        this.pending.delete(slot);
-        return;
-      }
-      let source;
-      let distance = Infinity;
-      for (const point of launch.sources) {
-        if (launch.cells.get(point.cell.id) !== point.cell) continue;
-        const candidate = (cell.x - point.x) ** 2 + (cell.y - point.y) ** 2;
-        if (candidate < distance) {
-          distance = candidate;
-          source = point;
-        }
-      }
-      if (!source) return;
-      const target = distance > 4 ? cell : launch.target;
-      this.effects.set(cell, {
-        time,
-        angle: Math.atan2(target.y - source.y, target.x - source.x)
-      });
-    }
-
-    static sprite() {
-      if (this.strip) return this.strip;
-      const sprite = document.createElement("canvas");
-      sprite.width = 96;
-      sprite.height = 192;
-      const ctx = sprite.getContext("2d");
-      const light = ctx.createLinearGradient(0, 0, 96, 0);
-      light.addColorStop(0, "rgba(77,140,255,0)");
-      light.addColorStop(.38, "rgba(88,147,255,.36)");
-      light.addColorStop(.59, "rgba(91,222,255,.65)");
-      light.addColorStop(.69, "rgba(228,254,255,.94)");
-      light.addColorStop(.76, "rgba(111,218,255,.35)");
-      light.addColorStop(1, "rgba(111,218,255,0)");
-      ctx.fillStyle = light;
-      ctx.fillRect(0, 0, sprite.width, sprite.height);
-      this.strip = sprite;
-      return sprite;
-    }
-
-    static draw(cell, origin, opacity) {
-      const effect = this.effects.get(cell);
-      if (!effect) return;
-      const elapsed = GameLoop.time - effect.time;
-      if (elapsed >= this.duration) {
-        this.effects.delete(cell);
-        return;
-      }
-      const radius = cell.animRadius * .98;
-      if (elapsed < 0 || radius * Camera.viewport < 7) return;
-      const progress = elapsed / this.duration;
-      const still = Renderer.moReducedMotion || MoPerformance.low();
-      const sweep = still ? 0 : (1 - (1 - progress) ** 2) * 2.06 - 1.12;
-      const fade = Math.min(1, (elapsed + 8) / 32) * (1 - progress ** 2);
-      const strength = Settings.moSplitSignature === "bright" && !still ? .92 : .50;
-      const ctx = Renderer.ctx;
-      ctx.save();
-      ctx.translate(cell.animX - origin.x, cell.animY - origin.y);
-      ctx.rotate(effect.angle);
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.globalAlpha *= opacity * strength * fade;
-      ctx.drawImage(this.sprite(), radius * (sweep - .39), -radius, radius * .72, 2 * radius);
-      ctx.restore();
-    }
-  }
-
   class MoGameplay {
     static animateSlipstream(cell, now) {
       const previous = cell._moMotionTime ?? cell.lastUpdateTime;
@@ -4003,7 +3874,7 @@
     static silkZoom(camera,target){const dt=this.silkDelta(camera,'_silkZoomAt');if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/(180*MoMotionTuning.factor('zoom'))))}
     static silkEdge(cell,origin,opacity){if(Settings.moMotionStyle!=='agar'||cell.isVirus||cell.isFood||cell.isEjected||!(opacity>0))return;const r=cell.animRadius+5;if(!Number.isFinite(r)||r<2||r*Camera.viewport<8)return;const c=Renderer.ctx,width=Math.min(r*.035,2.5/(Camera.viewport||1));c.save();try{c.globalAlpha=Math.min(1,opacity)*.45;c.strokeStyle='#07111d';c.lineWidth=width;c.beginPath();c.arc(cell.animX-origin.x,cell.animY-origin.y,r-width/2,0,Math.PI*2);c.stroke()}finally{c.restore()}}
 
-    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button><button type="button" class="moi-card" data-gameplay="slipstream" style="border-color:#7fd9e760;background:linear-gradient(145deg,#18374488,#111f3388)"><div style="font-size:32px;color:#a0edf5;margin:10px 0">⟶ ◉</div><strong>Slipstream</strong><small>Quick split catch-up, soft landings and a steady, close-following camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));MoSplitSignature.init(panel);MoMotionTuning.attach(panel);this.refresh()}
+    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button><button type="button" class="moi-card" data-gameplay="slipstream" style="border-color:#7fd9e760;background:linear-gradient(145deg,#18374488,#111f3388)"><div style="font-size:32px;color:#a0edf5;margin:10px 0">⟶ ◉</div><strong>Slipstream</strong><small>Quick split catch-up, soft landings and a steady, close-following camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));MoMotionTuning.attach(panel);this.refresh()}
     static select(style){if(!['cinematic','fluid','snappy','agar','slipstream'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
     static refresh(){if(!this.hub)return;MoMotionTuning.refresh();const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='slipstream'?'Slipstream active · quick catch-up, soft settling and steady zoom.':current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
   }
@@ -7298,7 +7169,6 @@
       }
       for (; 0 !== (ci = vi.readUInt32()); ) {
         akq = CellData.getCell(ci, vd);
-        const newCell = !akq.init;
         eb = vi.readInt32();
         tz = vi.readInt32();
         wn = vi.readUInt16();
@@ -7370,9 +7240,6 @@
         // fresh split pieces) as food for one tick, since they still had
         // stale defaults at that point.
         akq.isFood = this.checkIsFood(akq);
-        if (newCell && akq.isMine && !akq.isVirus && !akq.isEjected && Settings.moSplitSignature !== "off") {
-          MoSplitSignature.confirm(akq, vd, GameLoop.time);
-        }
       }
       akj = vi.readUInt16();
       for (akx = 0; akx < akj; akx++) {
@@ -7735,7 +7602,6 @@
         const kp = this.createView(1);
         kp.setUint8(0, 17, true);
         this.sendPacket(kp, fv);
-        MoSplitSignature.record(fv);
       }
     }
     static ["eject"]() {
@@ -9196,9 +9062,6 @@
           this.drawMoCellLight(aeq, w, afc * gu);
         }
         if (gu === 1) { MoInventory.drawSkin(aeq, w, afc); MoInventory.drawInactive(aeq, w, afc, dk || akw); }
-        if (!moCover && gu === 1 && aeq.isMine && Settings.moSplitSignature !== "off") {
-          MoSplitSignature.draw(aeq, w, afc);
-        }
         if(!moCover)MoGameplay.silkEdge(aeq,w,afc*gu);
         if (moCover) MoEmotes.draw(aeq, w, afc);
         if (!moCover && aeq.isMine && nl && aeq.cellType === Player.typeID && !["classic","agar"].includes(Settings.moMotionStyle) && MoInventory.config(aeq.cellType).mode !== "still" && !MoInventory.ring(aeq.cellType)) {
