@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name         CREST
 // @namespace    https://mohammedsinnan.github.io/ext-tools/
-// @version      2.1.2
+// @version      2.1.3
 // @description  Crest client with ordered startup, bounded download retries and a visible loading screen.
 // @match        *://3rb.io/*
 // @match        *://*.3rb.io/*
 // @run-at       document-start
 // @grant        GM_xmlhttpRequest
 // @connect      mohammedsinnan.github.io
-// @connect      crest-tag-relay-eu.onrender.com
 // @downloadURL  https://mohammedsinnan.github.io/ext-tools/crest.user.js
 // @updateURL    https://mohammedsinnan.github.io/ext-tools/crest.user.js
 // ==/UserScript==
@@ -32,7 +31,7 @@
     document.getElementById("loading-screen")?.style.setProperty("--crest-entry-offset", "-" + Math.min(850, performance.now() - entryStarted) + "ms");
     new Function(library)();
     new Function(shield)();
-    new Function("crestRelayRequest", client)(GM_xmlhttpRequest);
+    new Function(client)();
   }catch(error){if(!document.getElementById('ls-message')){document.open();document.write(shell);document.close()}console.error('Crest startup:',error);show('Startup could not finish. '+String(error.message||error)+'. Retry when your connection is ready.',true)}finally{running=false}}
   document.open();document.write(shell);document.close();
   run();

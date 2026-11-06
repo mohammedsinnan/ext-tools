@@ -7882,22 +7882,8 @@
       this.ws = null;
       this.connected = false;
       // Keep TLS validation enabled; the relay must offer trusted WSS.
-      this.relaySource = Storage.get("multibox", "relaySource") === "original" ? "original" : "frankfurt";
-      this.url = this.relayUrl();
-      const select = document.getElementById("crest-relay-source");
-      if (select) {
-        select.value = this.relaySource;
-        select.addEventListener("change", () => this.selectRelay(select.value));
-      }
-      // The relay is a single shared deployment - everyone who connects
-      // without a room ends up seeing everyone else. Tab 1 + tab 2 share
-      // one relay connection (see RelaySender), so a private per-browser room
-      // is the default (only your own two tabs see each other). Two other,
-      // independent things can override that default room selection - see
-      // updateRoom(): a shared "tag" (ambient, persists across sessions,
-      // set once and just works with anyone else using the same tag) and a
-      // native party (explicit invite/accept, takes priority over tag
-      // while active - see PartyManager).
+      this.url = "wss://157.180.84.143:8443";
+      // Both players share one connection. An active party takes priority over the team tag.
       this.privateRoom = Storage.get("multibox", "privateRoom") || this.generateCode(16);
       Storage.set("multibox", "privateRoom", this.privateRoom);
       this.room = this.computeRoom();
@@ -7912,22 +7898,6 @@
         this.disconnect();
         this.connect();
       });
-      this.connect();
-    }
-    static relayUrl() {
-      return this.relaySource === "original"
-        ? "wss://157.180.84.143:8443"
-        : "wss://crest-tag-relay-eu.onrender.com";
-    }
-    static selectRelay(source) {
-      if (source !== "original" && source !== "frankfurt") return;
-      if (this.relaySource === source) return;
-      this.relaySource = source;
-      Storage.set("multibox", "relaySource", source);
-      this.url = this.relayUrl();
-      this.policyBlocked = false;
-      this.reconnectAttempt = 0;
-      this.disconnect();
       this.connect();
     }
     static ["generateCode"](mw) {
@@ -7947,15 +7917,7 @@
       const url = this.url + "?room=" + encodeURIComponent(this.room);
       let socket;
       try {
-        if (this.relaySource === "original") {
-          socket = new WebSocket(url);
-        } else {
-          socket = typeof crestRelayRequest === "function"
-            ? this.openBrowserRelay()
-            : document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
-              ? this.openBridge()
-              : new WebSocket(url);
-        }
+        socket = new WebSocket(url);
       }
       catch (_) { this.scheduleReconnect(); return; }
       this.ws = socket;
@@ -7986,221 +7948,6 @@
         this.onError();
         this.setStatus("unavailable");
       };
-    }
-    static openBrowserRelay() {
-      const base = this.url.replace(/^wss:/, "https:") + "/browser-relay";
-      const room = encodeURIComponent(this.room);
-      const pending = new Set();
-      let session, queued = [], flushTimer, sending = false;
-      let sendingArena = false, sendingCommander = false;
-      const request = (method, url, data, timeout = 28000) => new Promise((resolve, reject) => {
-        let handle;
-        const fail = () => { pending.delete(handle); reject(Error("Tag relay request failed")); };
-        handle = crestRelayRequest({
-          method, url, data, timeout, anonymous: true,
-          headers: { "X-Crest-Relay": "1", ...(data ? {"Content-Type": "application/json"} : {}) },
-          onload(response) {
-            pending.delete(handle);
-            if (response.status >= 200 && response.status < 300) resolve(response.responseText);
-            else reject(Error("Tag relay returned " + response.status));
-          },
-          onerror: fail, onabort: fail, ontimeout: fail
-        });
-        if (handle) pending.add(handle);
-      });
-      const socket = {
-        readyState: WebSocket.CONNECTING,
-        send(buffer) {
-          if (this.readyState !== WebSocket.OPEN || buffer.byteLength > 2048) return;
-          const bytes = new Uint8Array(buffer);
-          let binary = "";
-          for (const byte of bytes) binary += String.fromCharCode(byte);
-          const frame = { opcode: bytes[0], data: btoa(binary) };
-          // Commander can travel immediately once this session's arena has been sent.
-          if (frame.opcode === 128 && !sendingArena && !sendingCommander &&
-              !queued.some(old => old.opcode === 4 || old.opcode === 128)) {
-            sendingCommander = true;
-            request("POST", session, JSON.stringify([frame.data]))
-              .catch(fail)
-              .finally(() => { sendingCommander = false; schedule(); });
-            return;
-          }
-          if (frame.opcode === 16) queued = queued.filter(old => old.opcode !== 16);
-          queued.push(frame);
-          if (queued.length > 32) { fail(); return; }
-          schedule();
-        },
-        close() {
-          if (this.readyState === WebSocket.CLOSED) return;
-          this.readyState = WebSocket.CLOSED;
-          clearTimeout(flushTimer);
-          for (const handle of pending) handle.abort?.();
-          pending.clear();
-          if (session) request("DELETE", session).catch(() => {});
-          this.onclose?.();
-        }
-      };
-      function fail() {
-        if (socket.readyState === WebSocket.CLOSED) return;
-        socket.onerror?.();
-        socket.close();
-      }
-      function schedule() {
-        if (sending || !queued.length || socket.readyState !== WebSocket.OPEN) return;
-        if (queued.some(frame => frame.opcode === 128)) {
-          clearTimeout(flushTimer);
-          flush();
-        } else if (!flushTimer) {
-          flushTimer = setTimeout(flush, 100);
-        }
-      }
-      async function flush() {
-        flushTimer = null;
-        // Keep queued arena changes and follow-up pings behind the in-flight ping.
-        if (sendingCommander && queued.some(frame => frame.opcode === 4 || frame.opcode === 128)) return;
-        sending = true;
-        const batch = [];
-        let length = 2;
-        while (queued.length && length + queued[0].data.length + 3 <= 32768) {
-          const frame = queued.shift();
-          if (frame.opcode === 4) sendingArena = true;
-          batch.push(frame.data);
-          length += frame.data.length + 3;
-        }
-        try { await request("POST", session, JSON.stringify(batch)); }
-        catch { fail(); }
-        finally {
-          sending = false;
-          sendingArena = false;
-          schedule();
-        }
-      }
-      function deliver(frames) {
-        for (const frame of frames) {
-          if (socket.readyState !== WebSocket.OPEN) break;
-          const bytes = Uint8Array.from(atob(frame), character => character.charCodeAt(0));
-          socket.onmessage?.({ data: bytes.buffer });
-        }
-      }
-      const setReceiveMode = mode => {
-        socket.receiveMode = mode;
-        if (this.ws === socket) this.setStatus();
-      };
-      function receiveStream() {
-        return new Promise(resolve => {
-          let handle, reader, finished = false;
-          let timeout = setTimeout(stop, 3500);
-          function stop() {
-            if (finished) return;
-            finished = true;
-            clearTimeout(timeout);
-            pending.delete(handle);
-            reader?.cancel().catch(() => {});
-            handle?.abort?.();
-            resolve();
-          }
-          async function read(response) {
-            if (finished) return;
-            // Tampermonkey may expose the stream before the HTTP status is known.
-            if ((response.status && response.status !== 200) || typeof response.response?.getReader !== "function") {
-              stop();
-              return;
-            }
-            try {
-              reader = response.response.getReader();
-              const decoder = new TextDecoder();
-              let buffer = "";
-              while (!finished) {
-                const { value, done } = await reader.read();
-                if (done || finished) break;
-                if (socket.receiveMode !== "stream") setReceiveMode("stream");
-                clearTimeout(timeout);
-                timeout = setTimeout(stop, 25000);
-                buffer += decoder.decode(value, { stream: true });
-                let newline;
-                while ((newline = buffer.indexOf("\n")) !== -1) {
-                  const line = buffer.slice(0, newline);
-                  buffer = buffer.slice(newline + 1);
-                  if (line.startsWith("data: ")) deliver(JSON.parse(line.slice(6)));
-                }
-                if (buffer.length > 400000) break;
-              }
-            } catch {
-              // An unavailable stream falls back to the regular receiver.
-            } finally {
-              stop();
-            }
-          }
-          try {
-            handle = crestRelayRequest({
-              method: "GET", url: session + "?stream=1", responseType: "stream", anonymous: true,
-              headers: { "X-Crest-Relay": "1" },
-              onloadstart: read, onload: () => { if (!reader) stop(); },
-              onabort: stop, onerror: stop, ontimeout: stop
-            });
-            if (finished) handle?.abort?.();
-            else if (handle) pending.add(handle);
-          } catch {
-            stop();
-          }
-        });
-      }
-      async function run() {
-        try {
-          const { id } = JSON.parse(await request("POST", base + "?room=" + room, undefined, 65000));
-          if (!/^[a-f0-9]{48}$/.test(id)) throw Error("Invalid tag relay session");
-          session = base + "/" + id;
-          if (socket.readyState === WebSocket.CLOSED) {
-            await request("DELETE", session);
-            return;
-          }
-          socket.readyState = WebSocket.OPEN;
-          socket.onopen?.();
-          await receiveStream();
-          if (socket.readyState === WebSocket.OPEN) setReceiveMode("polling");
-          while (socket.readyState === WebSocket.OPEN) {
-            deliver(JSON.parse(await request("GET", session)));
-          }
-        } catch { fail(); }
-      }
-      run();
-      return socket;
-    }
-    static openBridge() {
-      const channel = document.createElement("meta");
-      channel.setAttribute("data-crest-relay-room", this.room);
-      const socket = {
-        readyState: WebSocket.CONNECTING,
-        send(buffer) {
-          if (this.readyState !== WebSocket.OPEN || buffer.byteLength > 2048) return;
-          let bytes = "";
-          for (const byte of new Uint8Array(buffer)) bytes += String.fromCharCode(byte);
-          channel.dispatchEvent(new CustomEvent("crest-relay-send", { detail: btoa(bytes) }));
-        },
-        close() {
-          this.readyState = WebSocket.CLOSED;
-          channel.remove();
-        }
-      };
-      channel.addEventListener("crest-relay-open", () => {
-        socket.readyState = WebSocket.OPEN;
-        socket.onopen?.();
-      });
-      channel.addEventListener("crest-relay-error", () => socket.onerror?.());
-      channel.addEventListener("crest-relay-close", () => {
-        socket.close();
-        socket.onclose?.();
-      });
-      channel.addEventListener("crest-relay-message", event => {
-        if (socket.readyState !== WebSocket.OPEN || typeof event.detail !== "string" ||
-            event.detail.length > 174764) return;
-        let bytes;
-        try { bytes = Uint8Array.from(atob(event.detail), character => character.charCodeAt(0)); }
-        catch { return; }
-        socket.onmessage?.({ data: bytes.buffer });
-      });
-      document.documentElement.append(channel);
-      return socket;
     }
     static stopConnectTimer() {
       if (this.connectTimer != null) clearTimeout(this.connectTimer);
@@ -8234,16 +7981,9 @@
       if (tag && party) message = "Party takes priority over team tag.";
       else if (tag && !this.sanitize("T_", tag)) message = "Team tag needs a letter A–Z, a number, _ or -.";
       else if (tag) message = state === "connected"
-        ? this.relaySource === "original" ? "Tag relay connected · original WebSocket."
-          : this.ws?.receiveMode === "stream" ? "Tag relay connected · live stream."
-          : this.ws?.receiveMode === "polling" ? "Tag relay connected · polling."
-          : "Tag relay connected · use the same tag and server."
+        ? "Tag relay connected · original WebSocket."
         : state === "connecting" ? "Connecting to tag relay…"
-        : state === "blocked" ? (this.relaySource === "original"
-          ? "Original relay blocked by the page’s connection policy."
-          : document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
-          ? "Tag relay blocked · check CREST Relay’s isolated sandbox."
-          : "Tag relay blocked · install CREST Relay and reload.")
+        : state === "blocked" ? "Original relay blocked by the page’s connection policy."
         : state === "retrying" ? "Tag relay unavailable · retrying."
         : "Tag relay unavailable.";
       if (this.status.textContent !== message) this.status.textContent = message;
