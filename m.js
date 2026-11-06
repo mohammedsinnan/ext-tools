@@ -1735,7 +1735,7 @@
       this.selectedPreset = Storage.get("theme", "selectedPreset") || "custom";
       this.skinBorder = ~~Storage.get("theme", "skinBorder") || 100;
       this.lbSize = ~~Storage.get("theme", "lbSize") || 110;
-      this.minimapSize = ~~Storage.get("theme", "minimapSize") || 200;
+      this.minimapSize = ~~Storage.get("theme", "minimapSize") || 156;
       this.chatFontSize = ~~Storage.get("theme", "chatFontSize") || 14;
       this.cellTransparency = ~~Storage.get("theme", "cellTransparency") || 100;
       this.cellTransparencyStyle = Storage.get("theme", "cellTransparencyStyle") || "regular";
@@ -2000,30 +2000,7 @@
       if (Minimap.initted) {
         Minimap.resize(adm);
       }
-      $("#minimap-hud, .minimap-grid").css({
-        width: adm + "px",
-        height: adm + "px",
-      });
-      $(".minimap-row").css({
-        width: adm + "px",
-        height: (0 | (adm / 5)) + "px",
-      });
-      $(".minimap-sector").css({
-        width: (0 | (adm / 5)) + "px",
-        height: (0 | (adm / 5)) + "px",
-        "font-size": (0 | ((15 * adm) / 200)) + "px",
-        "padding-top": (0 | ((11 * adm) / 200)) + "px",
-      });
       document.getElementById("huds")?.style.setProperty("--crest-radar-size", adm + "px");
-      const le = $(".minimap-head");
-      le.css("bottom", adm + 30 + "px");
-      // Stack on top of .minimap-head (which is itself already anchored
-      // above #minimap-hud) - measuring its real height instead of
-      // guessing keeps this correct regardless of minimap size/theme.
-      $("#server-restart-countdown").css({
-        bottom: adm + 30 + le.outerHeight() + 8 + "px",
-        width: adm + "px",
-      });
     }
     static ["setCursor"](alu) {}
     static ["selectPreset"](zo) {
@@ -2771,6 +2748,7 @@
     }
     static resize(size) {
       this.size = size;
+      this.lastDraw = -Infinity;
       this.canvas.width = this.canvas.height = size;
       this.ctx.textAlign = "center";
       this.ctx.textBaseline = "bottom";
@@ -2778,6 +2756,9 @@
       this.ctx.lineWidth = 1.25;
     }
     static ["run"]() {
+      const now = performance.now();
+      if (now - this.lastDraw < 1000 / 30) return;
+      this.lastDraw = now;
       const wk = this.ctx;
       const av = this.size / WorldData.edge;
       const sx = Camera.viewBounds;
@@ -2786,16 +2767,14 @@
       const viewY = (sx.top - WorldData.offset.y + 8000) * av;
       const viewWidth = (sx.right - sx.left) * av;
       const viewHeight = (sx.bottom - sx.top) * av;
-      wk.fillStyle = "rgba(135, 236, 191, 0.14)";
-      wk.strokeStyle = "rgba(166, 246, 213, 0.57)";
+      wk.fillStyle = "rgba(168, 214, 224, 0.11)";
       wk.fillRect(viewX, viewY, viewWidth, viewHeight);
-      wk.strokeRect(viewX, viewY, viewWidth, viewHeight);
       if (RelayData.biggestIsOn && (Player.isAlive || !Camera.isSpectating || Camera.freeSpectate)) {
         RelayData.biggest.animate();
         const j = RelayData.biggest.mapX;
         const jr = RelayData.biggest.mapY;
         wk.beginPath();
-        wk.arc(j, jr, 7, 0, this.pi2, false);
+        wk.arc(j, jr, 5, 0, this.pi2, false);
         wk.closePath();
         wk.fillStyle = "#fff";
         wk.fill();
@@ -2815,7 +2794,7 @@
       wk.strokeStyle = "#113e32";
       const rg = (8000 - WorldData.offset.x + Camera.x) * av;
       const cs = (8000 - WorldData.offset.y + Camera.y) * av;
-      const ja = Player.isAlive ? 4.5 : 6;
+      const ja = Player.isAlive ? 3.25 : 4.75;
       wk.beginPath();
       wk.arc(rg, cs, ja, 0, this.pi2, false);
       wk.closePath();
@@ -2838,7 +2817,7 @@
           const ql = te.mapX;
           const aen = te.mapY;
           agv.beginPath();
-          agv.arc(ql, aen, 5, 0, this.pi2, false);
+          agv.arc(ql, aen, 3.5, 0, this.pi2, false);
           agv.closePath();
           agv.fillStyle = "#fff";
           if (0 < te.nick.length) {
@@ -2861,17 +2840,15 @@
           wr.animate();
           const bh = wr.mapX;
           const q = wr.mapY;
-          t.moveTo(bh + 5, q);
-          t.arc(bh, q, 5, 0, this.pi2, false);
+          t.moveTo(bh + 3.5, q);
+          t.arc(bh, q, 3.5, 0, this.pi2, false);
           if (0 < wr.nick.length) {
             t.fillText(wr.nick, bh, q - 6);
           }
         }
       t.closePath();
-      t.fillStyle = "#8ddfc0";
+      t.fillStyle = "#a6ddc9";
       t.fill();
-      t.strokeStyle = "#133b32";
-      t.stroke();
       this.partyMinimap();
     }
     static ["partyMinimap"]() {
@@ -2887,7 +2864,7 @@
         const ajk = agq.mapX;
         const lk = agq.mapY;
         ki.beginPath();
-        ki.arc(ajk, lk, 5, 0, this.pi2, false);
+        ki.arc(ajk, lk, 3.5, 0, this.pi2, false);
         ki.closePath();
         ki.fillStyle = "#fff";
         if (0 < agq.nick.length) {
