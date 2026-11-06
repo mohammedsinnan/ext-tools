@@ -7882,7 +7882,13 @@
       this.ws = null;
       this.connected = false;
       // Keep TLS validation enabled; the relay must offer trusted WSS.
-      this.url = "wss://crest-tag-relay-eu.onrender.com";
+      this.relaySource = Storage.get("multibox", "relaySource") === "original" ? "original" : "frankfurt";
+      this.url = this.relayUrl();
+      const select = document.getElementById("crest-relay-source");
+      if (select) {
+        select.value = this.relaySource;
+        select.addEventListener("change", () => this.selectRelay(select.value));
+      }
       // The relay is a single shared deployment - everyone who connects
       // without a room ends up seeing everyone else. Tab 1 + tab 2 share
       // one relay connection (see RelaySender), so a private per-browser room
@@ -7908,6 +7914,22 @@
       });
       this.connect();
     }
+    static relayUrl() {
+      return this.relaySource === "original"
+        ? "wss://157.180.84.143:8443"
+        : "wss://crest-tag-relay-eu.onrender.com";
+    }
+    static selectRelay(source) {
+      if (source !== "original" && source !== "frankfurt") return;
+      if (this.relaySource === source) return;
+      this.relaySource = source;
+      Storage.set("multibox", "relaySource", source);
+      this.url = this.relayUrl();
+      this.policyBlocked = false;
+      this.reconnectAttempt = 0;
+      this.disconnect();
+      this.connect();
+    }
     static ["generateCode"](mw) {
       const ajq = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       let zn = "";
@@ -7925,11 +7947,15 @@
       const url = this.url + "?room=" + encodeURIComponent(this.room);
       let socket;
       try {
-        socket = typeof crestRelayRequest === "function"
-          ? this.openBrowserRelay()
-          : document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
-            ? this.openBridge()
-            : new WebSocket(url);
+        if (this.relaySource === "original") {
+          socket = new WebSocket(url);
+        } else {
+          socket = typeof crestRelayRequest === "function"
+            ? this.openBrowserRelay()
+            : document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
+              ? this.openBridge()
+              : new WebSocket(url);
+        }
       }
       catch (_) { this.scheduleReconnect(); return; }
       this.ws = socket;
@@ -8208,11 +8234,14 @@
       if (tag && party) message = "Party takes priority over team tag.";
       else if (tag && !this.sanitize("T_", tag)) message = "Team tag needs a letter A–Z, a number, _ or -.";
       else if (tag) message = state === "connected"
-        ? this.ws?.receiveMode === "stream" ? "Tag relay connected · live stream."
+        ? this.relaySource === "original" ? "Tag relay connected · original WebSocket."
+          : this.ws?.receiveMode === "stream" ? "Tag relay connected · live stream."
           : this.ws?.receiveMode === "polling" ? "Tag relay connected · polling."
           : "Tag relay connected · use the same tag and server."
         : state === "connecting" ? "Connecting to tag relay…"
-        : state === "blocked" ? (document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
+        : state === "blocked" ? (this.relaySource === "original"
+          ? "Original relay blocked by the page’s connection policy."
+          : document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
           ? "Tag relay blocked · check CREST Relay’s isolated sandbox."
           : "Tag relay blocked · install CREST Relay and reload.")
         : state === "retrying" ? "Tag relay unavailable · retrying."
