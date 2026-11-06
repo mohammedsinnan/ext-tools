@@ -7931,9 +7931,11 @@
       const url = this.url + "?room=" + encodeURIComponent(this.room);
       let socket;
       try {
-        socket = document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
-          ? this.openBridge()
-          : new WebSocket(url);
+        socket = typeof crestRelayRequest === "function"
+          ? this.openBrowserRelay()
+          : document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
+            ? this.openBridge()
+            : new WebSocket(url);
       }
       catch (_) { this.scheduleReconnect(); return; }
       this.ws = socket;
@@ -7964,6 +7966,96 @@
         this.onError();
         this.setStatus("unavailable");
       };
+    }
+    static openBrowserRelay() {
+      const base = this.url.replace(/^wss:/, "https:") + "/browser-relay";
+      const room = encodeURIComponent(this.room);
+      const pending = new Set();
+      let session, queued = [], flushTimer, sending = false;
+      const request = (method, url, data, timeout = 28000) => new Promise((resolve, reject) => {
+        let handle;
+        const fail = () => { pending.delete(handle); reject(Error("Tag relay request failed")); };
+        handle = crestRelayRequest({
+          method, url, data, timeout, anonymous: true,
+          headers: { "X-Crest-Relay": "1", ...(data ? {"Content-Type": "application/json"} : {}) },
+          onload(response) {
+            pending.delete(handle);
+            if (response.status >= 200 && response.status < 300) resolve(response.responseText);
+            else reject(Error("Tag relay returned " + response.status));
+          },
+          onerror: fail, onabort: fail, ontimeout: fail
+        });
+        if (handle) pending.add(handle);
+      });
+      const socket = {
+        readyState: WebSocket.CONNECTING,
+        send(buffer) {
+          if (this.readyState !== WebSocket.OPEN || buffer.byteLength > 2048) return;
+          const bytes = new Uint8Array(buffer);
+          let binary = "";
+          for (const byte of bytes) binary += String.fromCharCode(byte);
+          const frame = { opcode: bytes[0], data: btoa(binary) };
+          if (frame.opcode === 16) queued = queued.filter(old => old.opcode !== 16);
+          queued.push(frame);
+          if (queued.length > 32) { fail(); return; }
+          schedule();
+        },
+        close() {
+          if (this.readyState === WebSocket.CLOSED) return;
+          this.readyState = WebSocket.CLOSED;
+          clearTimeout(flushTimer);
+          for (const handle of pending) handle.abort?.();
+          pending.clear();
+          if (session) request("DELETE", session).catch(() => {});
+          this.onclose?.();
+        }
+      };
+      function fail() {
+        if (socket.readyState === WebSocket.CLOSED) return;
+        socket.onerror?.();
+        socket.close();
+      }
+      function schedule() {
+        if (sending || flushTimer || !queued.length || socket.readyState !== WebSocket.OPEN) return;
+        flushTimer = setTimeout(flush, 100);
+      }
+      async function flush() {
+        flushTimer = null;
+        sending = true;
+        const batch = [];
+        let length = 2;
+        while (queued.length && length + queued[0].data.length + 3 <= 32768) {
+          const frame = queued.shift().data;
+          batch.push(frame);
+          length += frame.length + 3;
+        }
+        try { await request("POST", session, JSON.stringify(batch)); }
+        catch { fail(); }
+        finally { sending = false; schedule(); }
+      }
+      async function run() {
+        try {
+          const { id } = JSON.parse(await request("POST", base + "?room=" + room, undefined, 65000));
+          if (!/^[a-f0-9]{48}$/.test(id)) throw Error("Invalid tag relay session");
+          session = base + "/" + id;
+          if (socket.readyState === WebSocket.CLOSED) {
+            await request("DELETE", session);
+            return;
+          }
+          socket.readyState = WebSocket.OPEN;
+          socket.onopen?.();
+          while (socket.readyState === WebSocket.OPEN) {
+            const frames = JSON.parse(await request("GET", session));
+            for (const frame of frames) {
+              if (socket.readyState !== WebSocket.OPEN) break;
+              const bytes = Uint8Array.from(atob(frame), character => character.charCodeAt(0));
+              socket.onmessage?.({ data: bytes.buffer });
+            }
+          }
+        } catch { fail(); }
+      }
+      run();
+      return socket;
     }
     static openBridge() {
       const channel = document.createElement("meta");
