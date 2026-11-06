@@ -7903,6 +7903,15 @@
       this.room = this.computeRoom();
       this.reconnectAttempt = 0;
       this.reconnectTimer = null;
+      document.addEventListener("securitypolicyviolation", event => {
+        if (event.effectiveDirective !== "connect-src" || event.disposition !== "enforce") return;
+        let origin;
+        try { origin = new URL(event.blockedURI).origin; } catch { return; }
+        if (origin !== this.url) return;
+        this.policyBlocked = true;
+        this.disconnect();
+        this.connect();
+      });
       this.connect();
     }
     static ["generateCode"](mw) {
@@ -7915,11 +7924,17 @@
     }
     static ["connect"]() {
       if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+      if (this.room === this.privateRoom) { this.setStatus("idle"); return; }
+      if (this.policyBlocked) { this.setStatus("blocked"); return; }
       this.setStatus("connecting");
       if (typeof WebSocket === "undefined") { this.setStatus("unavailable"); return; }
       const url = this.url + "?room=" + encodeURIComponent(this.room);
       let socket;
-      try { socket = new WebSocket(url); }
+      try {
+        socket = document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
+          ? this.openBridge()
+          : new WebSocket(url);
+      }
       catch (_) { this.scheduleReconnect(); return; }
       this.ws = socket;
       socket.binaryType = "arraybuffer";
@@ -7927,7 +7942,7 @@
         if (this.ws !== socket || this.connected) return;
         this.disconnect();
         this.scheduleReconnect();
-      }, 8000);
+      }, 70000);
       socket.onopen = () => {
         if (this.ws !== socket) return;
         this.stopConnectTimer();
@@ -7949,6 +7964,42 @@
         this.onError();
         this.setStatus("unavailable");
       };
+    }
+    static openBridge() {
+      const channel = document.createElement("meta");
+      channel.setAttribute("data-crest-relay-room", this.room);
+      const socket = {
+        readyState: WebSocket.CONNECTING,
+        send(buffer) {
+          if (this.readyState !== WebSocket.OPEN || buffer.byteLength > 2048) return;
+          let bytes = "";
+          for (const byte of new Uint8Array(buffer)) bytes += String.fromCharCode(byte);
+          channel.dispatchEvent(new CustomEvent("crest-relay-send", { detail: btoa(bytes) }));
+        },
+        close() {
+          this.readyState = WebSocket.CLOSED;
+          channel.remove();
+        }
+      };
+      channel.addEventListener("crest-relay-open", () => {
+        socket.readyState = WebSocket.OPEN;
+        socket.onopen?.();
+      });
+      channel.addEventListener("crest-relay-error", () => socket.onerror?.());
+      channel.addEventListener("crest-relay-close", () => {
+        socket.close();
+        socket.onclose?.();
+      });
+      channel.addEventListener("crest-relay-message", event => {
+        if (socket.readyState !== WebSocket.OPEN || typeof event.detail !== "string" ||
+            event.detail.length > 174764) return;
+        let bytes;
+        try { bytes = Uint8Array.from(atob(event.detail), character => character.charCodeAt(0)); }
+        catch { return; }
+        socket.onmessage?.({ data: bytes.buffer });
+      });
+      document.documentElement.append(channel);
+      return socket;
     }
     static stopConnectTimer() {
       if (this.connectTimer != null) clearTimeout(this.connectTimer);
@@ -7983,6 +8034,9 @@
       else if (tag && !this.sanitize("T_", tag)) message = "Team tag needs a letter A–Z, a number, _ or -.";
       else if (tag) message = state === "connected" ? "Tag relay connected · use the same tag and server."
         : state === "connecting" ? "Connecting to tag relay…"
+        : state === "blocked" ? (document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
+          ? "Tag relay blocked · check CREST Relay’s isolated sandbox."
+          : "Tag relay blocked · install CREST Relay and reload.")
         : state === "retrying" ? "Tag relay unavailable · retrying."
         : "Tag relay unavailable.";
       if (this.status.textContent !== message) this.status.textContent = message;
