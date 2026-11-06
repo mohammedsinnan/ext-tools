@@ -411,7 +411,7 @@
       const moRenderScale=Storage.get("settings","moRenderScale");this.moRenderScale=["1","0.85","0.7"].includes(moRenderScale)?moRenderScale:"auto";
       this.moPerformance = ["auto","quality","balanced","performance"].includes(moPerformance) ? moPerformance : "auto";
       const arenaStyle = Storage.get("settings", "moArenaStyle");
-      this.moArenaStyle = ["classic","space","abyss","obsidian"].includes(arenaStyle) ? arenaStyle : "space";
+      this.moArenaStyle = ["classic","space","abyss","obsidian","moonwell"].includes(arenaStyle) ? arenaStyle : "space";
       const arenaEffects = Storage.get("settings", "moArenaEffects");
       this.moArenaEffects = typeof arenaEffects === "number" && Number.isFinite(arenaEffects) ? Math.max(0,Math.min(1,arenaEffects)) : 0.7;
       this.vanillaGrid = Storage.get("settings", "vanillaGrid") || "off";
@@ -3549,21 +3549,227 @@
   }
 
   class MoVirusGlow {
-    static draw(cell,origin,opacity){const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y,z=Camera.viewport;if(!(r>0)||!(z>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();try{const alpha=Math.min(1,opacity);if(r*z>=8&&!MoPerformance.low()){ctx.globalAlpha=alpha*.9;const size=r*1.22;ctx.drawImage(this.sprite(),x-size,y-size,size*2,size*2)}ctx.globalAlpha=alpha;ctx.drawImage(this.body(),x-r,y-r,r*2,r*2)}finally{ctx.restore()}}
-    static sprite(){if(this.cached)return this.cached;const s=document.createElement('canvas');s.width=s.height=256;const c=s.getContext('2d'),g=c.createRadialGradient(128,128,86,128,128,127);g.addColorStop(0,'rgba(94,255,111,0)');g.addColorStop(.28,'rgba(77,255,124,.02)');g.addColorStop(.49,'rgba(164,255,115,.9)');g.addColorStop(.6,'rgba(73,255,126,.4)');g.addColorStop(1,'rgba(58,239,169,0)');c.fillStyle=g;c.fillRect(0,0,256,256);this.cached=s;return s}
-    static body(){if(this.cachedBody)return this.cachedBody;const s=document.createElement('canvas');s.width=s.height=512;const c=s.getContext('2d');c.translate(256,256);c.beginPath();c.arc(0,0,255,0,Math.PI*2);c.clip();const shape=()=>{c.beginPath();for(let i=0;i<40;i++){const a=i*Math.PI/20-Math.PI/2,r=i%2?215:251,x=Math.cos(a)*r,y=Math.sin(a)*r;if(i)c.lineTo(x,y);else c.moveTo(x,y)}c.closePath()};shape();const g=c.createRadialGradient(-70,-85,10,0,0,275);g.addColorStop(0,'#3bbb64');g.addColorStop(.35,'#146644');g.addColorStop(.7,'#073c2f');g.addColorStop(1,'#1c8850');c.fillStyle=g;c.fill();c.save();shape();c.clip();const center=c.createRadialGradient(0,0,5,0,0,210);center.addColorStop(0,'rgba(89,255,123,.33)');center.addColorStop(.4,'rgba(57,204,107,.15)');center.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=center;c.fillRect(-255,-255,510,510);c.strokeStyle='rgba(92,255,131,.22)';c.lineWidth=4;for(let i=0;i<20;i++){const a=i*Math.PI/10-Math.PI/2;c.beginPath();c.moveTo(Math.cos(a)*178,Math.sin(a)*178);c.lineTo(Math.cos(a)*249,Math.sin(a)*249);c.stroke()}c.restore();shape();c.shadowColor='#52ff7c';c.shadowBlur=11;c.strokeStyle='#81ff98';c.lineWidth=7;c.stroke();c.shadowBlur=0;c.strokeStyle='#d9ffbf';c.lineWidth=2;c.stroke();
-      c.strokeStyle='rgba(102,246,141,.36)';c.lineWidth=3;c.beginPath();c.arc(0,0,155,0,Math.PI*2);c.stroke();c.fillStyle='#a9ff9c';c.beginPath();c.arc(0,0,18,0,Math.PI*2);c.fill();for(let i=0;i<3;i++){const a=i*Math.PI*2/3-Math.PI/2;c.save();c.rotate(a);c.fillStyle='#8cfb99';c.beginPath();c.arc(0,-63,49,Math.PI*.13,Math.PI*.87);c.arc(0,-48,29,Math.PI*.83,Math.PI*.17,true);c.closePath();c.fill();c.restore()}c.strokeStyle='rgba(199,255,189,.5)';c.lineWidth=5;c.beginPath();c.arc(-40,-43,108,-2.65,-1.35);c.stroke();this.cachedBody=s;return s}
+    static draw(cell, origin, opacity) {
+      const radius = cell.animRadius + 5;
+      const x = cell.animX - origin.x, y = cell.animY - origin.y;
+      const zoom = Camera.viewport;
+      if (!(radius > 0) || !(zoom > 0) || ![radius, x, y, opacity].every(Number.isFinite) || opacity <= 0) return;
+      const ctx = Renderer.ctx;
+      const alpha = Math.min(1, opacity);
+      ctx.save();
+      try {
+        if (radius * zoom >= 8 && !MoPerformance.low()) {
+          const glowRadius = radius * 1.36;
+          ctx.globalAlpha = alpha;
+          ctx.drawImage(this.sprite(), x - glowRadius, y - glowRadius, 2 * glowRadius, 2 * glowRadius);
+        }
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(this.body(), x - radius, y - radius, 2 * radius, 2 * radius);
+      } finally {
+        ctx.restore();
+      }
+    }
+    static sprite() {
+      if (this.cached) return this.cached;
+      const art = document.createElement('canvas');
+      art.width = art.height = 256;
+      const c = art.getContext('2d');
+      const light = c.createRadialGradient(128, 128, 0, 128, 128, 128);
+      light.addColorStop(0, 'transparent');
+      light.addColorStop(.55, 'rgba(136,247,113,0)');
+      light.addColorStop(.71, 'rgba(158,255,103,.36)');
+      light.addColorStop(.81, 'rgba(125,247,107,.24)');
+      light.addColorStop(1, 'rgba(113,245,150,0)');
+      c.fillStyle = light;
+      c.fillRect(0, 0, 256, 256);
+      this.cached = art;
+      return art;
+    }
+    static body() {
+      if (this.cachedBody) return this.cachedBody;
+      const art = document.createElement('canvas');
+      art.width = art.height = 512;
+      const c = art.getContext('2d');
+      c.translate(256, 256);
+      const segment = Math.PI / 6;
+      const polar = (angle, radius) => [Math.cos(angle) * radius, Math.sin(angle) * radius];
+
+      // Twelve curved teeth with blunted tips sit inside the native cell radius.
+      c.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const a = i * segment - Math.PI / 2;
+        const base = polar(a - segment / 2, 196);
+        if (i === 0) c.moveTo(...base);
+        c.bezierCurveTo(...polar(a - segment * .24, 208), ...polar(a - segment * .22, 250), ...polar(a, 250));
+        c.bezierCurveTo(...polar(a + segment * .22, 250), ...polar(a + segment * .24, 208), ...polar(a + segment / 2, 196));
+      }
+      c.closePath();
+      const fill = c.createRadialGradient(-63, -96, 25, 0, 0, 270);
+      for (const [at, color] of [[0,'#275c4b'],[.47,'#113b38'],[.74,'#1b5241'],[1,'#8ad75c']]) fill.addColorStop(at, color);
+      c.fillStyle = fill;
+      c.fill();
+      c.lineJoin = 'round';
+      c.lineWidth = 8;
+      c.strokeStyle = '#a8f579';
+      c.stroke();
+      c.lineWidth = 2.5;
+      c.strokeStyle = '#edffb8';
+      c.stroke();
+
+      const circle = radius => { c.beginPath(); c.arc(0, 0, radius, 0, Math.PI * 2); };
+      c.lineWidth = 3;
+      c.strokeStyle = '#9be8ad66';
+      circle(159);
+      c.stroke();
+      c.strokeStyle = '#bbfda044';
+      for (let i = 0; i < 12; i++) {
+        const a = i * segment - Math.PI / 2;
+        c.beginPath();
+        c.moveTo(...polar(a, 176));
+        c.lineTo(...polar(a, 220));
+        c.stroke();
+      }
+
+      const core = c.createRadialGradient(0, 0, 8, 0, 0, 128);
+      core.addColorStop(0, '#c8fd8a5c');
+      core.addColorStop(.55, '#91ef7970');
+      core.addColorStop(1, '#0c352100');
+      circle(128);
+      c.fillStyle = core;
+      c.fill();
+      const facets = [
+        ['#e7ffc0', [[0,-92],[65,0],[0,-15],[-65,0]]],
+        ['#89ee80', [[-65,0],[0,-15],[0,92]]],
+        ['#58ba79', [[0,-15],[65,0],[0,92]]]
+      ];
+      for (const [color, points] of facets) {
+        c.beginPath();
+        points.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
+        c.closePath();
+        c.fillStyle = color;
+        c.fill();
+      }
+      this.cachedBody = art;
+      return art;
+    }
   }
 
   class MoMap {
-    static palette(style=Settings.moArenaStyle){return {space:{bg:'#080e19',grid:'rgba(115,164,220,.1)',text:'rgba(149,182,217,.18)',border:'#82dce8',food:'#a6dfff'},abyss:{bg:'#0e0b1e',grid:'rgba(175,139,224,.1)',text:'rgba(183,160,225,.23)',border:'#b99ce9',food:'#d1b5ff'},obsidian:{bg:'#06151f',grid:'rgba(110,203,215,.1)',text:'rgba(149,214,222,.23)',border:'#7cdecb',food:'#96eddf'}}[style]||null}
-    static init(hub){this.hub=hub;const p=hub.views.map;p.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Give your arena its own atmosphere.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"></div><div class="moi-note" role="status" id="mo-map-status"></div><label class="moi-muted" style="display:block;margin:20px 0">Atmosphere intensity <output id="mo-map-intensity"></output><input aria-label="Atmosphere intensity" type="range" min="0" max="100" step="5" style="width:100%;margin-top:14px;accent-color:#83e9d6"></label><div class="moi-muted">Applies instantly and saves on this device.</div>';for(const [id,name,desc] of [['space','Space','Quiet stars · luminous stardust'],['abyss','Nebula','Purple cosmic clouds · quiet starlight'],['obsidian','Aurora','Turquoise light ribbons · a calm starfield']]){const b=document.createElement('button');b.type='button';b.className='moi-card';b.dataset.map=id;const c=document.createElement('canvas');c.width=c.height=640;c.style.cssText='width:100%;height:132px;object-fit:cover;border-radius:12px;margin-bottom:14px';c.getContext('2d').drawImage(id==='space'?BgRender.cacheSpaceTile():this.tile(id),0,0);const title=document.createElement('strong');title.textContent=name;const small=document.createElement('small');small.textContent=desc;b.append(c,title,small);b.addEventListener('click',()=>this.select(id));p.querySelector('.moi-grid').appendChild(b)}p.querySelector('input').addEventListener('input',e=>{const n=Number(e.target.value);if(!Number.isFinite(n))return;Settings.moArenaEffects=Math.max(0,Math.min(1,n/100));Storage.set('settings','moArenaEffects',Settings.moArenaEffects);this.refresh()});this.refresh()}
+    static palette(style=Settings.moArenaStyle){return {space:{bg:'#080e19',grid:'rgba(115,164,220,.1)',text:'rgba(149,182,217,.18)',border:'#82dce8',food:'#a6dfff'},abyss:{bg:'#0e0b1e',grid:'rgba(175,139,224,.1)',text:'rgba(183,160,225,.23)',border:'#b99ce9',food:'#d1b5ff'},obsidian:{bg:'#06151f',grid:'rgba(110,203,215,.1)',text:'rgba(149,214,222,.23)',border:'#7cdecb',food:'#96eddf'},moonwell:{bg:'#0b101d',grid:'rgba(157,166,211,.12)',text:'rgba(188,190,217,.24)',border:'#beb9e3',food:'#d9c6eb'}}[style]||null}
+    static init(hub){this.hub=hub;const p=hub.views.map;p.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Give your arena its own atmosphere.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"></div><div class="moi-note" role="status" id="mo-map-status"></div><label class="moi-muted" style="display:block;margin:20px 0">Atmosphere intensity <output id="mo-map-intensity"></output><input aria-label="Atmosphere intensity" type="range" min="0" max="100" step="5" style="width:100%;margin-top:14px;accent-color:#83e9d6"></label><div class="moi-muted">Applies instantly and saves on this device.</div>';for(const [id,name,desc] of [['space','Space','Quiet stars · luminous stardust'],['abyss','Nebula','Purple cosmic clouds · quiet starlight'],['obsidian','Aurora','Turquoise light ribbons · a calm starfield'],['moonwell','Moonwell','Ivory crescent · midnight lake']]){const b=document.createElement('button');b.type='button';b.className='moi-card';b.dataset.map=id;const c=document.createElement('canvas');c.width=c.height=640;c.style.cssText='width:100%;height:132px;object-fit:cover;border-radius:12px;margin-bottom:14px';c.getContext('2d').drawImage(id==='space'?BgRender.cacheSpaceTile():this.tile(id),0,0,640,640);const title=document.createElement('strong');title.textContent=name;const small=document.createElement('small');small.textContent=desc;b.append(c,title,small);b.addEventListener('click',()=>this.select(id));p.querySelector('.moi-grid').appendChild(b)}p.querySelector('input').addEventListener('input',e=>{const n=Number(e.target.value);if(!Number.isFinite(n))return;Settings.moArenaEffects=Math.max(0,Math.min(1,n/100));Storage.set('settings','moArenaEffects',Settings.moArenaEffects);this.refresh()});this.refresh()}
     static select(style){if(!this.palette(style))return;Settings.moArenaStyle=style;Storage.set('settings','moArenaStyle',style);this.refresh()}
-    static refresh(){if(!this.hub)return;const p=this.hub.views.map;p.querySelectorAll('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===Settings.moArenaStyle)));p.querySelector('#mo-map-status').textContent=({space:'Space',abyss:'Nebula',obsidian:'Aurora',classic:'Classic'}[Settings.moArenaStyle]||'Space')+' arena active';p.querySelector('input').value=Math.round(Settings.moArenaEffects*100);p.querySelector('output').textContent=Math.round(Settings.moArenaEffects*100)+'%'}
-    static tile(style){this.artCache=this.artCache||new Map();if(this.artCache.has(style))return this.artCache.get(style);const tile=document.createElement('canvas');tile.width=tile.height=640;const c=tile.getContext('2d'),nebula=style==='abyss';c.fillStyle=nebula?'#0e0b1e':'#06151f';c.fillRect(0,0,640,640);let seed=nebula?54819:92145;const rnd=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);const cloud=(x,y,r,color)=>{const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,640,640)};
+    static refresh(){if(!this.hub)return;const p=this.hub.views.map;p.querySelectorAll('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===Settings.moArenaStyle)));p.querySelector('#mo-map-status').textContent=({space:'Space',abyss:'Nebula',obsidian:'Aurora',moonwell:'Moonwell',classic:'Classic'}[Settings.moArenaStyle]||'Space')+' arena active';p.querySelector('input').value=Math.round(Settings.moArenaEffects*100);p.querySelector('output').textContent=Math.round(Settings.moArenaEffects*100)+'%'}
+    static tile(style){this.artCache=this.artCache||new Map();if(this.artCache.has(style))return this.artCache.get(style);
+      if (style === 'moonwell') {
+        const art = this.moonwellArt();
+        this.artCache.set(style, art);
+        return art;
+      }
+      const tile=document.createElement('canvas');tile.width=tile.height=640;const c=tile.getContext('2d'),nebula=style==='abyss';c.fillStyle=nebula?'#0e0b1e':'#06151f';c.fillRect(0,0,640,640);let seed=nebula?54819:92145;const rnd=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);const cloud=(x,y,r,color)=>{const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,640,640)};
       if(nebula){cloud(235,290,285,'rgba(95,55,185,.2)');cloud(408,230,215,'rgba(158,62,168,.15)');cloud(330,410,205,'rgba(48,86,192,.13)');for(let i=0;i<14;i++){const x=150+i*25,y=310+Math.sin(i*.45)*80;cloud(x,y,70+rnd()*45,'rgba(149,89,211,.045)')}}else{cloud(315,280,300,'rgba(27,124,146,.13)');c.save();c.lineCap='round';for(let band=0;band<3;band++){const points=[];for(let x=70;x<=580;x+=10)points.push([x,240+band*52+Math.sin(x*.009+band*.5)*65]);for(const [width,alpha] of [[100,.018],[56,.025],[23,.036],[4,.055]]){c.beginPath();for(let i=0;i<points.length;i++){const [x,y]=points[i];if(!i)c.moveTo(x,y);else c.lineTo(x,y)}c.lineWidth=width;c.strokeStyle=band===1?'rgba(62,168,213,'+alpha+')':'rgba(73,225,183,'+alpha+')';c.stroke()}}c.restore()}
       for(let i=0;i<76;i++){const x=8+rnd()*624,y=8+rnd()*624,r=.35+rnd()*.7;c.globalAlpha=.13+rnd()*.3;c.fillStyle=nebula?(i%3?'#c0badf':'#e7b6db'):(i%3?'#a8d3dc':'#b5ecdf');c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();if(i%23===0){c.globalAlpha=.16;c.fillRect(x-2.5,y-.3,5,.6);c.fillRect(x-.3,y-2.5,.6,5)}}c.globalAlpha=1;this.artCache.set(style,tile);return tile}
-    static atmosphere(){ /* Scenery is baked into world-anchored tiles. */ }
+    static moonwellArt() {
+      const art = document.createElement('canvas');
+      art.width = art.height = 1024;
+      const c = art.getContext('2d');
+      const sky = c.createLinearGradient(0, 0, 0, 1024);
+      for (const [at, color] of [[0,'#080d19'],[.22,'#13192f'],[.42,'#28223b'],[.49,'#10182d'],[.77,'#0b1526'],[1,'#080e1a']]) sky.addColorStop(at,color);
+      c.fillStyle = sky;
+      c.fillRect(0, 0, 1024, 1024);
+
+      const halo = (x, y, radius, color) => {
+        const gradient = c.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, 'transparent');
+        c.fillStyle = gradient;
+        c.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+      };
+      halo(750, 250, 260, 'rgba(143,126,204,.28)');
+      halo(734, 414, 280, 'rgba(223,135,166,.15)');
+      halo(262, 774, 315, 'rgba(58,114,151,.15)');
+
+      let seed = 17031;
+      const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+      for (let i = 0; i < 138; i++) {
+        const x = random() * 1024, y = random() * 410;
+        c.globalAlpha = .18 + random() * .42;
+        c.fillStyle = i % 4 ? '#c3d2f6' : '#f1c8b6';
+        const size = .65 + random() * 1.25;
+        c.fillRect(x, y, size, size);
+        if (i % 31 === 0) {
+          c.fillRect(x - 2.6, y + .35, 6, .65);
+          c.fillRect(x + .35, y - 2.6, .65, 6);
+        }
+      }
+      c.globalAlpha = 1;
+
+      // A thin ivory crescent beside its dark, cratered face.
+      c.save();
+      c.translate(747, 224);
+      c.rotate(.28);
+      c.beginPath();
+      c.arc(0, 0, 54, 0, Math.PI * 2);
+      c.clip();
+      const disc = c.createLinearGradient(-56, -36, 48, 58);
+      disc.addColorStop(0, '#f4e0c6');
+      disc.addColorStop(.58, '#c9bad9');
+      disc.addColorStop(1, '#737da9');
+      c.fillStyle = disc;
+      c.fillRect(-54, -54, 108, 108);
+      c.fillStyle = '#192039';
+      c.beginPath();
+      c.arc(24, -13, 57, 0, Math.PI * 2);
+      c.fill();
+      for (const [x, y, radius] of [[-35,4,6],[-40,-14,3],[-27,30,4],[-12,43,3]]) {
+        c.beginPath();
+        c.arc(x, y, radius, 0, Math.PI * 2);
+        c.fillStyle = '#6e71934a';
+        c.fill();
+      }
+      c.restore();
+
+      const ridge = (points, color, bottom) => {
+        c.beginPath();
+        points.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
+        c.lineTo(1024, bottom);
+        c.lineTo(0, bottom);
+        c.closePath();
+        c.fillStyle = color;
+        c.fill();
+      };
+      ridge([[0,387],[112,360],[164,335],[210,356],[288,339],[348,368],[426,379],[482,349],[551,375],[618,384],[688,363],[747,377],[830,334],[877,356],[948,340],[1024,367]], '#24293f', 430);
+      ridge([[0,400],[54,388],[124,382],[194,398],[286,404],[371,389],[438,408],[527,411],[612,395],[671,409],[744,406],[805,392],[884,405],[952,376],[1024,388]], '#151e32', 430);
+      const water = c.createLinearGradient(0, 421, 0, 1024);
+      water.addColorStop(0, '#232b455a');
+      water.addColorStop(.46, '#15213919');
+      water.addColorStop(1, '#07122145');
+      c.fillStyle = water;
+      c.fillRect(0, 428, 1024, 596);
+
+      // Broken reflections widen toward the foreground.
+      for (let i = 0; i < 51; i++) {
+        const y = 439 + i * 10.5 + random() * 7;
+        const spread = 12 + i * 4.5;
+        const x = 746 + (random() - .5) * spread;
+        const length = 9 + random() * (18 + i * 1.25);
+        const glint = c.createLinearGradient(x - length / 2, y, x + length / 2, y);
+        glint.addColorStop(0, 'transparent');
+        glint.addColorStop(.5, i % 3 ? '#d9bed8' : '#f2cdac');
+        glint.addColorStop(1, 'transparent');
+        c.globalAlpha = (.22 - i * .0028) * (.65 + random() * .6);
+        c.fillStyle = glint;
+        c.fillRect(x - length / 2, y, length, .85 + random() * .7);
+      }
+      for (let i = 0; i < 94; i++) {
+        const x = random() * 1024, y = 435 + random() * 574;
+        c.globalAlpha = .035 + random() * .09;
+        c.fillStyle = '#a2bddb';
+        c.fillRect(x, y, 5 + random() * 27, .7 + random() * .65);
+      }
+      c.globalAlpha = 1;
+      return art;
+    }
+    static atmosphere(){ /* Scenery is baked into world-anchored art. */ }
   }
 
   class MoMotionTuning {
@@ -3720,7 +3926,7 @@
       this.search.oninput=()=>this.render();this.applyUI();
     }
     static category(owner,name){if(owner===Mouse)return'controls';if(owner===Theme){if(['chatFontSize','lbSize','minimapSize','indicatorSize'].includes(name))return'hud';if(['foodSize','virusBorderWidth','gridWidth','gridTextSize','gridTextFont'].includes(name))return'arena';return'appearance'}if(['moMotionStyle','CellAnimation','eatAnimation','cellTextAnimation','zoomSpeed','cameraSpeed','autoZoom','pairCamera'].includes(name))return'movement';if(['moArenaStyle','food','vanillaGrid','bgSectors'].includes(name))return'arena';if(['language','chatType'].includes(name))return'hud';return'cells'}
-    static describe(name){return {"language":"Language used by the existing game menus.","moMotionStyle":"Choose the feel of cell transitions.","CellAnimation":"Higher values create softer visual transitions.","eatAnimation":"Animate a cell drawing inward when it is eaten.","cellTextAnimation":"Choose how name and mass labels resize as cells grow.","zoomSpeed":"Adjust how quickly camera zoom responds.","cameraSpeed":"Control how gently the camera follows your cells.","autoZoom":"Let the existing camera choose its zoom.","pairCamera":"Use the existing near/far camera behavior for two players.","moArenaStyle":"Choose Space, Nebula, Aurora or the original arena.","autoHideText":"Hide small labels automatically when space is limited.","hideOwnNick":"Hide the nickname on your own cells.","hideOwnMass":"Hide mass labels on your own cells.","cellNick":"Display player names on cells.","nickShadow":"Choose the name outline when player names are visible.","cellMass":"Show full mass, shortened mass, or no mass label.","massShadow":"Choose the mass outline when mass labels are visible.","urlSkins":"Display player skins supplied by image URLs.","arbSkins":"Display the original game skin collection.","vanillaGrid":"Display the original arena grid.","bgSectors":"Applies in the Classic arena. Space, Nebula and Aurora use their own scenery.","food":"Choose single-color food, rainbow food, or hide it.","cursorLine":"Draw the existing guide toward your mouse position.","multiboxRing":"Highlight the player you are controlling.","multiboxCellColor":"Use active and inactive colors on your own cell bodies.","teamIndicator":"Shows a marker for recognized teammates at small on-screen cell sizes.","commander":"Display your team’s existing commander markers.","chatType":"Choose the persistent chatroom or temporary pop-up messages.","selectedPreset":"A preset can change several supported colors and display options.","chatFontSize":"Resizes chatroom messages, pop-up notifications and the chat input.","lbSize":"Resize the leaderboard.","minimapSize":"Resize the minimap.","cellTransparencyStyle":"Choose flat or radiant cell fill. Agar · Silk and Performance use flat fill.","cellTransparency":"Control cell body opacity. Custom skin artwork stays separate.","lightenCellColor":"Adjust the brightness of the original cell body colors.","borderColor":"Changes the default border in Classic. Other arenas use their own palette.","borderWidth":"Adjust the width of the arena boundary.","borderStyle":"Choose a fixed or animated arena border. Performance uses a fixed border.","gridColor":"Changes the Classic sector lines or the original grid when enabled.","gridTextColor":"Changes sector labels or symbols in the Classic arena.","gridTextSize":"Resizes sector labels or symbols in the Classic arena.","gridTextFont":"Changes the font for Classic sector labels when Sector decoration is Normal.","gridWidth":"Changes the Classic sector lines or the original grid when enabled.","nickColor":"Fill color for player names.","nickStrokeColor":"Changes the name outline when Nick shadow is enabled. VIP names use their own color.","cellNickSize":"Resize player names on cells.","nickFont":"Typeface used for player names.","massColor":"Fill color for mass labels.","massStrokeColor":"Changes the mass outline when Mass shadow is enabled.","cellMassSize":"Resize mass labels on cells.","massFont":"Typeface used for mass labels.","foodColor":"Changes food bodies in single-color food mode. Themed halos can use the arena palette.","foodSize":"Adjust the size of food artwork.","backgroundColor":"Page background behind the arena canvas.","commanderColor":"Changes the color of commander markers when they are enabled.","indicatorSize":"Resizes the marker when teammate indicators are enabled.","multiboxActive":"Color for the active multibox ring or body when those options are enabled.","multiboxInactive":"Color for the inactive multibox ring or body when those options are enabled.","multiboxRingWidth":"Changes the ring width when Multibox ring is enabled.","team1color":"Team one color in the existing double-tag mode.","team2color":"Team two color in the existing double-tag mode.","leftClick":"Choose the action assigned to your left mouse button.","middleClick":"Choose the action assigned to your middle mouse button.","rightClick":"Choose the action assigned to your right mouse button."}[name]||''}
+    static describe(name){return {"language":"Language used by the existing game menus.","moMotionStyle":"Choose the feel of cell transitions.","CellAnimation":"Higher values create softer visual transitions.","eatAnimation":"Animate a cell drawing inward when it is eaten.","cellTextAnimation":"Choose how name and mass labels resize as cells grow.","zoomSpeed":"Adjust how quickly camera zoom responds.","cameraSpeed":"Control how gently the camera follows your cells.","autoZoom":"Let the existing camera choose its zoom.","pairCamera":"Use the existing near/far camera behavior for two players.","moArenaStyle":"Choose Moonwell, Space, Nebula, Aurora or the original arena.","autoHideText":"Hide small labels automatically when space is limited.","hideOwnNick":"Hide the nickname on your own cells.","hideOwnMass":"Hide mass labels on your own cells.","cellNick":"Display player names on cells.","nickShadow":"Choose the name outline when player names are visible.","cellMass":"Show full mass, shortened mass, or no mass label.","massShadow":"Choose the mass outline when mass labels are visible.","urlSkins":"Display player skins supplied by image URLs.","arbSkins":"Display the original game skin collection.","vanillaGrid":"Display the original arena grid.","bgSectors":"Applies in the Classic arena. Themed arenas have their own scenery.","food":"Choose single-color food, rainbow food, or hide it.","cursorLine":"Draw the existing guide toward your mouse position.","multiboxRing":"Highlight the player you are controlling.","multiboxCellColor":"Use active and inactive colors on your own cell bodies.","teamIndicator":"Shows a marker for recognized teammates at small on-screen cell sizes.","commander":"Display your team’s existing commander markers.","chatType":"Choose the persistent chatroom or temporary pop-up messages.","selectedPreset":"A preset can change several supported colors and display options.","chatFontSize":"Resizes chatroom messages, pop-up notifications and the chat input.","lbSize":"Resize the leaderboard.","minimapSize":"Resize the minimap.","cellTransparencyStyle":"Choose flat or radiant cell fill. Agar · Silk and Performance use flat fill.","cellTransparency":"Control cell body opacity. Custom skin artwork stays separate.","lightenCellColor":"Adjust the brightness of the original cell body colors.","borderColor":"Changes the default border in Classic. Other arenas use their own palette.","borderWidth":"Adjust the width of the arena boundary.","borderStyle":"Choose a fixed or animated arena border. Performance uses a fixed border.","gridColor":"Changes the Classic sector lines or the original grid when enabled.","gridTextColor":"Changes sector labels or symbols in the Classic arena.","gridTextSize":"Resizes sector labels or symbols in the Classic arena.","gridTextFont":"Changes the font for Classic sector labels when Sector decoration is Normal.","gridWidth":"Changes the Classic sector lines or the original grid when enabled.","nickColor":"Fill color for player names.","nickStrokeColor":"Changes the name outline when Nick shadow is enabled. VIP names use their own color.","cellNickSize":"Resize player names on cells.","nickFont":"Typeface used for player names.","massColor":"Fill color for mass labels.","massStrokeColor":"Changes the mass outline when Mass shadow is enabled.","cellMassSize":"Resize mass labels on cells.","massFont":"Typeface used for mass labels.","foodColor":"Changes food bodies in single-color food mode. Themed halos can use the arena palette.","foodSize":"Adjust the size of food artwork.","backgroundColor":"Page background behind the arena canvas.","commanderColor":"Changes the color of commander markers when they are enabled.","indicatorSize":"Resizes the marker when teammate indicators are enabled.","multiboxActive":"Color for the active multibox ring or body when those options are enabled.","multiboxInactive":"Color for the inactive multibox ring or body when those options are enabled.","multiboxRingWidth":"Changes the ring width when Multibox ring is enabled.","team1color":"Team one color in the existing double-tag mode.","team2color":"Team two color in the existing double-tag mode.","leftClick":"Choose the action assigned to your left mouse button.","middleClick":"Choose the action assigned to your middle mouse button.","rightClick":"Choose the action assigned to your right mouse button."}[name]||''}
     static get(item){if(item.owner===this)return this.ui[item.name];return item.owner[item.name]}
     static open(page='overview'){this.init();this.returnFocus=document.activeElement;const last=Storage.get('crestUI','lastPage');if(page==='overview'&&this.ui.remember&&this.categories.some(x=>x[0]===last))page=last;this.root.hidden=false;this.show(page);this.root.querySelector('.cpx-close').focus()}
     static close(restore=true){if(!this.root||this.root.hidden)return;this.root.hidden=true;Inputs.isOpened=false;if(restore&&this.returnFocus?.isConnected)this.returnFocus.focus()}
@@ -5465,7 +5671,14 @@
         ctx.globalAlpha = 1;
         ctx.fillStyle = palette.bg; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
         ctx.globalAlpha = Settings.moArenaEffects;
-        if(!MoPerformance.low()){
+        if (Settings.moArenaStyle === 'moonwell') {
+          // A single fixed-size picture spans the map. Crop it to the visible world.
+          if (Settings.moArenaEffects > 0) {
+            const pixels = tile.width / edge;
+            ctx.drawImage(tile, (x0 - left) * pixels, (y0 - top) * pixels,
+              (x1 - x0) * pixels, (y1 - y0) * pixels, x0, y0, x1 - x0, y1 - y0);
+          }
+        } else if (!MoPerformance.low()) {
         if(Settings.moArenaStyle === 'space') {
         for (let iy = firstY; iy < lastY; iy++) {
           for (let ix = firstX; ix < lastX; ix++) {
