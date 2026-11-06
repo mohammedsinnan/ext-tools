@@ -8055,6 +8055,76 @@
           schedule();
         }
       }
+      function deliver(frames) {
+        for (const frame of frames) {
+          if (socket.readyState !== WebSocket.OPEN) break;
+          const bytes = Uint8Array.from(atob(frame), character => character.charCodeAt(0));
+          socket.onmessage?.({ data: bytes.buffer });
+        }
+      }
+      const setReceiveMode = mode => {
+        socket.receiveMode = mode;
+        if (this.ws === socket) this.setStatus();
+      };
+      function receiveStream() {
+        return new Promise(resolve => {
+          let handle, reader, finished = false;
+          let timeout = setTimeout(stop, 3500);
+          function stop() {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timeout);
+            pending.delete(handle);
+            reader?.cancel().catch(() => {});
+            handle?.abort?.();
+            resolve();
+          }
+          async function read(response) {
+            if (finished) return;
+            // Tampermonkey may expose the stream before the HTTP status is known.
+            if ((response.status && response.status !== 200) || typeof response.response?.getReader !== "function") {
+              stop();
+              return;
+            }
+            try {
+              reader = response.response.getReader();
+              const decoder = new TextDecoder();
+              let buffer = "";
+              while (!finished) {
+                const { value, done } = await reader.read();
+                if (done || finished) break;
+                if (socket.receiveMode !== "stream") setReceiveMode("stream");
+                clearTimeout(timeout);
+                timeout = setTimeout(stop, 25000);
+                buffer += decoder.decode(value, { stream: true });
+                let newline;
+                while ((newline = buffer.indexOf("\n")) !== -1) {
+                  const line = buffer.slice(0, newline);
+                  buffer = buffer.slice(newline + 1);
+                  if (line.startsWith("data: ")) deliver(JSON.parse(line.slice(6)));
+                }
+                if (buffer.length > 400000) break;
+              }
+            } catch {
+              // An unavailable stream falls back to the regular receiver.
+            } finally {
+              stop();
+            }
+          }
+          try {
+            handle = crestRelayRequest({
+              method: "GET", url: session + "?stream=1", responseType: "stream", anonymous: true,
+              headers: { "X-Crest-Relay": "1" },
+              onloadstart: read, onload: () => { if (!reader) stop(); },
+              onabort: stop, onerror: stop, ontimeout: stop
+            });
+            if (finished) handle?.abort?.();
+            else if (handle) pending.add(handle);
+          } catch {
+            stop();
+          }
+        });
+      }
       async function run() {
         try {
           const { id } = JSON.parse(await request("POST", base + "?room=" + room, undefined, 65000));
@@ -8066,13 +8136,10 @@
           }
           socket.readyState = WebSocket.OPEN;
           socket.onopen?.();
+          await receiveStream();
+          if (socket.readyState === WebSocket.OPEN) setReceiveMode("polling");
           while (socket.readyState === WebSocket.OPEN) {
-            const frames = JSON.parse(await request("GET", session));
-            for (const frame of frames) {
-              if (socket.readyState !== WebSocket.OPEN) break;
-              const bytes = Uint8Array.from(atob(frame), character => character.charCodeAt(0));
-              socket.onmessage?.({ data: bytes.buffer });
-            }
+            deliver(JSON.parse(await request("GET", session)));
           }
         } catch { fail(); }
       }
@@ -8146,7 +8213,10 @@
       let message = "";
       if (tag && party) message = "Party takes priority over team tag.";
       else if (tag && !this.sanitize("T_", tag)) message = "Team tag needs a letter A–Z, a number, _ or -.";
-      else if (tag) message = state === "connected" ? "Tag relay connected · use the same tag and server."
+      else if (tag) message = state === "connected"
+        ? this.ws?.receiveMode === "stream" ? "Tag relay connected · live stream."
+          : this.ws?.receiveMode === "polling" ? "Tag relay connected · polling."
+          : "Tag relay connected · use the same tag and server."
         : state === "connecting" ? "Connecting to tag relay…"
         : state === "blocked" ? (document.documentElement?.getAttribute("data-crest-relay-bridge") === "1"
           ? "Tag relay blocked · check CREST Relay’s isolated sandbox."
@@ -9248,15 +9318,17 @@
         if (iw > 1250) {
           this.commanderPoints["delete"](acg);
         } else {
-          if (!(ui || 1 > iw)) {
-            const ako = (1000 * iw) / 1250;
+          if (!ui) {
+            const ako = Math.max(0, (1000 * iw) / 1250);
+            // Keep the first frame visible even at the widest zoom.
+            const radius = Math.max(ako, 10 / Camera.viewport);
             afn.globalAlpha = ako > 333 ? (1000 - ako) / 667 : 1;
-            const ut = afn.createRadialGradient(ack, ai, 0.7 * ako, ack, ai, ako);
+            const ut = afn.createRadialGradient(ack, ai, 0.7 * radius, ack, ai, radius);
             ut.addColorStop(0, "rgba(0,0,0,0)");
             ut.addColorStop(1, Theme.commanderColor);
             afn.fillStyle = ut;
             afn.beginPath();
-            afn.arc(ack, ai, ako, 0, this.pi2, true);
+            afn.arc(ack, ai, radius, 0, this.pi2, true);
             afn.closePath();
             afn.fill();
             afn.stroke();
