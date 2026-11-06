@@ -128,10 +128,19 @@ function createRelay({rooms, flushMs=125}={}) {
       if(clients.size>=MAX_PEERS||[...clients.values()].filter(p=>p.room===room).length>=MAX_ROOM)return json(res,503,{error:'Relay full'});
       const id=randomBytes(24).toString('hex');
       const peer=new EventEmitter();
-      let pending=null, queue=[];
+      let pending=null, stream=null, heartbeat, queue=[];
       peer.readyState=WebSocket.OPEN;
       peer.bufferedAmount=0;
       function flush(){
+        if(stream){
+          if(!queue.length)return;
+          const event='data: '+JSON.stringify(queue)+'\n\n';
+          queue=[];
+          peer.bufferedAmount=0;
+          if(stream.writableLength+Buffer.byteLength(event)>MAX_PENDING)peer.terminate();
+          else stream.write(event);
+          return;
+        }
         if(!pending)return;
         const res=pending.res;
         clearTimeout(pending.timer);
@@ -141,6 +150,25 @@ function createRelay({rooms, flushMs=125}={}) {
         peer.bufferedAmount=0;
         json(res,200,frames);
       }
+      function endStream(res){
+        if(stream!==res)return;
+        stream=null;
+        clearInterval(heartbeat);
+        if(!res.destroyed)res.end();
+      }
+      peer.stream=res=>{
+        if(stream||pending)return json(res,409,{error:'Receiver already active'});
+        stream=res;
+        res.once('close',()=>endStream(res));
+        res.writeHead(200,{
+          'Content-Type':'text/event-stream; charset=utf-8',
+          'Cache-Control':'no-store, no-transform',
+          'X-Accel-Buffering':'no'
+        });
+        res.write(': ready\n\n');
+        heartbeat=setInterval(()=>res.write(': keepalive\n\n'),9000);
+        flush();
+      };
       peer.send=(buffer,_opts,callback)=>{
         queue.push(buffer.toString('base64'));
         peer.bufferedAmount+=buffer.length;
@@ -151,6 +179,7 @@ function createRelay({rooms, flushMs=125}={}) {
         if(peer.readyState!==WebSocket.OPEN)return;
         peer.readyState=WebSocket.CLOSED;
         browserSessions.delete(id);
+        if(stream)endStream(stream);
         if(pending){
           const res=pending.res;
           clearTimeout(pending.timer);
@@ -160,6 +189,7 @@ function createRelay({rooms, flushMs=125}={}) {
         peer.emit('close');
       };
       peer.poll=res=>{
+        if(stream)endStream(stream);
         if(pending)return json(res,409,{error:'Poll already active'});
         pending={res,timer:setTimeout(flush,18000)};
         res.once('close',()=>{
@@ -176,7 +206,7 @@ function createRelay({rooms, flushMs=125}={}) {
     const id=/^\/browser-relay\/([a-f0-9]{48})$/.exec(url.pathname)?.[1];
     const peer=browserSessions.get(id);
     if(!peer)return json(res,404,{error:'Unknown relay session'});
-    if(req.method==='GET')return peer.poll(res);
+    if(req.method==='GET')return url.searchParams.get('stream')==='1'?peer.stream(res):peer.poll(res);
     if(req.method==='DELETE'){peer.close();return res.writeHead(204).end()}
     if(req.method!=='POST')return res.writeHead(405).end();
     let size=0;
