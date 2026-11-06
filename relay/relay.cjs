@@ -1,5 +1,7 @@
 'use strict';
 const http = require('node:http');
+const { randomBytes } = require('node:crypto');
+const { EventEmitter } = require('node:events');
 const {WebSocket, WebSocketServer} = require('ws');
 const ALLOWED_ORIGIN = /^https:\/\/(?:[a-z0-9-]+\.)*3rb\.io$/i;
 const ROOM = /^[A-Z0-9_-]{1,64}$/;
@@ -33,12 +35,12 @@ function createRelay({rooms, flushMs=125}={}) {
   const allowed = new Set(rooms || []);
   if (!allowed.size || [...allowed].some(r=>!ROOM.test(r))) throw Error('Set CREST_ROOMS to comma-separated uppercase room names.');
   const wss = new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false});
-  const clients=new Map(), dirty=new Set();
+  const clients=new Map(), dirty=new Set(), browserSessions=new Map();
   let nextId=1, closed=false;
   const server=http.createServer((req,res)=>{
     if(req.method==='GET' && req.url==='/healthz') {
       res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end('{"ok":true}');
-    } else res.writeHead(404).end();
+    } else browserRequest(req,res);
   });
   function send(p,b) {
     if(p.ws.readyState!==WebSocket.OPEN) return;
@@ -102,15 +104,106 @@ function createRelay({rooms, flushMs=125}={}) {
     const deny=(code,phrase)=>socket.end('HTTP/1.1 '+code+' '+phrase+'\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
     if(url.pathname!=='/'||!ALLOWED_ORIGIN.test(req.headers.origin||'')||!allowed.has(room))return deny(403,'Forbidden');
     if(clients.size>=MAX_PEERS||[...clients.values()].filter(p=>p.room===room).length>=MAX_ROOM)return deny(503,'Service Unavailable');
-    wss.handleUpgrade(req,socket,head,ws=>{
-      const now=Date.now(), p={ws,room,id:nextId++,arena:null,seen:new Set(),nick:Buffer.alloc(0),
-        skin:Buffer.alloc(0),color:Buffer.from([160,160,160]),x:0,y:0,mass:0,alive:0,rgb:0,lastAlive:now,
-        rateAt:now,frames:0,lastCommand:0,biggest:null,biggestAt:0};
-      clients.set(ws,p);send(p,Buffer.concat([Buffer.from([4]),uint(p.id)]));
-      ws.on('message',(b,isBinary)=>receive(p,b,isBinary));
-      ws.on('close',()=>disconnect(p));ws.on('error',()=>ws.terminate());
-    });
+    wss.handleUpgrade(req,socket,head,ws=>attach(ws,room));
   });
+  function attach(ws,room) {
+    const now=Date.now(), p={ws,room,id:nextId++,arena:null,seen:new Set(),nick:Buffer.alloc(0),
+      skin:Buffer.alloc(0),color:Buffer.from([160,160,160]),x:0,y:0,mass:0,alive:0,rgb:0,lastAlive:now,
+      rateAt:now,frames:0,lastCommand:0,biggest:null,biggestAt:0};
+    clients.set(ws,p);send(p,Buffer.concat([Buffer.from([4]),uint(p.id)]));
+    ws.on('message',(b,isBinary)=>receive(p,b,isBinary));
+    ws.on('close',()=>disconnect(p));ws.on('error',()=>ws.terminate());
+  }
+  const json=(res,status,data)=>res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify(data));
+  function browserRequest(req,res) {
+    // Only clients with an extension-granted request can send the header cross-origin.
+    // Room authorization is the same allowlist used by the WebSocket upgrade.
+    if(req.headers['x-crest-relay']!=='1')return res.writeHead(404).end();
+    let url;
+    try{url=new URL(req.url,'http://localhost')}catch{return res.writeHead(400).end()}
+    const room=url.searchParams.get('room');
+    if(url.pathname==='/browser-relay'&&req.method==='POST'){
+      req.resume();
+      if(!allowed.has(room))return json(res,403,{error:'Room is not enabled'});
+      if(clients.size>=MAX_PEERS||[...clients.values()].filter(p=>p.room===room).length>=MAX_ROOM)return json(res,503,{error:'Relay full'});
+      const id=randomBytes(24).toString('hex');
+      const peer=new EventEmitter();
+      let pending=null, queue=[];
+      peer.readyState=WebSocket.OPEN;
+      peer.bufferedAmount=0;
+      function flush(){
+        if(!pending)return;
+        const res=pending.res;
+        clearTimeout(pending.timer);
+        pending=null;
+        const frames=queue;
+        queue=[];
+        peer.bufferedAmount=0;
+        json(res,200,frames);
+      }
+      peer.send=(buffer,_opts,callback)=>{
+        queue.push(buffer.toString('base64'));
+        peer.bufferedAmount+=buffer.length;
+        flush();
+        callback();
+      };
+      peer.close=peer.terminate=()=>{
+        if(peer.readyState!==WebSocket.OPEN)return;
+        peer.readyState=WebSocket.CLOSED;
+        browserSessions.delete(id);
+        if(pending){
+          const res=pending.res;
+          clearTimeout(pending.timer);
+          pending=null;
+          json(res,410,{error:'Relay session ended'});
+        }
+        peer.emit('close');
+      };
+      peer.poll=res=>{
+        if(pending)return json(res,409,{error:'Poll already active'});
+        pending={res,timer:setTimeout(flush,18000)};
+        res.once('close',()=>{
+          if(pending?.res!==res)return;
+          clearTimeout(pending.timer);
+          pending=null;
+        });
+        if(queue.length)flush();
+      };
+      browserSessions.set(id,peer);
+      attach(peer,room);
+      return json(res,201,{id});
+    }
+    const id=/^\/browser-relay\/([a-f0-9]{48})$/.exec(url.pathname)?.[1];
+    const peer=browserSessions.get(id);
+    if(!peer)return json(res,404,{error:'Unknown relay session'});
+    if(req.method==='GET')return peer.poll(res);
+    if(req.method==='DELETE'){peer.close();return res.writeHead(204).end()}
+    if(req.method!=='POST')return res.writeHead(405).end();
+    let size=0;
+    const chunks=[];
+    req.on('error',()=>peer.close());
+    req.on('data',chunk=>{
+      size+=chunk.length;
+      if(size>32768){
+        if(!res.headersSent)json(res,413,{error:'Relay batch too large'});
+      }else chunks.push(chunk);
+    });
+    req.on('end',()=>{
+      if(res.headersSent)return;
+      try {
+        const frames=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        if(!Array.isArray(frames)||frames.length>64)throw Error();
+        for(const frame of frames){
+          if(typeof frame!=='string'||frame.length>2732||!/^[A-Za-z0-9+/]+={0,2}$/.test(frame))throw Error();
+          const bytes=Buffer.from(frame,'base64');
+          if(!bytes.length||bytes.length>2048)throw Error();
+          peer.emit('message',bytes,true);
+          if(peer.readyState!==WebSocket.OPEN)return json(res,410,{error:'Relay session ended'});
+        }
+        return res.writeHead(204).end();
+      } catch { return json(res,400,{error:'Invalid relay batch'}); }
+    });
+  }
   const timer=setInterval(()=>{
     const now=Date.now();
     for(const p of clients.values()){
