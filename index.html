@@ -4070,41 +4070,114 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                 box-shadow: 0 8px 26px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
                 color: #e6edf8; text-shadow: none; font-family: Inter, Ubuntu, sans-serif;
             }
-            .mo-hud-label { font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1.8px; color: #a7bdd8; }
-            #leaderboard-hud { width: 226px; right: 18px; padding: 13px 11px 10px; margin-top: 18px; box-sizing: border-box; }
-            #leaderboard-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 5px 12px; margin-bottom: 3px; border-bottom: 1px solid #9bbfe51a; text-align: left; }
-            .mo-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #79dab3; box-shadow: 0 0 8px #79dab340; }
-            #leaderboard-head .mo-hud-label { font-size: .45em; }
-            #leaderboard-positions { text-align: left; font-family: Inter, Ubuntu, sans-serif; font-variant-numeric: tabular-nums; }
-            #leaderboard-positions .mo-lb-row { display: flex; align-items: center; gap: 9px; min-height: 30px; padding: 3px 6px; box-sizing: border-box; border-radius: 8px; margin: 3px 0; }
-            #leaderboard-positions .mo-lb-row:nth-child(odd) { background: rgba(160,196,240,.035); }
-            #leaderboard-positions .mo-lb-row.is-self { background: #7bbfff18; box-shadow: inset 2px 0 #91c9ff; }
-            #leaderboard-positions .mo-lb-rank { display: inline-flex; flex: 0 0 21px; justify-content: center; color: #7d94b1; font-size: .85em; font-weight: 700; white-space: normal; }
-            #leaderboard-positions .mo-lb-row:first-child .mo-lb-rank { color: #f2cf85; }
-            #leaderboard-positions .mo-lb-name { display: block; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-            #leaderboard-positions .leaderboard-score { display: inline; flex: 0 0 auto; color: #829cb9; font-size: .8em; white-space: nowrap; }
-            #leaderboard-chart { float: none; padding-top: 8px; }
-            #leaderboard-chart .chart-bar { border-radius: 6px; box-shadow: none; height: 8px; margin: 8px 0; }
-            #chatroom { width: 300px; max-width: calc(100vw - 36px); height: 262px; max-height: 32vh; left: 18px; bottom: 62px; border-radius: 16px; unicode-bidi: normal; box-sizing: border-box; }
-            #chat-mode-switch { position: sticky; top: 0; height: 34px; flex-shrink: 0; margin: 0; padding: 8px 11px; box-sizing: border-box; background: #111f32; border-radius: 15px 15px 0 0; border-bottom: 1px solid #9bbfe51a; z-index: 2; }
-            #chat-mode-switch .chat-mode-btn, #chat-mode-switch .chat-mode-btn.active { font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1.1px; text-transform: uppercase; padding: 0; border: 0; background: transparent; color: #bad5f3; }
-            #chatroom .chatroom-row { margin: 7px 10px; padding: 8px 9px; background: rgba(137,174,221,.045); border-radius: 9px; font: var(--crest-chat-font-size, 14px)/1.5 Inter, Ubuntu, sans-serif; overflow-wrap: anywhere; text-align: start; unicode-bidi: plaintext; }
-            #chatroom .chatroom-row[data-channel="system"] { background: transparent; border-left: 2px solid #6f94c24d; padding-left: 8px; }
-            #chatroom .chatroom-row .nick { font: 600 var(--crest-chat-font-size, 14px)/1.5 Inter, Ubuntu, sans-serif; color: #accfff; }
-            #chatroom .chatroom-row .message { font: 400 var(--crest-chat-font-size, 14px)/1.5 Inter, Ubuntu, sans-serif; color: #d9e3f1; }
-            #chatroom .chatroom-row .chattime { font-size: .75em; color: #778ca6; margin-right: 4px; font-variant-numeric: tabular-nums; }
-            #chatroom .chatroom-row i { color: #8ba9ca; font-size: .9em; }
-            #chatroom .ps__scrollbar-y { background: #7495ba !important; box-shadow: none !important; }
-            #message { border: 1px solid #9abfeb40; border-radius: 14px; height: max(42px, calc(var(--crest-chat-font-size, 14px) + 28px)); font-size: var(--crest-chat-font-size, 14px); box-sizing: border-box; width: min(420px, calc(100vw - 36px)); background: #0d192bea; color: #edf5ff; padding: 11px 15px; transition: border-color .15s; }
-            #message:focus { border: 1px solid #8dc4ff; background: #142239; box-shadow: 0 0 0 3px #80bfff15; }
+            /* CREST arena HUD */
+            #leaderboard-hud, #chatroom, #minimap-hud {
+                --crest-hud-edge: #a0e8c837;
+                --crest-hud-ink: #ebf5f0;
+                --crest-hud-mint: #a1efcd;
+                --crest-hud-muted: #94aaa5;
+                box-sizing: border-box;
+                border: 1px solid var(--crest-hud-edge);
+                background: linear-gradient(148deg, #152a2bf5, #0c151dec 58%);
+                box-shadow: 0 14px 36px #0006, inset 0 1px #eafff014;
+                color: var(--crest-hud-ink);
+                font-family: Inter, "Segoe UI", Ubuntu, sans-serif;
+                text-shadow: none;
+            }
+            .mo-hud-label { font: 700 10px Inter, "Segoe UI", Ubuntu, sans-serif; letter-spacing: 1.6px; color: #a6bfba; }
+            .crest-hud-heading { display: flex; align-items: center; min-width: 0; gap: 9px; }
+            .crest-hud-icon { display: grid; place-items: center; flex: 0 0 25px; width: 25px; height: 25px; color: #b6ebd4; background: #8de0bb18; border-radius: 7px; }
+            .crest-hud-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
+            .crest-hud-signal { display: inline-flex; align-items: center; gap: 5px; color: #9adabc; font: 650 8px "Segoe UI", sans-serif; letter-spacing: 1.2px; }
+            .crest-hud-signal::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #9df1c3; box-shadow: 0 0 9px #9df1c380; }
+            #leaderboard-hud { width: clamp(180px, 19vw, 262px); right: 18px; padding: 11px; margin-top: 18px; border-radius: 12px 12px 17px 17px; }
+            #leaderboard-head { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-bottom: 7px; padding: 2px 2px 10px; border-bottom: 1px solid #b1d7c323; text-align: left; }
+            #leaderboard-head .mo-hud-label { color: #ecf6ef; font-size: .46em; letter-spacing: .1em; }
+            #leaderboard-positions { text-align: left; color: #e7f0ec; font-family: inherit; font-variant-numeric: tabular-nums; }
+            #leaderboard-positions .mo-lb-row { display: flex; align-items: center; gap: 8px; min-height: 25px; padding: 3px 5px; border-bottom: 1px solid #8cb3a412; box-sizing: border-box; }
+            #leaderboard-positions .mo-lb-row:last-child { border-bottom-color: transparent; }
+            #leaderboard-positions .mo-lb-row:first-child { min-height: 36px; padding: 5px; margin: 3px 0; border-radius: 8px; border: 1px solid #f1d8a14a; background: linear-gradient(100deg, #b48a4e40, #332c1f4d); }
+            #leaderboard-positions .mo-lb-row.is-self { border-radius: 7px; border-color: transparent; background: #91ebc424; box-shadow: inset 2px 0 #a7efcc; }
+            #leaderboard-positions .mo-lb-rank { display: grid; place-items: center; flex: 0 0 23px; height: 19px; border-radius: 4px; color: #a9c1b9; font: 650 .81em "Segoe UI", sans-serif; white-space: normal; }
+            #leaderboard-positions .mo-lb-row:first-child .mo-lb-rank { color: #ffe1a6; background: #f8d69221; }
+            #leaderboard-positions .mo-lb-row.is-self .mo-lb-rank { color: #c2ffdf; }
+            #leaderboard-positions .mo-lb-name { display: block; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+            #leaderboard-positions .leaderboard-score { display: inline; flex: 0 0 auto; color: #a4b8b2; font-size: .79em; white-space: nowrap; }
+            #leaderboard-chart { float: none; padding: 2px 5px 0; }
+            #leaderboard-chart .chart-bar { border-radius: 5px; box-shadow: none; height: 7px; margin: 8px 0; transition: width .18s ease-out; }
+            #chatroom { width: clamp(226px, 23vw, 330px); max-width: calc(100vw - 36px); height: 256px; max-height: 30vh; left: 18px; bottom: 62px; border-radius: 13px; overflow: hidden; unicode-bidi: normal; }
+            #chat-mode-switch { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; min-height: 43px; height: 43px; flex-shrink: 0; margin: 0; padding: 0 11px; box-sizing: border-box; background: #142729; border-radius: 12px 12px 0 0; border-bottom: 1px solid #b1d7c326; z-index: 2; }
+            #chat-mode-switch .chat-mode-btn, #chat-mode-switch .chat-mode-btn.active { font: 700 10px Inter, "Segoe UI", sans-serif; letter-spacing: .095em; text-transform: uppercase; padding: 6px 1px; border: 0; background: transparent; color: #edf8f0; }
+            #chatroom .chatroom-row { margin: 6px 9px; padding: 6px 8px; border-radius: 6px; border-left: 2px solid #8bcfb46b; background: #c2e6d80b; font: var(--crest-chat-font-size, 14px)/1.47 Inter, "Segoe UI", Ubuntu, sans-serif; overflow-wrap: anywhere; text-align: start; unicode-bidi: plaintext; animation: crest-chat-rise .2s ease-out both; }
+            #chatroom .chatroom-row[data-channel="system"] { background: transparent; border-color: #879bba59; }
+            #chatroom .chatroom-row .nick { font-family: inherit; font-weight: 650; font-size: inherit; line-height: inherit; color: #b5efd4; }
+            #chatroom .chatroom-row .message { font-family: inherit; font-weight: 400; font-size: inherit; line-height: inherit; color: #e3ece7; }
+            #chatroom .chatroom-row .chattime { font-size: .72em; color: #9bacac; margin-right: 4px; font-variant-numeric: tabular-nums; }
+            #chatroom .chatroom-row i { color: #9ccfbe; font-size: .88em; }
+            #chatroom .ps__scrollbar-y { background: #8bbdab !important; box-shadow: none !important; }
+            #notifications { left: 18px; bottom: 61px; width: min(310px, calc(100vw - 36px)); }
+            #notifications :is(.normal, .command, .alert) { color: #eaf5f0; background: #15272aef; border: 1px solid #9be9c842; border-radius: 7px; padding: 7px 9px; font: 500 var(--crest-chat-font-size, 14px)/1.4 Inter, "Segoe UI", sans-serif; overflow-wrap: anywhere; }
+            #notifications .alert { border-left: 2px solid #efc786; }
+            #message { border: 1px solid #9debc853; border-radius: 10px; height: max(42px, calc(var(--crest-chat-font-size, 14px) + 26px)); font-size: var(--crest-chat-font-size, 14px); box-sizing: border-box; width: min(420px, calc(100vw - 36px)); background: #102022f4; color: #eaf7f0; padding: 10px 14px; transition: border-color .16s, background-color .16s; }
+            #message:focus { border-color: #b8f6d5; background: #182d2e; box-shadow: 0 0 0 3px #95eac21d; }
             #message-hud { z-index: 104; bottom: 20px; }
-            #minimap-hud { right: 18px; bottom: 18px; border-radius: 16px; background: linear-gradient(145deg,#112038ed,#081424ed); box-shadow: 0 0 0 1px #9abfeb30, 0 8px 26px #0004; overflow: hidden; }
-            .minimap-sector { box-sizing: border-box; color: #829eba; border-right: 1px solid #8eb9ee0d; border-bottom: 1px solid #8eb9ee0d; font-weight: 500; }
-            .minimap-head { right: 18px; bottom: 230px; display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 2px; }
-            .minimap-head .mo-hud-label { margin-right: 8px; }
-            .minimap-button { border-radius: 6px; padding: 4px 9px; color: #92b4d8; background: #152239; font-size: 10px; }
-            .minimap-button.active { background: #2c4b6d; color: #e3f2ff; }
-            #server-restart-countdown { right: 18px; bottom: 264px; color: #8097b1; font: 10px Inter, Ubuntu, sans-serif; }
+            #minimap-hud { right: 18px; bottom: 18px; border: 0; border-radius: 12px; outline: 1px solid #a0e8c852; overflow: hidden; background: radial-gradient(circle at 50% 52%, #1e4440 0, #132925 48%, #0c1a21 100%); }
+            .minimap-grid { background: repeating-radial-gradient(circle at center, #88c5ae27 0 1px, transparent 1px 15%); }
+            .minimap-sector { box-sizing: border-box; color: #9dbdb2; font-family: Inter, "Segoe UI", Ubuntu, sans-serif; border-right: 1px solid #b4dfc822; border-bottom: 1px solid #b4dfc822; font-weight: 500; text-shadow: 0 1px 3px #061115; }
+            .minimap-head { right: 18px; bottom: 230px; display: flex; align-items: center; gap: 5px; min-height: 25px; padding: 0 1px; }
+            .minimap-head .crest-hud-icon { width: 21px; height: 21px; flex-basis: 21px; }
+            .minimap-head .mo-hud-label { color: #b4dccc; margin-right: 5px; }
+            .minimap-button { border-radius: 5px; padding: 4px 7px; color: #bad3cd; background: #1a2d30; font-size: 10px; }
+            .minimap-button.active { background: #9ce1bd; color: #102621; }
+            .minimap-button:focus-visible, #chat-mode-switch button:focus-visible { outline: 2px solid #b8f6d5; outline-offset: 2px; }
+            #server-restart-countdown { right: 18px; bottom: 264px; color: #aac1b9; font: 10px Inter, "Segoe UI", sans-serif; }
+            @keyframes crest-chat-rise { from { opacity: .4; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+            @media (max-width: 760px) { #chatroom { max-width: min(47vw, 240px); } #notifications { left: 10px; width: min(47vw, 240px); } }
+            @media (max-width: 390px) { #chatroom .crest-hud-signal, #leaderboard-head .crest-hud-signal { display: none; } }
+            @media (prefers-reduced-motion: reduce) {
+                #chatroom .chatroom-row { animation: none; }
+                #leaderboard-chart .chart-bar, #message { transition: none; }
+            }
+            #crest-arena-title {
+                position: fixed; z-index: 103; top: clamp(45px, 9vh, 88px); left: 50%;
+                transform: translateX(-50%); pointer-events: none; text-align: center;
+                color: #f0fff6; font-family: "Segoe UI", Arial, sans-serif;
+                animation: crest-arena-enter 1.5s cubic-bezier(.22,.76,.32,1) both;
+            }
+            #crest-arena-title[hidden] { display: none !important; }
+            #crest-arena-title strong {
+                display: block; padding-left: .29em; font-size: clamp(24px, 3.8vw, 43px);
+                font-weight: 750; letter-spacing: .29em; line-height: 1;
+                text-shadow: 0 2px 9px #051814, 0 0 26px #93e7b977;
+            }
+            #crest-arena-title span {
+                display: block; margin: 8px auto 0; padding-left: .24em; color: #c4f0d9;
+                font-size: 8px; font-weight: 700; letter-spacing: .24em;
+                text-shadow: 0 2px 5px #051814;
+            }
+            #crest-arena-title::after {
+                content: ""; display: block; height: 1px; width: 86%; margin: 10px auto 0;
+                background: linear-gradient(90deg, transparent, #acf8d5, transparent);
+                box-shadow: 0 0 8px #b8f9d461;
+            }
+            @keyframes crest-arena-enter {
+                0% { opacity: 0; transform: translate(-50%, 8px) scale(.94); }
+                22%, 65% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+                100% { opacity: 0; transform: translate(-50%, -7px) scale(1); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #crest-arena-title { animation: none; }
+            }
+            @media (max-width: 760px) {
+                #minimap-hud, .minimap-grid, .minimap-row { max-width: 43vw; }
+                #minimap-hud, .minimap-grid { max-height: 43vw; }
+                #minimap-nodes { width: 100%; height: 100%; }
+                .minimap-row { display: flex; height: 20% !important; }
+                .minimap-sector { display: grid; place-items: center; width: 20% !important; height: 100% !important; padding-top: 0 !important; font-size: clamp(7px, 2.5vw, 12px) !important; }
+                .minimap-head { bottom: calc(min(var(--crest-radar-size, 200px), 43vw) + 30px) !important; }
+                #server-restart-countdown { bottom: calc(min(var(--crest-radar-size, 200px), 43vw) + 62px) !important; max-width: 43vw; }
+                #leaderboard-hud { max-height: max(88px, calc(100dvh - min(var(--crest-radar-size, 200px), 43vw) - 96px)); overflow: auto; }
+            }
             #teamlist-hud { left: 18px; margin-top: 8px; padding: 10px 12px; min-width: 130px; }
             #teamlist-head { margin: 0 0 8px; font: 700 10px Inter, Ubuntu, sans-serif; letter-spacing: 1px; color: #a7bdd8; }
             #targeting-hud { border-radius: 0 0 12px 12px; font-size: 10px; padding: 0 10px 8px; }
@@ -4123,8 +4196,9 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
 </div><script>(function(){window.__crestStatus=function(message,step){const el=document.getElementById('ls-message');if(el)el.textContent=message;const bar=document.getElementById('crest-start-progress');if(bar)bar.style.width=([28,58,82,100][step]||28)+'%';document.querySelectorAll('[data-step]').forEach(s=>s.dataset.ready=String(Number(s.dataset.step)<=step))};window.__crestComplete=function(){window.__crestStatus('Your arena is ready',3);const screen=document.getElementById('loading-screen');if(screen){screen.classList.add('crest-entered');setTimeout(()=>screen.remove(),180)}};})();
 </script>
         <div id="huds">
+            <div id="crest-arena-title" aria-hidden="true" hidden><strong>CREST</strong><span>IN THE ARENA</span></div>
             <div id="leaderboard-hud">
-                <div id="leaderboard-head"><span class="mo-hud-label">LEADERBOARD</span><span class="mo-live-dot" aria-hidden="true"></span></div>
+                <div id="leaderboard-head"><span class="crest-hud-heading"><span class="crest-hud-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16v-4h3v4m2 0V8h3v8m2 0V4h3v12"/></svg></span><span class="mo-hud-label">LEADERBOARD</span></span><span class="crest-hud-signal">LIVE</span></div>
                 <div id="leaderboard-positions"></div>
                 <div id="leaderboard-chart">
                     <div class="chart-bar red"></div>
@@ -4138,7 +4212,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
             </div>
             <div id="chatroom">
                 <div id="chat-mode-switch">
-                    <button type="button" class="chat-mode-btn active" data-mode="1">Game Chat</button>
+                    <span class="crest-hud-heading"><span class="crest-hud-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v10h-7l-4 4v-4H5zM8 9h8m-8 3h5"/></svg></span><button type="button" class="chat-mode-btn active" data-mode="1">Game Chat</button></span><span class="crest-hud-signal">CHANNEL</span>
                 </div>
             </div>
             <div id="stats-hud">
@@ -4246,7 +4320,7 @@ body:has(#menu-overlay:not([style*="display: none"])) #huds {
                 </div>
             </div>
             <div class="minimap-head">
-                <span class="mo-hud-label">RADAR</span>
+                <span class="crest-hud-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8z"/></svg></span><span class="mo-hud-label">RADAR</span>
                 <button class="minimap-button" id="minimap-show-1">1</button>
                 <button class="minimap-button" id="minimap-show-2">2</button>
                 <button class="minimap-button active" id="minimap-show-0">All</button>
@@ -5449,6 +5523,47 @@ document.addEventListener("DOMContentLoaded", function () {
 #crest-start-retry{border:1px solid #a7dbc842;border-radius:10px;background:#16322b;color:#def1e7;padding:10px 22px;margin:20px 0 0;cursor:pointer;font:600 13px Segoe UI,sans-serif}#crest-start-retry[hidden]{display:none}
 .crest-entry-help{display:block;margin-top:28px;color:#6f9385;font-size:11px;text-decoration:none}.crest-entry-help:hover{color:#bfdfcf}.crest-entry button:focus-visible,.crest-entry a:focus-visible{outline:2px solid #bde8d3;outline-offset:4px}
 @keyframes crest-breathe{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.crest-entry-track span{animation:none}#loading-screen{transition:none}}
+#loading-screen {
+    background: radial-gradient(ellipse at 50% 32%, #204439 0, #102520 27%, #080f15 62%) !important;
+    transition: opacity .18s ease;
+}
+.crest-entry { position: relative; isolation: isolate; }
+.crest-entry::before {
+    inset: 0; width: min(350px, 84vw); height: min(350px, 84vw); margin: auto; top: -16%; bottom: auto;
+    border-radius: 50%; border-color: #c1e9c827; transform: none;
+    box-shadow: 0 0 0 18px #a8ddc20b, 0 0 0 38px #a8ddc207, inset 0 0 60px #96dfbc12;
+    z-index: -1; animation: crest-aperture .85s ease-out both;
+}
+.crest-emblem {
+    width: clamp(65px, 13vw, 100px); height: auto; margin: 0 auto 19px;
+    animation: crest-emblem-enter .62s cubic-bezier(.16,1,.3,1) both;
+}
+.crest-emblem svg { display: block; width: 100%; }
+#loading-screen .ls-title {
+    font: 750 clamp(47px, 9vw, 86px)/.98 "Segoe UI", Arial, sans-serif !important;
+    letter-spacing: .21em !important; padding-left: .21em; margin: 0 0 18px;
+    text-shadow: 0 0 32px #b6f1d64d !important;
+    animation: crest-wordmark-enter .68s cubic-bezier(.17,.91,.27,1) both;
+}
+.crest-entry-tag { color: #a3cabb; letter-spacing: .38em; margin-bottom: 33px; }
+.crest-entry-track { height: 2px; }
+.crest-entry-steps { color: #879f96; }
+@keyframes crest-aperture {
+    from { opacity: 0; transform: scale(.68); } to { opacity: 1; transform: none; }
+}
+@keyframes crest-emblem-enter {
+    from { opacity: 0; transform: translateY(16px) scale(.72); } to { opacity: 1; transform: none; }
+}
+@keyframes crest-wordmark-enter {
+    from { opacity: 0; clip-path: inset(0 50%); }
+    47% { opacity: 1; }
+    to { opacity: 1; clip-path: inset(0 -24%); }
+}
+.crest-entry::before, .crest-emblem, #loading-screen .ls-title { animation-delay: var(--crest-entry-offset, 0ms); }
+@media (prefers-reduced-motion: reduce) {
+    .crest-entry::before, .crest-emblem, #loading-screen .ls-title { animation: none; }
+    #loading-screen { transition: none; }
+}
 </style><span id="crest-dom-ready" hidden></span><style id="crest-studio-style">#crest-preferences-studio{--cpx-accent:#9ce0c8;--cpx-ink:#182e39;--cpx-line:#dce5e5;position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;background:#03101bce;backdrop-filter:blur(12px);font-family:Segoe UI,Arial,sans-serif;color:var(--cpx-ink);text-align:left;font-size:14px;box-sizing:border-box;}
 #crest-preferences-studio[hidden],#crest-preferences-studio [hidden]{display:none!important;}
 #crest-preferences-studio *{box-sizing:border-box;text-shadow:none;}

@@ -1998,9 +1998,7 @@
     }
     static ["setMinimap"](adm) {
       if (Minimap.initted) {
-        Minimap.size = adm;
-        Minimap.canvas.width = adm;
-        Minimap.canvas.height = adm;
+        Minimap.resize(adm);
       }
       $("#minimap-hud, .minimap-grid").css({
         width: adm + "px",
@@ -2016,6 +2014,7 @@
         "font-size": (0 | ((15 * adm) / 200)) + "px",
         "padding-top": (0 | ((11 * adm) / 200)) + "px",
       });
+      document.getElementById("huds")?.style.setProperty("--crest-radar-size", adm + "px");
       const le = $(".minimap-head");
       le.css("bottom", adm + 30 + "px");
       // Stack on top of .minimap-head (which is itself already anchored
@@ -2723,6 +2722,7 @@
       if (!this.teamLBvisible) {
         this.teamLB.show();
         this.div.innerHTML = "";
+        this.renderedRanks = undefined;
         this.teamLBvisible = true;
       }
       this.barsCss.innerText =
@@ -2751,7 +2751,10 @@
           '<span class="mo-lb-rank">' + Number(ach.position) + '</span>' +
           '<span class="mo-lb-name" dir="auto">' + name + '</span>' + xu + '</div>';
       }
-      this.div.innerHTML = ir;
+      if (ir !== this.renderedRanks) {
+        this.div.innerHTML = ir;
+        this.renderedRanks = ir;
+      }
     }
     static ["cleanNick"](ia) {
       return ia.replace(/</g, "(").replace(/>/g, ")").substring(0, 15);
@@ -2761,29 +2764,32 @@
     static ["init"]() {
       this.initted = true;
       this.canvas = $("#minimap-nodes")[0];
-      this.size = Theme.minimapSize;
-      this.canvas.width = this.size;
-      this.canvas.height = this.size;
       this.pi2 = 2 * Math.PI;
       this.ctx = this.canvas.getContext("2d");
+      this.resize(Theme.minimapSize);
+      this.selector = 0;
+    }
+    static resize(size) {
+      this.size = size;
+      this.canvas.width = this.canvas.height = size;
       this.ctx.textAlign = "center";
       this.ctx.textBaseline = "bottom";
-      this.ctx.font = "500 12px ubuntu";
-      this.ctx.lineWidth = 2;
-      this.selector = 0;
+      this.ctx.font = "600 " + Math.max(9, Math.round(size / 20)) + "px Segoe UI, sans-serif";
+      this.ctx.lineWidth = 1.25;
     }
     static ["run"]() {
       const wk = this.ctx;
       const av = this.size / WorldData.edge;
       const sx = Camera.viewBounds;
       wk.clearRect(0, 0, this.size, this.size);
-      wk.fillStyle = "rgba(180, 57, 69, 0.4)";
-      wk.fillRect(
-        0 | ((sx.left - WorldData.offset.x + 8000) * av),
-        0 | ((sx.top - WorldData.offset.y + 8000) * av),
-        0 | ((sx.right - sx.left) * av),
-        0 | ((sx.bottom - sx.top) * av),
-      );
+      const viewX = (sx.left - WorldData.offset.x + 8000) * av;
+      const viewY = (sx.top - WorldData.offset.y + 8000) * av;
+      const viewWidth = (sx.right - sx.left) * av;
+      const viewHeight = (sx.bottom - sx.top) * av;
+      wk.fillStyle = "rgba(135, 236, 191, 0.14)";
+      wk.strokeStyle = "rgba(166, 246, 213, 0.57)";
+      wk.fillRect(viewX, viewY, viewWidth, viewHeight);
+      wk.strokeRect(viewX, viewY, viewWidth, viewHeight);
       if (RelayData.biggestIsOn && (Player.isAlive || !Camera.isSpectating || Camera.freeSpectate)) {
         RelayData.biggest.animate();
         const j = RelayData.biggest.mapX;
@@ -2796,7 +2802,7 @@
         wk.stroke();
         wk.fillText(Language.current.huds.num1position || "#1 position", j, jr - 8);
       }
-      wk.strokeStyle = "#666";
+      wk.strokeStyle = "#c5aa7e";
       const aca = (8000 - WorldData.offset.x + Player.deathLocation.x) * av;
       const nz = (8000 - WorldData.offset.y + Player.deathLocation.y) * av;
       wk.beginPath();
@@ -2806,14 +2812,14 @@
       wk.lineTo(aca + 4, nz - 4);
       wk.closePath();
       wk.stroke();
-      wk.strokeStyle = "rgba(51, 51, 51, 0.5)";
+      wk.strokeStyle = "#113e32";
       const rg = (8000 - WorldData.offset.x + Camera.x) * av;
       const cs = (8000 - WorldData.offset.y + Camera.y) * av;
-      const ja = Player.isAlive ? 4 : 7;
+      const ja = Player.isAlive ? 4.5 : 6;
       wk.beginPath();
       wk.arc(rg, cs, ja, 0, this.pi2, false);
       wk.closePath();
-      wk.fillStyle = "#fff";
+      wk.fillStyle = "#ddffeb";
       wk.fill();
       wk.stroke();
       if (RelayData.isSpectator) {
@@ -2848,6 +2854,7 @@
       const t = this.ctx;
       t.textAlign = "center";
       t.textBaseline = "bottom";
+      t.fillStyle = "#e8f6f0";
       t.beginPath();
       for (const wr of RelayData.teamPlayers.values())
         if (wr.isAlive && !PartyManager.hasNick(wr.nick)) {
@@ -2861,8 +2868,10 @@
           }
         }
       t.closePath();
-      t.fillStyle = "#555";
+      t.fillStyle = "#8ddfc0";
       t.fill();
+      t.strokeStyle = "#133b32";
+      t.stroke();
       this.partyMinimap();
     }
     static ["partyMinimap"]() {
@@ -3910,6 +3919,12 @@
         PacketSender.spawn(2);
       }
     }
+    static showArenaTitle() {
+      const title = document.getElementById("crest-arena-title");
+      if (!title?.hidden) return;
+      title.hidden = false;
+      setTimeout(() => title.remove(), 1500);
+    }
     static ["closeSubMenus"]() {
       CrestPreferences.close(false);
       MoMenu.setAccount(false, false);
@@ -4396,6 +4411,7 @@
     static ["playing"]() {
       if (!this._isAlive) {
         this._isAlive = true;
+        MainMenu.showArenaTitle();
         // Tab 1 respawning ends any background scouting it was doing for
         // the #1 position marker - clear it locally instead of leaving the
         // last scouted position stuck on the minimap until a stale relay
@@ -4417,6 +4433,7 @@
     static ["playing2"]() {
       if (!this._isAlive2) {
         this._isAlive2 = true;
+        MainMenu.showArenaTitle();
         // Same as above, for tab 2 respawning.
         if (this._scouting2) {
           this._scouting2 = false;
