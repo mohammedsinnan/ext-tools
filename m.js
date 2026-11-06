@@ -8401,15 +8401,7 @@
       // which isn't guaranteed for every server. Adding it back here (when
       // the sender no longer subtracts anything but a tab2 visual-shift,
       // if any) was producing wildly out-of-bounds points, e.g. y=-11279.
-      const vg = acs.readInt16();
-      const re = acs.readInt16();
-      const agh = GameLoop.time;
-      const bd = {
-        x: vg,
-        y: re,
-        time: agh,
-      };
-      Renderer.commanderPoints.add(bd);
+      Renderer.addCommanderPoint(acs.readInt16(), acs.readInt16());
     }
     static ["selfID"](ln) {
       const aab = ln.readUInt32();
@@ -8552,22 +8544,18 @@
       }
     }
     static ["commander"]() {
+      // Remove Player 2's aiming offset to get the cursor position in the arena.
+      const offset = Player.typeID === 2 ? WorldData.position : { x: 0, y: 0 };
+      const x = Mouse.canvasX - offset.x;
+      const y = Mouse.canvasY - offset.y;
+      Renderer.addCommanderPoint(x, y);
+
       if (RelayWs.connected) {
-        // Only remove tab2's visual-separation shift (WorldData.position -
-        // the delta used to draw tab2's cells apart from tab1's on the
-        // shared canvas), not the border-derived offset/offset2 - same
-        // fix as positionMass()'s own Player.x/y, which already only
-        // subtracts this same shift. canvasX/Y is otherwise already a raw
-        // world coordinate.
-        const qf = { x: 0, y: 0 };
-        const afr = 2 === Player.typeID ? WorldData.position : qf;
-        const ali = Mouse.canvasX - afr.x;
-        const ol = Mouse.canvasY - afr.y;
-        const pg = this.createView(5);
-        pg.setUint8(0, 128, true);
-        pg.setInt16(1, 0 | ali, true);
-        pg.setInt16(3, 0 | ol, true);
-        RelayWs.sendVolatile(pg.buffer);
+        const packet = this.createView(5);
+        packet.setUint8(0, 128);
+        packet.setInt16(1, x, true);
+        packet.setInt16(3, y, true);
+        RelayWs.sendVolatile(packet.buffer);
       }
     }
     static ["spectator"]() {}
@@ -9222,6 +9210,9 @@
     }
     static ["code2Url"](aae) {
       return "https://i.imgur.com/" + aae + ".png";
+    }
+    static addCommanderPoint(x, y) {
+      this.commanderPoints.add({ x, y, time: GameLoop.time });
     }
     static ["commands"]() {
       const afn = this.ctx;
