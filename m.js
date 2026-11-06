@@ -7972,6 +7972,7 @@
       const room = encodeURIComponent(this.room);
       const pending = new Set();
       let session, queued = [], flushTimer, sending = false;
+      let sendingArena = false, sendingCommander = false;
       const request = (method, url, data, timeout = 28000) => new Promise((resolve, reject) => {
         let handle;
         const fail = () => { pending.delete(handle); reject(Error("Tag relay request failed")); };
@@ -7995,6 +7996,15 @@
           let binary = "";
           for (const byte of bytes) binary += String.fromCharCode(byte);
           const frame = { opcode: bytes[0], data: btoa(binary) };
+          // Commander can travel immediately once this session's arena has been sent.
+          if (frame.opcode === 128 && !sendingArena && !sendingCommander &&
+              !queued.some(old => old.opcode === 4 || old.opcode === 128)) {
+            sendingCommander = true;
+            request("POST", session, JSON.stringify([frame.data]))
+              .catch(fail)
+              .finally(() => { sendingCommander = false; schedule(); });
+            return;
+          }
           if (frame.opcode === 16) queued = queued.filter(old => old.opcode !== 16);
           queued.push(frame);
           if (queued.length > 32) { fail(); return; }
@@ -8016,22 +8026,34 @@
         socket.close();
       }
       function schedule() {
-        if (sending || flushTimer || !queued.length || socket.readyState !== WebSocket.OPEN) return;
-        flushTimer = setTimeout(flush, 100);
+        if (sending || !queued.length || socket.readyState !== WebSocket.OPEN) return;
+        if (queued.some(frame => frame.opcode === 128)) {
+          clearTimeout(flushTimer);
+          flush();
+        } else if (!flushTimer) {
+          flushTimer = setTimeout(flush, 100);
+        }
       }
       async function flush() {
         flushTimer = null;
+        // Keep queued arena changes and follow-up pings behind the in-flight ping.
+        if (sendingCommander && queued.some(frame => frame.opcode === 4 || frame.opcode === 128)) return;
         sending = true;
         const batch = [];
         let length = 2;
         while (queued.length && length + queued[0].data.length + 3 <= 32768) {
-          const frame = queued.shift().data;
-          batch.push(frame);
-          length += frame.length + 3;
+          const frame = queued.shift();
+          if (frame.opcode === 4) sendingArena = true;
+          batch.push(frame.data);
+          length += frame.data.length + 3;
         }
         try { await request("POST", session, JSON.stringify(batch)); }
         catch { fail(); }
-        finally { sending = false; schedule(); }
+        finally {
+          sending = false;
+          sendingArena = false;
+          schedule();
+        }
       }
       async function run() {
         try {
