@@ -389,7 +389,7 @@
       this.language = Storage.get("settings", "language") || Language.browser;
       this.CellAnimation = ~~Storage.get("settings", "CellAnimation") || 160;
       const motionStyle = Storage.get("settings", "moMotionStyle");
-      this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid", "snappy", "agar"].includes(motionStyle) ? motionStyle : "cinematic";
+      this.moMotionStyle = ["classic", "smooth", "cinematic", "fluid", "snappy", "agar", "slipstream"].includes(motionStyle) ? motionStyle : "cinematic";
       this.eatAnimation = Storage.get("settings", "eatAnimation") || "on";
       this.zoomSpeed = ~~Storage.get("settings", "zoomSpeed") || 92;
       this.cameraSpeed = ~~Storage.get("settings", "cameraSpeed") || 20;
@@ -3574,13 +3574,13 @@
       const art = document.createElement('canvas');
       art.width = art.height = 256;
       const c = art.getContext('2d');
-      const light = c.createRadialGradient(128, 128, 0, 128, 128, 128);
-      light.addColorStop(0, 'transparent');
-      light.addColorStop(.55, 'rgba(136,247,113,0)');
-      light.addColorStop(.71, 'rgba(158,255,103,.36)');
-      light.addColorStop(.81, 'rgba(125,247,107,.24)');
-      light.addColorStop(1, 'rgba(113,245,150,0)');
-      c.fillStyle = light;
+      const glow = c.createRadialGradient(128, 128, 0, 128, 128, 128);
+      glow.addColorStop(0, 'transparent');
+      glow.addColorStop(.52, 'transparent');
+      glow.addColorStop(.71, 'rgba(87,255,170,.27)');
+      glow.addColorStop(.82, 'rgba(70,232,162,.15)');
+      glow.addColorStop(1, 'rgba(47,207,172,0)');
+      c.fillStyle = glow;
       c.fillRect(0, 0, 256, 256);
       this.cached = art;
       return art;
@@ -3591,62 +3591,64 @@
       art.width = art.height = 512;
       const c = art.getContext('2d');
       c.translate(256, 256);
-      const segment = Math.PI / 6;
+      const step = Math.PI / 4;
       const polar = (angle, radius) => [Math.cos(angle) * radius, Math.sin(angle) * radius];
 
-      // Twelve curved teeth with blunted tips sit inside the native cell radius.
+      // The blades bend in the same direction, with a soft shoulder and a clear tip.
       c.beginPath();
-      for (let i = 0; i < 12; i++) {
-        const a = i * segment - Math.PI / 2;
-        const base = polar(a - segment / 2, 196);
-        if (i === 0) c.moveTo(...base);
-        c.bezierCurveTo(...polar(a - segment * .24, 208), ...polar(a - segment * .22, 250), ...polar(a, 250));
-        c.bezierCurveTo(...polar(a + segment * .22, 250), ...polar(a + segment * .24, 208), ...polar(a + segment / 2, 196));
+      for (let i = 0; i < 8; i++) {
+        const a = i * step - Math.PI / 2;
+        if (!i) c.moveTo(...polar(a - step / 2, 176));
+        c.bezierCurveTo(...polar(a - step * .35, 211), ...polar(a - step * .17, 246), ...polar(a + step * .2, 250));
+        c.bezierCurveTo(...polar(a + step * .03, 226), ...polar(a + step * .19, 182), ...polar(a + step / 2, 176));
       }
       c.closePath();
-      const fill = c.createRadialGradient(-63, -96, 25, 0, 0, 270);
-      for (const [at, color] of [[0,'#275c4b'],[.47,'#113b38'],[.74,'#1b5241'],[1,'#8ad75c']]) fill.addColorStop(at, color);
-      c.fillStyle = fill;
+      const membrane = c.createRadialGradient(-49, -67, 18, 0, 0, 257);
+      for (const [at,color] of [[0,'#123943'],[.56,'#0d3436'],[.78,'#155745'],[1,'#65d99b']]) membrane.addColorStop(at,color);
+      c.fillStyle = membrane;
       c.fill();
+      const rim = c.createLinearGradient(-216, -188, 196, 218);
+      rim.addColorStop(0, '#c0ffe3');
+      rim.addColorStop(.48, '#79edb4');
+      rim.addColorStop(1, '#48bda4');
       c.lineJoin = 'round';
-      c.lineWidth = 8;
-      c.strokeStyle = '#a8f579';
-      c.stroke();
-      c.lineWidth = 2.5;
-      c.strokeStyle = '#edffb8';
+      c.lineWidth = 6;
+      c.strokeStyle = rim;
       c.stroke();
 
-      const circle = radius => { c.beginPath(); c.arc(0, 0, radius, 0, Math.PI * 2); };
-      c.lineWidth = 3;
-      c.strokeStyle = '#9be8ad66';
-      circle(159);
-      c.stroke();
-      c.strokeStyle = '#bbfda044';
-      for (let i = 0; i < 12; i++) {
-        const a = i * segment - Math.PI / 2;
+      c.save();
+      c.clip();
+      for (let i = 0; i < 8; i++) {
+        const a = i * step - Math.PI / 2;
         c.beginPath();
-        c.moveTo(...polar(a, 176));
-        c.lineTo(...polar(a, 220));
+        c.moveTo(...polar(a - step * .27, 105));
+        c.quadraticCurveTo(...polar(a - step * .36, 182), ...polar(a + step * .18, 242));
+        c.strokeStyle = i % 2 ? '#9afcc247' : '#72f4c177';
+        c.lineWidth = 4;
         c.stroke();
       }
+      c.restore();
 
-      const core = c.createRadialGradient(0, 0, 8, 0, 0, 128);
-      core.addColorStop(0, '#c8fd8a5c');
-      core.addColorStop(.55, '#91ef7970');
-      core.addColorStop(1, '#0c352100');
-      circle(128);
-      c.fillStyle = core;
+      const light = c.createRadialGradient(-18, -11, 6, 0, 0, 136);
+      light.addColorStop(0, '#85ffd79a');
+      light.addColorStop(.53, '#53d5b34d');
+      light.addColorStop(1, '#46c6aa00');
+      c.beginPath();
+      c.arc(0, 0, 136, 0, Math.PI * 2);
+      c.fillStyle = light;
       c.fill();
-      const facets = [
-        ['#e7ffc0', [[0,-92],[65,0],[0,-15],[-65,0]]],
-        ['#89ee80', [[-65,0],[0,-15],[0,92]]],
-        ['#58ba79', [[0,-15],[65,0],[0,92]]]
-      ];
-      for (const [color, points] of facets) {
+      c.beginPath();
+      c.ellipse(0, 0, 96, 70, -.34, 0, Math.PI * 2);
+      c.strokeStyle = '#89eacf69';
+      c.lineWidth = 3;
+      c.stroke();
+      for (const [x,y,r] of [[-24,5,23],[23,-24,13],[31,24,10]]) {
+        const seed = c.createRadialGradient(x - 3, y - 3, 1, x, y, r);
+        seed.addColorStop(0, '#ecfff1');
+        seed.addColorStop(1, '#72efac');
         c.beginPath();
-        points.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
-        c.closePath();
-        c.fillStyle = color;
+        c.arc(x, y, r, 0, Math.PI * 2);
+        c.fillStyle = seed;
         c.fill();
       }
       this.cachedBody = art;
@@ -3773,7 +3775,7 @@
   }
 
   class MoMotionTuning {
-    static styles=['cinematic','fluid','snappy','agar'];
+    static styles=['cinematic','fluid','snappy','agar','slipstream'];
     static keys=['glide','split','camera','zoom'];
     static neutral={glide:50,split:50,camera:50,zoom:50};
     static presets={competitive:{glide:20,split:15,camera:25,zoom:30},relaxed:{glide:75,split:70,camera:80,zoom:80}};
@@ -3787,12 +3789,16 @@
     static choose(id){const e=this.entry();if(!e||!['competitive','relaxed','custom'].includes(id))return;e.active=id;this.save()}
     static edit(name,value){const e=this.entry();value=Number(value);if(!e||!this.keys.includes(name)||!Number.isFinite(value))return;if(e.active!=='custom')e.custom={...this.values()};e.active='custom';e.custom[name]=Math.max(0,Math.min(100,Math.round(value)));this.save()}
     static reset(){const e=this.entry();if(!e)return;e.active='custom';e.custom={...this.neutral};this.save()}
-    static cycle(){const e=this.entry();if(!e)return;const ids=['competitive','relaxed','custom'];this.choose(ids[(ids.indexOf(e.active)+1)%ids.length]);if(!this.toast){this.toast=document.createElement('div');this.toast.setAttribute('role','status');this.toast.style.cssText='position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:100001;pointer-events:none;background:#0e2434ed;color:#b8f5df;border:1px solid #91ddc655;border-radius:12px;padding:10px 18px;font:600 13px Arial,sans-serif';document.body.appendChild(this.toast)}this.toast.textContent=({agar:'Agar · Silk',cinematic:'Cinematic',fluid:'Fluid',snappy:'Snappy'})[Settings.moMotionStyle]+' · '+this.labels[e.active];this.toast.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast.hidden=true},1800)}
+    static cycle(){const e=this.entry();if(!e)return;const ids=['competitive','relaxed','custom'];this.choose(ids[(ids.indexOf(e.active)+1)%ids.length]);if(!this.toast){this.toast=document.createElement('div');this.toast.setAttribute('role','status');this.toast.style.cssText='position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:100001;pointer-events:none;background:#0e2434ed;color:#b8f5df;border:1px solid #91ddc655;border-radius:12px;padding:10px 18px;font:600 13px Arial,sans-serif';document.body.appendChild(this.toast)}this.toast.textContent=({agar:'Agar · Silk',cinematic:'Cinematic',fluid:'Fluid',snappy:'Snappy',slipstream:'Slipstream'})[Settings.moMotionStyle]+' · '+this.labels[e.active];this.toast.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast.hidden=true},1800)}
     static follow(camera,x,y,dt,tau){if(!Number.isFinite(dt))return;const a=dt>250?1:-Math.expm1(-dt/Math.max(8,tau));camera.x+=(x-camera.x)*a;camera.y+=(y-camera.y)*a}
     static zoom(camera,target,dt,tau){if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/Math.max(8,tau)))}
     static legacyCameraTau(){const speed=Math.max(1.01,Number(Settings.cameraSpeed)||20);return -(1000/60)/Math.log1p(-1/speed)}
-    static followGame(camera){this.follow(camera,Player.x,Player.y,MoGameplay.silkDelta(camera,'_moTuneFollowAt'),this.legacyCameraTau()*this.factor('camera'))}
-    static zoomGame(camera,target){this.zoom(camera,target,MoGameplay.silkDelta(camera,'_moTuneZoomAt'),(-(1000/60)/Math.log(7/8))*this.factor('zoom'))}
+    static followGame(camera, tau = this.legacyCameraTau()) {
+      this.follow(camera, Player.x, Player.y, MoGameplay.silkDelta(camera, '_moTuneFollowAt'), tau * this.factor('camera'));
+    }
+    static zoomGame(camera, target, tau = -(1000 / 60) / Math.log(7 / 8)) {
+      this.zoom(camera, target, MoGameplay.silkDelta(camera, '_moTuneZoomAt'), tau * this.factor('zoom'));
+    }
     static attach(panel){
       this.panel=panel;const wrap=document.createElement('section');wrap.className='mom-tuning';wrap.setAttribute('aria-label','Movement tuning');
       wrap.innerHTML='<div class="mom-head"><div><small>MOTION STUDIO</small><h3>Your movement. Your rhythm.</h3><p>Separate tuning for each gameplay style. Your current animation stays unchanged at 50.</p></div><button type="button" data-motion-reset>Reset tuning</button></div><div class="mom-profiles" role="group" aria-label="Movement profile"><button type="button" data-motion-profile="competitive">Competitive<small>Tighter follow · faster settling</small></button><button type="button" data-motion-profile="relaxed">Relaxed<small>Softer glide · weighted camera</small></button><button type="button" data-motion-profile="custom">Custom<small>Your saved personal tuning</small></button></div><div class="mom-layout"><div class="mom-sliders"></div><div class="mom-preview"><canvas width="720" height="240" aria-label="Live movement and split preview"></canvas><p>Simulated cells · live animation preview</p></div></div><div class="mom-foot" role="status"></div>';
@@ -3801,19 +3807,55 @@
       for(const [id,label,left,right]of labels){const host=document.createElement('label');host.className='mom-slider';host.innerHTML='<span>'+label+'<output></output></span><input type="range" min="0" max="100" step="1" data-motion-tune="'+id+'" aria-label="'+label+'"><small><b>'+left+'</b><b>'+right+'</b></small>';host.querySelector('input').addEventListener('input',e=>this.edit(id,e.target.value));wrap.querySelector('.mom-sliders').appendChild(host)}
       wrap.querySelectorAll('[data-motion-profile]').forEach(b=>b.addEventListener('click',()=>this.choose(b.dataset.motionProfile)));wrap.querySelector('[data-motion-reset]').addEventListener('click',()=>this.reset());panel.appendChild(wrap);this.root=wrap;this.refresh();
     }
-    static refresh(){if(!this.root)return;const entry=this.entry(),values=this.values();this.root.querySelectorAll('[data-motion-profile]').forEach(b=>{b.disabled=!entry;b.setAttribute('aria-pressed',String(entry?.active===b.dataset.motionProfile))});this.root.querySelectorAll('[data-motion-tune]').forEach(input=>{input.disabled=!entry;input.value=values[input.dataset.motionTune];input.previousElementSibling.querySelector('output').textContent=input.value});this.root.querySelector('[data-motion-reset]').disabled=!entry;const key=typeof Hotkeys!=='undefined'?Hotkeys.cycleMotionProfile:'';this.root.querySelector('.mom-foot').textContent=entry?this.labels[entry.active]+' profile · saves automatically for this style. '+(key?'Press '+key+' in gameplay to cycle profiles.':'Assign “Cycle movement profile” in Settings → Controls → Keyboard.'):'Choose Cinematic, Fluid, Snappy or Agar · Silk to use movement tuning.'}
+    static refresh(){if(!this.root)return;const entry=this.entry(),values=this.values();this.root.querySelectorAll('[data-motion-profile]').forEach(b=>{b.disabled=!entry;b.setAttribute('aria-pressed',String(entry?.active===b.dataset.motionProfile))});this.root.querySelectorAll('[data-motion-tune]').forEach(input=>{input.disabled=!entry;input.value=values[input.dataset.motionTune];input.previousElementSibling.querySelector('output').textContent=input.value});this.root.querySelector('[data-motion-reset]').disabled=!entry;const key=typeof Hotkeys!=='undefined'?Hotkeys.cycleMotionProfile:'';this.root.querySelector('.mom-foot').textContent=entry?this.labels[entry.active]+' profile · saves automatically for this style. '+(key?'Press '+key+' in gameplay to cycle profiles.':'Assign “Cycle movement profile” in Settings → Controls → Keyboard.'):'Choose Cinematic, Fluid, Snappy, Agar · Silk or Slipstream to use movement tuning.'}
     static stop(){cancelAnimationFrame(this.frame);this.frame=null;this.previewState=null;this.lastPaint=undefined}
     static start(){this.stop();this.refresh();if(!this.root||this.panel.hidden||MoInventory.root?.hidden)return;this.frame=requestAnimationFrame(t=>this.preview(t))}
     static preview(now){if(!this.root||this.panel.hidden||MoInventory.root?.hidden){this.stop();return}this.frame=requestAnimationFrame(t=>this.preview(t));if(document.hidden)return;if(this.lastPaint!==undefined&&now-this.lastPaint<1000/(MoPerformance.full()?30:15))return;this.lastPaint=now;
       const style=Settings.moMotionStyle;if(!this.previewState||this.previewState.style!==style){const cell=new Cell(-1,1);Object.assign(cell,{x:-100,y:0,radius:40,animX:-100,animY:0,animRadius:40,lastUpdateTime:now});this.previewState={style,born:now,phase:0,cells:[cell],camera:{x:0,y:0,viewport:1},at:now};this.refresh()}
       const s=this.previewState,dt=now-s.at;s.at=now;const age=(now-s.born)/1000,phase=age%6;if(phase<2&&s.phase>=2){s.cells=s.cells.slice(0,1);s.cells[0].radius=40}if(phase>=2&&s.phase<2){s.cells[0].radius=28;const child=new Cell(-2,1);Object.assign(child,{x:100,y:0,radius:28,animX:s.cells[0].animX,animY:0,animRadius:4,lastUpdateTime:now});s.cells.push(child)}s.phase=phase;
       let target=0;for(let i=0;i<s.cells.length;i++){const cell=s.cells[i];cell.x=Math.sin(age*.85)*145+(i?75:-75);cell.y=i?18:-18;cell.animate(now);target+=cell.animX}target/=s.cells.length;
-      const cameraTau=(style==='agar'?125*Math.max(.5,Math.min(2,(Number(Settings.cameraSpeed)||20)/20)):this.legacyCameraTau())*this.factor('camera');this.follow(s.camera,target,0,dt,cameraTau);this.zoom(s.camera,s.cells.length>1?.85:1,dt,(style==='agar'?180:-(1000/60)/Math.log(7/8))*this.factor('zoom'));
+      const cameraTau = style === 'slipstream' ? MoGameplay.slipstreamCameraTau()
+        : style === 'agar' ? 125 * Math.max(.5, Math.min(2, (Number(Settings.cameraSpeed) || 20) / 20)) : this.legacyCameraTau();
+      const zoomTau = style === 'slipstream' ? MoGameplay.slipstreamZoomTau
+        : style === 'agar' ? 180 : -(1000 / 60) / Math.log(7 / 8);
+      this.follow(s.camera, target, 0, dt, cameraTau * this.factor('camera'));
+      this.zoom(s.camera, s.cells.length > 1 ? .85 : 1, dt, zoomTau * this.factor('zoom'));
       const cv=this.root.querySelector('canvas'),c=cv.getContext('2d');c.clearRect(0,0,720,240);c.save();c.translate(360,118);c.scale(s.camera.viewport,s.camera.viewport);c.translate(-s.camera.x,0);c.strokeStyle='#7bbdaf14';c.lineWidth=1;for(let x=-600;x<=600;x+=65){c.beginPath();c.moveTo(x,-200);c.lineTo(x,200);c.stroke()}for(const [i,cell]of s.cells.entries()){c.save();c.translate(cell.animX,cell.animY);if(['cinematic','fluid','snappy'].includes(style)){const stretch=cell._moStretch||0;c.rotate(Math.atan2(cell._moVY||0,cell._moVX||0));c.scale(1+stretch,1/(1+stretch))}c.fillStyle=i?'#a4a0e2':'#8ce0c8';c.beginPath();c.arc(0,0,cell.animRadius+5,0,Math.PI*2);c.fill();c.strokeStyle='#18393b';c.lineWidth=1.5;c.stroke();c.restore()}c.restore();c.fillStyle='#9abebd';c.font='12px Arial,sans-serif';c.fillText(phase<2?'GLIDE':'SPLIT & FOLLOW',16,222);
     }
   }
 
   class MoGameplay {
+    static animateSlipstream(cell, now) {
+      const previous = cell._moMotionTime ?? cell.lastUpdateTime;
+      const dt = Math.max(0, now - previous);
+      if (!Number.isFinite(dt) || ![cell.x, cell.y, cell.radius, cell.animX, cell.animY, cell.animRadius].every(Number.isFinite)) return;
+      cell._moMotionTime = cell.lastUpdateTime = now;
+      cell._moStretch = cell._moVX = cell._moVY = 0;
+      if (!dt) return;
+      if (dt > 250) {
+        cell.animX = cell.x;
+        cell.animY = cell.y;
+        cell.animRadius = cell.radius;
+        return;
+      }
+
+      // Exact distance-dependent decay. Large split gaps close quickly and
+      // small corrections settle gently, independent of render frame rate.
+      const scale = Math.max(.6, Math.min(1.6, (Number(Settings.CellAnimation) || 160) / 160));
+      const dx = cell.x - cell.animX, dy = cell.y - cell.animY;
+      const gap = Math.hypot(dx, dy) / Math.max(36, cell.radius * 2);
+      const fall = -Math.expm1(-dt / (62 * scale * MoMotionTuning.factor('glide')));
+      const remaining = (1 - fall) / (1 + gap * fall);
+      cell.animX = cell.x - dx * remaining;
+      cell.animY = cell.y - dy * remaining;
+      const sizeTime = (cell.radius < cell.animRadius ? 31 : 47) * scale * MoMotionTuning.factor('split');
+      cell.animRadius += (cell.radius - cell.animRadius) * -Math.expm1(-dt / sizeTime);
+    }
+    static slipstreamCameraTau() {
+      return 82 * Math.max(.5, Math.min(2, (Number(Settings.cameraSpeed) || 20) / 20));
+    }
+    static slipstreamZoomTau = 128;
+
     static animateSilk(cell,now=GameLoop.time){
       const previous=cell._moMotionTime===undefined?cell.lastUpdateTime:cell._moMotionTime,dt=Math.max(0,now-previous);
       if(!Number.isFinite(dt)||![cell.x,cell.y,cell.radius,cell.animX,cell.animY,cell.animRadius].every(Number.isFinite))return;
@@ -3832,9 +3874,9 @@
     static silkZoom(camera,target){const dt=this.silkDelta(camera,'_silkZoomAt');if(!Number.isFinite(dt)||!Number.isFinite(target)||!(target>0))return;camera.viewport+=(target-camera.viewport)*(dt>250?1:-Math.expm1(-dt/(180*MoMotionTuning.factor('zoom'))))}
     static silkEdge(cell,origin,opacity){if(Settings.moMotionStyle!=='agar'||cell.isVirus||cell.isFood||cell.isEjected||!(opacity>0))return;const r=cell.animRadius+5;if(!Number.isFinite(r)||r<2||r*Camera.viewport<8)return;const c=Renderer.ctx,width=Math.min(r*.035,2.5/(Camera.viewport||1));c.save();try{c.globalAlpha=Math.min(1,opacity)*.45;c.strokeStyle='#07111d';c.lineWidth=width;c.beginPath();c.arc(cell.animX-origin.x,cell.animY-origin.y,r-width/2,0,Math.PI*2);c.stroke()}finally{c.restore()}}
 
-    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));MoMotionTuning.attach(panel);this.refresh()}
-    static select(style){if(!['cinematic','fluid','snappy','agar'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
-    static refresh(){if(!this.hub)return;MoMotionTuning.refresh();const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
+    static init(hub){this.hub=hub;const panel=hub.views.gameplay;panel.innerHTML='<div class="moi-muted" style="margin:18px 0 24px">Choose how movement and splits animate on your screen.</div><div class="moi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><button type="button" class="moi-card" data-gameplay="cinematic"><div style="font-size:32px;color:#83e9d6;margin:10px 0">◉ →</div><strong>Cinematic</strong><small>Your current style · responsive movement and directional stretch.</small></button><button type="button" class="moi-card" data-gameplay="fluid"><div style="font-size:32px;color:#aca6ff;margin:10px 0">◉ ≋</div><strong>Fluid</strong><small>Softer movement and split-size transitions · gentler stretch.</small></button><button type="button" class="moi-card" data-gameplay="snappy"><div style="font-size:32px;color:#ffd58d;margin:10px 0">◉ »</div><strong>Snappy</strong><small>Quicker movement and split-size transitions · minimal stretch.</small></button><button type="button" class="moi-card" data-gameplay="agar" style="border-color:#a5e7d766;background:linear-gradient(145deg,#173b3c88,#101e3088)"><div style="font-size:32px;color:#b8f3de;margin:10px 0">◯ · ◯</div><strong>Agar · Silk</strong><small>A new classic feel. Round silhouettes, damped glide, clean split settling and a steady camera.</small></button><button type="button" class="moi-card" data-gameplay="slipstream" style="border-color:#7fd9e760;background:linear-gradient(145deg,#18374488,#111f3388)"><div style="font-size:32px;color:#a0edf5;margin:10px 0">⟶ ◉</div><strong>Slipstream</strong><small>Quick split catch-up, soft landings and a steady, close-following camera.</small></button></div><div class="moi-note" id="mo-gameplay-status" role="status"></div><div class="moi-muted">Applies immediately and saves on this device. Split mechanics, eating, login and multibox stay the same.</div>';panel.querySelectorAll('[data-gameplay]').forEach(button=>button.addEventListener('click',()=>this.select(button.dataset.gameplay)));MoMotionTuning.attach(panel);this.refresh()}
+    static select(style){if(!['cinematic','fluid','snappy','agar','slipstream'].includes(style))return;Settings.moMotionStyle=style;Storage.set('settings','moMotionStyle',style);this.refresh()}
+    static refresh(){if(!this.hub)return;MoMotionTuning.refresh();const current=Settings.moMotionStyle;this.hub.views.gameplay.querySelectorAll('[data-gameplay]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.gameplay===current)));this.hub.views.gameplay.querySelector('#mo-gameplay-status').textContent=current==='slipstream'?'Slipstream active · quick catch-up, soft settling and steady zoom.':current==='agar'?'Agar · Silk active · round cells, damped glide and steady zoom.':current==='snappy'?'Snappy active · quicker transitions with minimal stretch.':current==='fluid'?'Fluid active · soft movement and split transitions.':current==='cinematic'?'Cinematic active · your original motion style.':'Current motion style: '+current+'. Choose a style above to compare.'}
   }
 
   class MoMenu {
@@ -3907,7 +3949,7 @@
         const type=source.getAttribute('type'),input=source.querySelector('input');const name=source.getAttribute('name')||input?.id;if(!name||owner===Settings&&name==='language'&&source.querySelectorAll('b[value]').length<2||owner===Theme&&['virusColor','virusBorderColor','virusBorderWidth'].includes(name))continue;
         let label=source.closest('.row')?.querySelector('.title')?.textContent.trim()||name;label=({moArenaStyle:'Arena theme',moMotionStyle:'Movement style',CellAnimation:'Animation smoothing',eatAnimation:'Cell eating animation',cameraSpeed:'Camera smoothing',arbSkins:'Original game skins'}[name]||label);
         const item={owner,source,name,label,type,category:this.category(owner,name),description:this.describe(name)};
-        if(type==='options'){item.choices=[...source.querySelectorAll('b[value]')].map(x=>[x.getAttribute('value'),x.textContent.trim()]);if(name==='moMotionStyle')item.choices=[['classic','Classic'],['smooth','Smooth'],['cinematic','Cinematic'],['fluid','Fluid'],['snappy','Snappy'],['agar','Agar · Silk']];}
+        if(type==='options'){item.choices=[...source.querySelectorAll('b[value]')].map(x=>[x.getAttribute('value'),x.textContent.trim()]);}
         if(type==='range'){const span=source.querySelector('span.outer');item.min=Number(span.getAttribute('min'));item.max=Number(span.getAttribute('max'));item.step=Number(span.getAttribute('step'));}
         if(type==='colorpicker')item.type='color';
         if(type==='range'){const saved=Storage.get(owner===Theme?'theme':owner===Mouse?'mouse':'settings',name);if(typeof saved==='number'&&Number.isFinite(saved)&&saved>=item.min&&saved<=item.max){owner[name]=saved;owner.handleRange(source,2);}}this.descriptors.push(item);
@@ -4461,6 +4503,10 @@
     ["animate"](moNow=GameLoop.time) {
       if(Settings.moMotionStyle==="agar"&&!this.isVirus&&!this.isFood&&!this.isEjected){MoGameplay.animateSilk(this,moNow);return}
       if(this._silkVX!==undefined)this._silkVX=this._silkVY=0;
+      if (Settings.moMotionStyle === "slipstream" && !this.isVirus && !this.isFood && !this.isEjected) {
+        MoGameplay.animateSlipstream(this, moNow);
+        return;
+      }
       if (Settings.moMotionStyle === "classic" || this.isVirus || this.isFood || this.isEjected) {
         let aah = (moNow - this.lastUpdateTime) / Settings.CellAnimation;
         aah = 0 > aah ? 0 : 1 < aah ? 1 : aah;
@@ -5280,8 +5326,12 @@
     static ["move"]() {
       if (Player.isAlive) {
         if(Settings.moMotionStyle==="agar"){MoGameplay.silkCamera(this);return}
-        this._silkFollowAt=undefined;
-        if(MoMotionTuning.factor('camera')!==1){MoMotionTuning.followGame(this);return}
+        this._silkFollowAt = undefined;
+        const slipstream = Settings.moMotionStyle === "slipstream";
+        if (slipstream || MoMotionTuning.factor('camera') !== 1) {
+          MoMotionTuning.followGame(this, slipstream ? MoGameplay.slipstreamCameraTau() : undefined);
+          return;
+        }
         this._moTuneFollowAt=undefined;
         this.x += (Player.x - this.x) / Settings.cameraSpeed;
         this.y += (Player.y - this.y) / Settings.cameraSpeed;
@@ -5295,8 +5345,18 @@
       if ("on" === Settings.autoZoom) {
         aq *= this.autoZoomViewport;
       }
-      if(Settings.moMotionStyle==="agar"&&Player.isAlive)MoGameplay.silkZoom(this,aq);
-      else {this._silkZoomAt=undefined;if(Player.isAlive&&MoMotionTuning.factor('zoom')!==1)MoMotionTuning.zoomGame(this,aq);else {this._moTuneZoomAt=undefined;this.viewport += (aq - this.viewport) / 8;}}
+      if (Settings.moMotionStyle === "agar" && Player.isAlive) {
+        MoGameplay.silkZoom(this, aq);
+      } else {
+        this._silkZoomAt = undefined;
+        const slipstream = Settings.moMotionStyle === "slipstream";
+        if (Player.isAlive && (slipstream || MoMotionTuning.factor('zoom') !== 1)) {
+          MoMotionTuning.zoomGame(this, aq, slipstream ? MoGameplay.slipstreamZoomTau : undefined);
+        } else {
+          this._moTuneZoomAt = undefined;
+          this.viewport += (aq - this.viewport) / 8;
+        }
+      }
       const aer = Renderer.canvas.width / 2 / this.viewport;
       const aag = Renderer.canvas.height / 2 / this.viewport;
       this.viewBounds.left = Math.max(-aer + this.x, WorldData.left);
