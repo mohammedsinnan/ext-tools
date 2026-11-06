@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         CREST
 // @namespace    https://mohammedsinnan.github.io/ext-tools/
-// @version      2.1.1
+// @version      2.1.2
 // @description  Crest client with ordered startup, bounded download retries and a visible loading screen.
 // @match        *://3rb.io/*
 // @match        *://*.3rb.io/*
 // @run-at       document-start
 // @grant        GM_xmlhttpRequest
 // @connect      mohammedsinnan.github.io
-// @connect      crest-tag-relay.onrender.com
+// @connect      crest-tag-relay-eu.onrender.com
 // @downloadURL  https://mohammedsinnan.github.io/ext-tools/crest.user.js
 // @updateURL    https://mohammedsinnan.github.io/ext-tools/crest.user.js
 // ==/UserScript==
