@@ -1,4 +1,5 @@
 (function crestDependencyGate(factory) {
+  if (window.self !== window.top) return;
   const state=window.__crestLaunch||(window.__crestLaunch={});
   if(state.factoryAccepted)return;
   state.factoryAccepted=true;
@@ -21,45 +22,6 @@
   document.addEventListener('DOMContentLoaded',check);
   check();
 })(function(window,$,document){
-  const antiDebug = (function () {
-    let ka = true;
-    return function (hb, dd) {
-      const dv = ka
-        ? function () {
-            if (dd) {
-              const vm = dd.apply(hb, arguments);
-              dd = null;
-              return vm;
-            }
-          }
-        : function () {};
-      ka = false;
-      return dv;
-    };
-  })();
-  const antiDebugCall = antiDebug(this, function () {
-    const sb = function () {
-      let kk;
-      try {
-        kk = Function('return (function() {}.constructor("return this")( ));')();
-      } catch (hd) {
-        kk = window;
-      }
-      return kk;
-    };
-    const ob = sb();
-    const oy = (ob.console = ob.console || {});
-    const sw = ["log", "warn", "info", "error", "exception", "table", "trace"];
-    for (let akd = 0; akd < sw.length; akd++) {
-      const kw = antiDebug.constructor.prototype.bind(antiDebug);
-      const c = sw[akd];
-      const ko = oy[c] || kw;
-      kw.__proto__ = antiDebug.bind(antiDebug);
-      kw.toString = ko.toString.bind(ko);
-      oy[c] = kw;
-    }
-  });
-  antiDebugCall();
   class Storage {
     static ["init"]() {
       this.prefix = "MX-";
@@ -3190,6 +3152,58 @@
     }
   }
   class MoDiagnostics {
+    static incident(kind, slot = 0, code = 0) {
+      try {
+        const storageKey = "crest-restart-history-v1";
+        let entries;
+        try { entries = JSON.parse(sessionStorage.getItem(storageKey)); } catch (_) {}
+        if (!Array.isArray(entries)) entries = [];
+        const entry = {
+          time: new Date().toISOString(), kind, slot, code,
+          alive: [Boolean(Player._isAlive), Boolean(Player._isAlive2)],
+          ready: [Boolean(WsConnection.connected), Boolean(WsConnection.connected2)],
+          hidden: document.hidden,
+          graphics: MoPerformance.effective(),
+          fps: MoPerformance.renderedFps ?? null,
+          discarded: Boolean(document.wasDiscarded)
+        };
+        if (kind === "Page started") {
+          entry.navigation = performance.getEntriesByType("navigation")[0]?.type || "unknown";
+          entry.loader = window.__crestLoaderVersion || "older or custom";
+        }
+        if (kind === "Socket closed") {
+          entry.trace = (this.closedPackets?.[slot]?.trace || []).slice(-6);
+        }
+        entries.push(entry);
+        sessionStorage.setItem(storageKey, JSON.stringify(entries.slice(-12)));
+      } catch (_) {}
+    }
+    static incidentReport() {
+      try {
+        const history = JSON.parse(sessionStorage.getItem("crest-restart-history-v1"));
+        return Array.isArray(history) ? JSON.stringify(history.slice(-12), null, 2) : "No saved incidents";
+      } catch (_) {
+        return "Incident storage unavailable";
+      }
+    }
+    static initLifecycle() {
+      if (this.lifecycleStarted) return;
+      this.lifecycleStarted = true;
+      this.incident("Page started");
+      window.addEventListener("pagehide", () => this.incident("Page left"));
+      window.addEventListener("pageshow", event => {
+        if (event.persisted) this.incident("Page restored");
+      });
+      const runtimeError = () => {
+        const now = Date.now();
+        if (this.lastRuntimeError && now - this.lastRuntimeError < 60000) return;
+        this.lastRuntimeError = now;
+        this.incident("Runtime error");
+      };
+      window.addEventListener("error", runtimeError);
+      window.addEventListener("unhandledrejection", runtimeError);
+    }
+
     static note(stage, detail = "") {
       this.events = this.events || [];
       this.events.push(new Date().toLocaleTimeString() + " " + stage + (detail ? ": " + detail : ""));
@@ -3226,7 +3240,7 @@
     }
     static report() {
       const W = WsConnection, A = Account;
-      const lines = ["CREST connection report 6", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
+      const lines = ["CREST connection report 7", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
       const sh = window.__SHIELD__;
       lines.push("Shield loaded: " + Boolean(sh && sh.isReady));
       if (sh && sh.isReady) {
@@ -3245,10 +3259,11 @@
         const closed = this.closedPackets && this.closedPackets[slot];
         if (closed) lines.push("Player " + slot + " packets at last disconnect (code " + closed.code + "):", ...closed.trace);
       }
-      lines.push("Recent connection events:", ...(this.events || ["No events recorded yet"]));
+      lines.push("Recent connection events:", ...(this.events || ["No events recorded yet"]), "Saved restart incidents:", this.incidentReport());
       return lines.join("\n");
     }
     static init() {
+      this.initLifecycle();
       const host = document.getElementById("account-box");
       if (!host || document.getElementById("mo-connection-report")) return;
       window.addEventListener("securitypolicyviolation", event => {
@@ -6756,6 +6771,7 @@
       if (numericTab !== 1 && numericTab !== 2) return false;
       const reason = ev && ev.reason ? String(ev.reason) : "";
       MoDiagnostics.packetClose(numericTab, ev && ev.code);
+      MoDiagnostics.incident("Socket closed", numericTab, Number(ev && ev.code || 0));
       MoDiagnostics.note("Player " + numericTab, "Socket closed (code " + Number(ev && ev.code || 0) + "). " + MoDiagnostics.closeReason(reason));
       if (/new connection/i.test(reason)) {
         Notifications.warn("Crest", "Tab " + numericTab + " was replaced by another connection from this IP (new 3rb.io rule)");
@@ -6847,6 +6863,7 @@
       }
       if (this.recycleLocks.has(tab)) return false;
       this.recycleLocks.add(tab);
+      MoDiagnostics.incident("Kill requested", tab);
       const locks = this.recycleLocks;
       this._recycleJobs = this._recycleJobs || new Map();
       const jobs = this._recycleJobs, job = {};
@@ -7248,6 +7265,7 @@
       Camera.autoZoomViewport = m.readFloat32();
     }
     static ["clearCells"](tp) {
+      if (Player._isAlive || Player._isAlive2) MoDiagnostics.incident("World cleared", tp);
       if (1 === tp) {
         CellData.cells.clear();
         CellData.myCellsIDs.clear();
@@ -7263,6 +7281,7 @@
       }
     }
     static ["clearMyCells"](mp) {
+      if (Player._isAlive || Player._isAlive2) MoDiagnostics.incident("Owned cells cleared", mp);
       if (1 === mp) {
         CellData.myCellsIDs.clear();
         CellData.myCells.clear();

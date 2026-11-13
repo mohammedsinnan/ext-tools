@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         CREST
 // @namespace    https://mohammedsinnan.github.io/ext-tools/
-// @version      2.1.3
+// @version      2.1.4
 // @description  Crest client with ordered startup, bounded download retries and a visible loading screen.
 // @match        *://3rb.io/*
 // @match        *://*.3rb.io/*
+// @noframes
 // @run-at       document-start
 // @grant        GM_xmlhttpRequest
 // @connect      mohammedsinnan.github.io
@@ -12,6 +13,9 @@
 // @updateURL    https://mohammedsinnan.github.io/ext-tools/crest.user.js
 // ==/UserScript==
 (function(){
+  if (window.self !== window.top) return;
+  if (/^\/(?:php\/Auth\.php(?:\/|$)|api(?:\/|$)|cdn-cgi(?:\/|$))/i.test(window.location.pathname)) return;
+  window.__crestLoaderVersion = "2.1.4";
   if(window.__crestLoaderRunning)return;
   window.__crestLoaderRunning=true;
   const base='https://mohammedsinnan.github.io/ext-tools/';
