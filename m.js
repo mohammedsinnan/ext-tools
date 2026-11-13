@@ -3226,7 +3226,7 @@
     }
     static report() {
       const W = WsConnection, A = Account;
-      const lines = ["MO connection report 5", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
+      const lines = ["CREST connection report 6", "Server selected: " + Boolean(W.ip), "Browser verification SDK: " + Boolean(window.turnstile && window.turnstile.render), "Shield library: " + Boolean(window.__SHIELD__), "Signed-in session: " + Boolean(A.loggedIn), "Tag relay connected: " + Boolean(RelayWs.connected), "Tag relay socket: " + (RelayWs.ws ? ["connecting", "open", "closing", "closed"][RelayWs.ws.readyState] : "none")];
       const sh = window.__SHIELD__;
       lines.push("Shield loaded: " + Boolean(sh && sh.isReady));
       if (sh && sh.isReady) {
@@ -6185,9 +6185,6 @@
       this.pendingResolvers = {};
       this.restartAt = null;
       this.pendingRespawns = new Set();
-      this.pendingPromotions = new Set();
-      this.promotionInFlight = 0;
-      this.autoRespawnGeneration = 0;
       this.recycleLocks = new Set();
       this.backupPhase = "Waiting";
       this.backupPhaseSince = Date.now();
@@ -6243,11 +6240,14 @@
       });
     }
     static ["shieldHello"](slot) {
+      const socket = slot === 1 ? this.ws : slot === 2 ? this.ws2 : this.ws3;
+      const expectedEntry = this._shield && this._shield[slot];
       this.shieldReadyPromise()
         .then((sh) => {
           if (!sh || !sh.ready || !this.ip) { MoDiagnostics.note("Player " + slot, "Shield library not ready"); return; }
+          const current = slot === 1 ? this.ws : slot === 2 ? this.ws2 : this.ws3;
           const entry = this._shield && this._shield[slot];
-          if (!entry || entry.session) return;
+          if (socket !== current || entry !== expectedEntry || !entry || entry.session) return;
           let session;
           try {
             session = new sh.ShieldSession(sh.shield_build_id());
@@ -6266,7 +6266,6 @@
             console.log("[Crest] shield hello error (tab " + slot + ")", e);
             return;
           }
-          const socket = 1 === slot ? this.ws : 2 === slot ? this.ws2 : this.ws3;
           if (socket && socket.readyState === socket.OPEN) {
             socket.send(hello);
             MoDiagnostics.note("Player " + slot, "Shield hello sent");
@@ -6446,7 +6445,9 @@
         return Notifications.warn("Crest", "Server IP is invalid");
       }
       if (!hy) return;
+      const generation = this.connectGeneration = (this.connectGeneration || 0) + 1;
       const go = () => {
+        if (this.connectGeneration !== generation) return;
         this.disconnect();
         this.resetData();
         this.ip = hy;
@@ -6536,7 +6537,9 @@
       this.queueTab2();
     }
     static ["createSocket"](slot) {
-      if (!this.ip) return null;
+      if (!this.ip || this.intentionalDisconnect) return null;
+      const existing = slot === 1 ? this.ws : slot === 2 ? this.ws2 : this.ws3;
+      if (existing && (existing.readyState === WebSocket.CONNECTING || existing.readyState === WebSocket.OPEN)) return existing;
       // 2026 proto-map negotiation state (see handleProto). Each socket starts
       // "waiting" for the server's MapInit packet; every packet we send while
       // waiting is queued and flushed once the mapping is resolved.
@@ -6573,17 +6576,10 @@
       socket.onopen = () => { if (current()) this.onOpen(slot); };
       socket.onmessage = (ev) => { if (current()) this.onMessage(ev, slot); };
       socket.onclose = (ev) => this.onClose(slot, socket, ev);
-      socket.onerror = () => this.onError(slot);
-    }
-    // Standby Tab 3 was removed: the new 3rb.io server kicks any extra
-    // connection from the same IP, so a third socket can never survive.
-    static ["scheduleBackup"](delay = 1500) {
-      return false;
-    }
-    static ["connectBackup"]() {
-      return false;
+      socket.onerror = () => { if (current()) this.onError(slot); };
     }
     static ["disconnect"]() {
+      this.connectGeneration = (this.connectGeneration || 0) + 1;
       this.intentionalDisconnect = true;
       [1, 2, 3].forEach(slot => this.cancelVerification(slot));
       clearTimeout(this.backupRetryTimer);
@@ -6603,9 +6599,7 @@
       this.connected3 = false;
       this.backupReady = false;
       this.backupConnecting = false;
-      this.pendingPromotions.clear();
       this.pendingRespawns.clear();
-      this.promotionInFlight = 0;
       this.setBackupPhase("Waiting");
       this.ip = null;
       this.resetShield(1);
@@ -6783,8 +6777,9 @@
       Notifications.alert("Crest", "Tab " + numericTab + " disconnected");
       console.log("Websocket " + numericTab + " closed" + (reason ? " (" + reason + ")" : ""));
       if (1 === numericTab) {
+        const generation = this.connectGeneration;
         setTimeout(() => {
-          if (this.intentionalDisconnect || !this.ip || this.ws) return;
+          if (this.connectGeneration !== generation || this.intentionalDisconnect || !this.ip || this.ws) return;
           this.createSocket(1);
         }, 1000);
       } else {
@@ -6839,16 +6834,6 @@
       this.backupPhase = String(phase || "Waiting");
       this.backupPhaseSince = Date.now();
       this.connectionStatus();
-    }
-    static ["promoteBackup"](tab, reason = "Standby promotion") {
-      // Standby Tab 3 was removed (the new server kicks a third connection).
-      return false;
-    }
-    static ["queuePromotion"](tab, reason = "Playable tab died") {
-      return false;
-    }
-    static ["pumpPromotionQueue"]() {
-      return false;
     }
     static ["recycleActiveCell"]() {
       const tab = Number(Player.typeID || 1);
@@ -7421,11 +7406,22 @@
       // last update, kicks every second guest connection from the same IP
       // ("New connection from this browser"). Tab 1 uses slot 1, Tab 2 uses
       // slot 2 (falling back to guest).
-      const str = 1 === Number(ahn) ? Account.loginStringFor(1) : Account.loginStringFor(2);
+      const slot = Number(ahn);
+      const socket = slot === 1 ? WsConnection.ws : WsConnection.ws2;
+      if (!socket || socket.readyState !== socket.OPEN) return false;
+      const str = Account.loginStringFor(slot);
+      const account = str.split("|", 1)[0];
+      const withToken = str.includes("|");
+      this.loginSessions = this.loginSessions || new WeakMap();
+      const previous = this.loginSessions.get(socket);
+      // Refresh credentials for the next connection without restarting a
+      // healthy account session. A guest login or a changed account still sends.
+      if (previous && previous.account === account && (previous.withToken || !withToken)) return false;
       console.log("Crest Login packet (tab " + ahn + "): " + (str ? "account, " + (3 + str.length * 2) + " bytes" : "guest"));
       if (!str) {
         const px = new Uint8Array([255, 0, 0]);
         WsConnection.send(px, ahn);
+        this.loginSessions.set(socket, { account, withToken });
         return;
       }
       const bytes = new Uint8Array(3 + str.length * 2);
@@ -7436,9 +7432,11 @@
         bytes[2 + i * 2] = (cc >> 8) & 0xff;
       }
       WsConnection.send(bytes, ahn);
+      this.loginSessions.set(socket, { account, withToken });
     }
-    static ["resendLogin"]() {
-      [1, 2].forEach((tab) => {
+    static ["resendLogin"](slot) {
+      const tabs = slot === undefined ? [1, 2] : [Number(slot)];
+      tabs.forEach((tab) => {
         if ((1 === tab && WsConnection.connected) || (2 === tab && WsConnection.connected2)) {
           this.handshake1(tab);
         }
@@ -7470,7 +7468,6 @@
       WsConnection.send(fj.buffer, oq);
       return true;
     }
-    // The standby tab is transport-only: it must never spawn a visible cell.
     static ["spawnTab"](tab) {
       tab = Number(tab);
       if (tab !== 1 && tab !== 2) return false;
@@ -7833,7 +7830,7 @@
           this["gameTokenAt" + slot] = Date.now();
           if (this.uuid === entry.uuid) { this.gameToken = tk; this.gameTokenAt = Date.now(); }
           Notifications.command("Login", "Game token ready (Tab " + slot + " account)");
-          PacketSender.resendLogin();
+          PacketSender.resendLogin(slot);
           if (WsConnection && WsConnection.connected && !WsConnection.ws2) WsConnection.queueTab2();
           return tk;
         })
@@ -8811,7 +8808,7 @@
       this.rgbTeammates = new Set();
       this.borderImages = new Map();
       this.indicator = this.cacheIndicator();
-      this.getKnownSkins();
+      this.getKnownSkins().catch(() => MoDiagnostics.note("Assets", "Skin directory request failed"));
       BgRender.init();
       RgbCycle.init();
       MoEmotes.init();
@@ -8824,7 +8821,7 @@
       this.canvas.width = 0 | window.innerWidth;
       this.canvas.height = 0 | window.innerHeight;
     }
-    static ["run"]() {if(!MoPerformance.shouldRender())return;const moFrameStarted=performance.now();MoPerformance.begin(this);try{
+    static ["run"]() {const moFrameStarted=performance.now();MoPerformance.begin(this);try{
       
       MoEmotes.sync();
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -9258,69 +9255,85 @@
           this.rgbTeammates.add(ok.worldID);
         }
     }
-    static ["getCustomSkin"](aks) {
-      const pr = this.skinMap.get(aks);
-      if (!pr) {
-        return false;
+    static ["getCustomSkin"](key) {
+      const url = this.skinMap.get(key);
+      return url ? this.getCachedSkin(url, url) : false;
+    }
+    static ["get3rbSkin"](key) {
+      return this.getCachedSkin(key, "./res/skins/free/" + key.replace(/free\/|.png/g, "") + ".png");
+    }
+    static getCachedSkin(key, url) {
+      this.skinUsedAt = this.skinUsedAt || new Map();
+      if (this.downloadedSkins.has(key)) {
+        this.skinUsedAt.set(key, performance.now());
+        return this.downloadedSkins.get(key);
       }
-      const ym = this.downloadedSkins.get(pr);
-      return undefined === ym ? (this.downloadSkin(pr), false) : ym;
+      this.downloadSkin(url, key);
+      return false;
     }
-    static ["get3rbSkin"](fd) {
-      const rs = this.downloadedSkins.get(fd);
-      return undefined === rs ? (this.download3rbSkin(fd), false) : rs;
-    }
-    static ["download3rbSkin"](jc) {
-      this.downloadedSkins.set(jc, false);
-      const oc = new Image();
-      oc.crossOrigin = "anonymous";
-      oc.onload = () => {
-        this.cropSkinBitmap(oc, (bit) => {
-          this.downloadedSkins.set(jc, bit);
-        });
-      };
-      oc.src = "./res/skins/free/" + jc.replace(/free\/|.png/g, "") + ".png";
-    }
-    static ["downloadSkin"](oa) {
-      this.downloadedSkins.set(oa, false);
-      const il = new Image();
-      il.crossOrigin = "anonymous";
-      il.onload = () => {
-        this.cropSkinBitmap(il, (bit) => {
-          this.downloadedSkins.set(oa, bit);
-        });
-      };
-      il.src = oa;
-    }
-    static ["cropSkinBitmap"](img, done) {
-      // Circular-crop + PNG encode OFF the main thread. The old canvas +
-      // toDataURL() path ran its multi-hundred-ms PNG encode synchronously on
-      // the render thread whenever a skin image finished loading - and that
-      // load fires at arbitrary times (every respawn/color change for you,
-      // your tabs, or a skinned friend), which is exactly the recurring
-      // random ~1s freeze. OffscreenCanvas rasterizes in a worker thread;
-      // drawImage accepts the resulting ImageBitmap directly.
-      if ("undefined" === typeof OffscreenCanvas) {
-        done(null);
-        return;
+    static makeSkinRoom() {
+      if (this.downloadedSkins.size < 96) return true;
+      const staleBefore = performance.now() - 10000;
+      let oldest = Infinity;
+      let key;
+      for (const [candidate, usedAt] of this.skinUsedAt) {
+        if (usedAt <= staleBefore && usedAt < oldest) {
+          oldest = usedAt;
+          key = candidate;
+        }
       }
+      if (key === undefined) return false;
+      const bitmap = this.downloadedSkins.get(key);
+      if (bitmap && typeof bitmap.close === "function") bitmap.close();
+      this.downloadedSkins.delete(key);
+      this.skinUsedAt.delete(key);
+      const pending = this.skinRequests && this.skinRequests.get(key);
+      if (pending) {
+        this.skinRequests.delete(key);
+        pending.onload = pending.onerror = null;
+        pending.src = "";
+      }
+      return true;
+    }
+    static ["downloadSkin"](url, key = url) {
+      this.skinUsedAt = this.skinUsedAt || new Map();
+      this.skinRequests = this.skinRequests || new Map();
+      if (this.downloadedSkins.has(key) || !this.makeSkinRoom()) return;
+      this.downloadedSkins.set(key, false);
+      this.skinUsedAt.set(key, performance.now());
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      this.skinRequests.set(key, image);
+      const finish = bitmap => {
+        if (this.skinRequests.get(key) !== image) {
+          if (bitmap && typeof bitmap.close === "function") bitmap.close();
+          return;
+        }
+        this.skinRequests.delete(key);
+        this.downloadedSkins.set(key, bitmap || false);
+        image.onload = image.onerror = null;
+      };
+      image.onload = () => this.cropSkinBitmap(image, finish);
+      image.onerror = () => finish(false);
+      image.src = url;
+    }
+    static ["cropSkinBitmap"](image, done) {
       try {
-        const adv = new OffscreenCanvas(512, 512);
-        const acz = adv.getContext("2d");
-        acz.beginPath();
-        acz.arc(256, 256, 256, 0, 2 * Math.PI, true);
-        acz.closePath();
-        acz.clip();
-        acz.drawImage(img, 0, 0, 512, 512);
-        adv
-          .convertToBlob({ type: "image/png" })
-          .then((blob) => createImageBitmap(blob))
-          .then(done)
-          .catch(() => done(null));
-      } catch (e) {
-        done(null);
+        const canvas = typeof OffscreenCanvas === "undefined"
+          ? document.createElement("canvas") : new OffscreenCanvas(512, 512);
+        canvas.width = canvas.height = 512;
+        const ctx = canvas.getContext("2d");
+        ctx.beginPath();
+        ctx.arc(256, 256, 256, 0, 2 * Math.PI);
+        ctx.clip();
+        ctx.drawImage(image, 0, 0, 512, 512);
+        // Keep decoded pixels directly instead of encoding and decoding a PNG.
+        done(typeof canvas.transferToImageBitmap === "function" ? canvas.transferToImageBitmap() : canvas);
+      } catch (_) {
+        done(false);
       }
     }
+
     static ["getImgurCode"](ajz) {
       if (!ajz) {
         return "XXXXXXX";
@@ -9488,6 +9501,7 @@
     }
     static ["run"]() {
       GameLoop.refreshTime();
+      if (!MoPerformance.shouldRender()) return;
       CellData.update();
       Player.update();
       Camera.update();
