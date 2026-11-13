@@ -3488,8 +3488,7 @@
       const ctx = canvas.getContext("2d");
       const size = canvas.width;
       const radius = size * .39;
-      const code = MoInventory.slot === 2 ? (Player.skin2 || Player.skin) : Player.skin;
-      const url = code && code !== "XXXXXXX" ? Renderer.code2Url(code) : "";
+      const url = Renderer.playerSkinURL(MoInventory.slot);
       const image = Settings.urlSkins === "on" && url ? Renderer.getCachedSkin(url, url) : null;
       ctx.clearRect(0, 0, size, size);
       ctx.save();
@@ -4456,7 +4455,8 @@
         jn.set(ek, st);
         ww["delete"](ek);
         st.isMine = true;
-        st.nick = Player.nick;
+        st.isFood = false;
+        if (!st.nick) st.nick = afh === 2 ? (Player.nick2 || Player.nick) : Player.nick;
       }
     }
     static ["eatCell"](agb, ahu, ahw) {
@@ -7424,6 +7424,9 @@
       const ago = 1 === aft ? CellData.myCellsIDs : 2 === aft ? CellData.myCellsIDs2 : CellData.myCellsIDs3;
       const hq = agp.readUInt32();
       ago.add(hq);
+      const cells = aft === 1 ? CellData.cells : aft === 2 ? CellData.cells2 : CellData.cells3;
+      const existing = cells.get(hq);
+      if (existing) CellData.myCellCheck(hq, existing, aft);
     }
     static ["getLeaderboard"](abx) {
       Leaderboard.clear();
@@ -9122,7 +9125,7 @@
       amh.strokeStyle = Theme.virusBorderColor;
       amh.lineWidth = Theme.virusBorderWidth;
       for (const aeq of CellData.sortedCells) {
-        const wx = !aeq.isVirus && !aeq.isEjected && this.skinMap.has(this.skinKey(aeq.nick, aeq.colorHex));
+        const wx = !aeq.isVirus && !aeq.isEjected && (aeq.isMine || this.skinMap.has(this.skinKey(aeq.nick, aeq.colorHex)));
         aeq.animate();
         let gu = 1;
         const alp = {
@@ -9182,7 +9185,7 @@
         }
         let gk = Renderer.code2Url(Renderer.getImgurCode(aeq.skin || "")).includes("XXXXXXX") ? aeq.skin : aeq.arbSkin;
         const crestSkin = aeq.isMine && !MoInventory.hiddenCosmetics && MoInventory.config(aeq.cellType).skinSource === "crest";
-        const dk = wx && jy && !crestSkin && this.getCustomSkin(this.skinKey(aeq.nick, aeq.colorHex));
+        const dk = wx && jy && !crestSkin && this.skinForCell(aeq);
         const akw =
           arb && !crestSkin && !dk && gk && this.knownSkins.hasOwnProperty(gk.replace(/free\/|.png/, "")) && this.get3rbSkin(gk);
         if (dk) {
@@ -9338,6 +9341,20 @@
       ctx.fillRect(0, 0, 256, 256);
       return sprite;
     }
+    static playerSkinURL(slot) {
+      const primary = /^[a-zA-Z0-9]{5,8}$/.test(Player.skin || "") && Player.skin !== "XXXXXXX" ? Player.skin : "";
+      const second = /^[a-zA-Z0-9]{5,8}$/.test(Player.skin2 || "") && Player.skin2 !== "XXXXXXX" ? Player.skin2 : "";
+      const code = slot === 2 ? second || primary : primary;
+      return code ? this.code2Url(code) : "";
+    }
+    static skinForCell(cell) {
+      if (!cell.isMine) return this.getCustomSkin(this.skinKey(cell.nick, cell.colorHex));
+      const url = this.playerSkinURL(cell.cellType);
+      if (url) return this.getCachedSkin(url, url);
+      if (!this.arbSkin) return false;
+      const original = "./res/skins/free/" + this.arbSkin.replace(/free\/|.png/g, "") + ".png";
+      return this.getCachedSkin(original, original);
+    }
     static ["createSkinMap"]() {
       this.arbSkin = $("#arbSkin").val();
       this.skinMap.clear();
@@ -9349,8 +9366,8 @@
       // tabs' cells received both skins and the overlapping copies drew one
       // of them at random. Colors are server-assigned per spawn and stable
       // for the player's whole life.
-      const u1 = Player.skin.includes("XXXXXXX") ? "" : this.code2Url(Player.skin);
-      const u2 = Player.skin2 ? this.code2Url(Player.skin2) : u1;
+      const u1 = this.playerSkinURL(1);
+      const u2 = this.playerSkinURL(2);
       const arb = this.arbSkin
         ? "./res/skins/free/" + this.arbSkin.replace(/free\/|.png/g, "") + ".png"
         : "";
