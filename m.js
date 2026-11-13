@@ -3399,6 +3399,123 @@
     static shell(white,overlay){this.cache=this.cache||new Map();const key=white+':'+overlay;if(this.cache.has(key))return this.cache.get(key);const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const c=canvas.getContext('2d');c.translate(128,128);c.beginPath();c.arc(0,0,127.8,0,Math.PI*2);c.clip();if(!overlay){const g=c.createRadialGradient(-40,-62,5,0,0,150);g.addColorStop(0,white?'#eefcff':'#376786');g.addColorStop(.65,white?'#d5e9ee':'#133753');g.addColorStop(1,white?'#8fb2c4':'#071e35');c.fillStyle=g;c.fillRect(-128,-128,256,256)}else{const g=c.createRadialGradient(-25,-40,30,0,0,134);g.addColorStop(0,'rgba(226,255,255,0)');g.addColorStop(.78,'rgba(119,231,255,.025)');g.addColorStop(.94,white?'rgba(87,127,157,.35)':'rgba(2,23,57,.6)');g.addColorStop(1,'rgba(211,251,255,.85)');c.fillStyle=g;c.fillRect(-128,-128,256,256);c.strokeStyle=white?'#e7ffff':'#85e8ff';c.lineWidth=2;c.beginPath();c.arc(0,0,126,0,Math.PI*2);c.stroke();c.save();c.rotate(-.55);c.fillStyle='rgba(239,255,255,.66)';c.beginPath();c.ellipse(-23,-89,39,9,0,0,Math.PI*2);c.fill();c.fillStyle='rgba(230,255,255,.2)';c.beginPath();c.ellipse(-51,-64,8,19,-.12,0,Math.PI*2);c.fill();c.restore();c.strokeStyle='rgba(224,253,255,.35)';c.lineWidth=3;c.beginPath();c.arc(0,0,113,.27,1.1);c.stroke()}this.cache.set(key,canvas);return canvas}
   }
 
+  class MoSkinSource {
+    static init() {
+      const root = MoInventory.root;
+      const section = document.createElement("section");
+      section.className = "moi-source";
+      section.innerHTML = `
+        <div class="moi-muted">Skin source</div>
+        <div class="moi-tools" role="group" aria-label="Skin source" style="margin-top:8px">
+          <button type="button" data-skin-source="url">URL skin</button>
+          <button type="button" data-skin-source="crest">CREST skin</button>
+        </div>
+        <div id="moi-source-status" class="moi-muted" role="status" style="margin-bottom:16px"></div>
+        <div id="moi-url-editor" style="margin-bottom:20px">
+          <label class="moi-muted" for="moi-url">Image URL for this player</label>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <input id="moi-url" type="url" placeholder="https://i.imgur.com/your-image.png"
+              style="min-width:180px;flex:1;background:#0b1a29;color:#e6f9ff;padding:10px;border:1px solid #94d7e442;border-radius:10px">
+            <button type="button" class="moi-close" id="moi-apply-url">Apply URL</button>
+          </div>
+          <div id="moi-url-feedback" class="moi-muted" role="status" style="margin-top:8px"></div>
+        </div>`;
+      root.querySelector(".moi-players").after(section);
+      for (const button of section.querySelectorAll("[data-skin-source]")) {
+        button.addEventListener("click", () => this.select(button.dataset.skinSource));
+      }
+      section.querySelector("#moi-apply-url").addEventListener("click", () => this.applyURL());
+      section.querySelector("#moi-url").addEventListener("keydown", event => {
+        event.stopPropagation();
+        if (event.key === "Enter") { event.preventDefault(); this.applyURL(); }
+      });
+    }
+    static select(source) {
+      if (!["url", "crest"].includes(source)) return;
+      const config = MoInventory.config(MoInventory.slot);
+      config.skinSource = source;
+      if (source === "crest") {
+        config.matchingSkin = true;
+        MoInventory.hiddenCosmetics = false;
+      }
+      if (source === "url") {
+        Settings.urlSkins = "on";
+        Storage.set("settings", "urlSkins", "on");
+        const native = document.querySelector('#settings [name="urlSkins"]');
+        if (native) Settings.handleOptions(native, 2);
+        if (CrestPreferences.fields) CrestPreferences.sync();
+      }
+      MoInventory.save();
+    }
+    static refresh() {
+      const root = MoInventory.root;
+      const slot = MoInventory.slot;
+      const config = MoInventory.config(slot);
+      const url = config.skinSource === "url";
+      for (const button of root.querySelectorAll("[data-skin-source]")) {
+        button.setAttribute("aria-pressed", String(button.dataset.skinSource === config.skinSource));
+      }
+      root.querySelector("#moi-url-editor").hidden = !url;
+      root.querySelector("#moi-body").closest("label").hidden = url;
+      root.querySelector("#moi-water-color-row").hidden = url || config.skinType !== "water";
+      const input = root.querySelector("#moi-url");
+      if (document.activeElement !== input) input.value = document.getElementById(slot === 2 ? "skin2" : "skin").value;
+      root.querySelector("#moi-url-feedback").textContent = "";
+      root.querySelector("#moi-source-status").textContent = url
+        ? Settings.urlSkins === "on"
+          ? "Your image fills the cell. Choose a ring effect below if you want one."
+          : "URL images are hidden in settings. Press URL skin above to enable them."
+        : "Your selected CREST skin fills the cell. Your URL image stays saved.";
+      if (url) root.querySelector("#moi-selected").textContent = "URL skin";
+    }
+    static applyURL() {
+      const root = MoInventory.root;
+      const text = root.querySelector("#moi-url").value.trim();
+      const code = Renderer.getImgurCode(text);
+      const feedback = root.querySelector("#moi-url-feedback");
+      if (code === "XXXXXXX" || /imgur\.com\/(?:a|gallery)\//i.test(text)) {
+        feedback.textContent = "Use a link to one Imgur image, such as https://i.imgur.com/abc1234.png.";
+        return;
+      }
+      const slot = MoInventory.slot;
+      const field = document.getElementById(slot === 2 ? "skin2" : "skin");
+      field.value = Renderer.code2Url(code);
+      $(field).trigger("input").trigger("blur");
+      this.select("url");
+      feedback.textContent = "Image saved for Player " + String(slot).padStart(2, "0") + ".";
+    }
+    static preview(canvas, config, time) {
+      const ctx = canvas.getContext("2d");
+      const size = canvas.width;
+      const radius = size * .39;
+      const code = MoInventory.slot === 2 ? (Player.skin2 || Player.skin) : Player.skin;
+      const url = code && code !== "XXXXXXX" ? Renderer.code2Url(code) : "";
+      const image = Settings.urlSkins === "on" && url ? Renderer.getCachedSkin(url, url) : null;
+      ctx.clearRect(0, 0, size, size);
+      ctx.save();
+      ctx.translate(size / 2, size / 2);
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = "#172d41";
+      ctx.fillRect(-radius, -radius, 2 * radius, 2 * radius);
+      if (image) {
+        ctx.drawImage(image, -radius, -radius, radius * 2, radius * 2);
+      } else {
+        ctx.fillStyle = "#a7c7d6";
+        ctx.font = "600 14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const pending = Renderer.skinRequests?.has(url);
+        ctx.fillText(Settings.urlSkins !== "on" ? "URL images hidden"
+          : !url ? "Add your image URL"
+          : pending ? "Loading image…" : "Image unavailable", 0, 0);
+      }
+      if (["ring", "both"].includes(config.mode)) MoInventory.paint(ctx, config.ring, radius, time, config);
+      ctx.restore();
+    }
+  }
+
   class MoInventory {
     static config(slot) {
       this.configs = this.configs || {};
@@ -3406,6 +3523,9 @@
         let saved; try { saved = Storage.get('cosmetics', 'player' + slot); } catch (_) {}
         saved = saved && typeof saved === 'object' ? saved : {};
         this.configs[slot] = {
+          skinSource: ["url", "crest"].includes(saved.skinSource) ? saved.skinSource
+            : (["water","thunder","fire","skeleton","dragon","ghost","molten","madridwhite","madridnight"].includes(saved.skinType)
+              || saved.matchingSkin !== false && ["ring","both"].includes(saved.mode)) ? "crest" : "url",
           matchingSkin: saved.matchingSkin !== false,
           skinType: ["water","thunder","fire","skeleton","dragon","ghost","molten","madridwhite","madridnight"].includes(saved.skinType) ? saved.skinType : "standard",
           waterColor: /^#[0-9a-f]{6}$/i.test(saved.waterColor||'') ? saved.waterColor : "#198fc3",
@@ -3418,11 +3538,18 @@
       }
       return this.configs[slot];
     }
+    static visualConfig(slot) {
+      const config = this.config(slot);
+      if (config.skinSource === "crest") return config;
+      this.urlConfigs = this.urlConfigs || {};
+      return this.urlConfigs[slot] || (this.urlConfigs[slot] = { ...config, skinType: "standard", matchingSkin: false });
+    }
     static mouse(slot) { return ['mouse','both'].includes(this.config(slot).mode); }
     static ring(slot) { return ['ring','both'].includes(this.config(slot).mode); }
     static save() {
       const c = this.config(this.slot);
       Storage.set('cosmetics', 'player' + this.slot, {...c});
+      this.urlConfigs = {};
       this.refresh();
       MoSharedCosmetics.publish();
     }
@@ -3452,7 +3579,7 @@
       document.head.appendChild(style);
       this.toggle = document.createElement('button');this.toggle.id='mo-inventory-open';this.toggle.type='button';this.toggle.textContent='◈ Inventory';this.toggle.setAttribute('aria-controls','mo-inventory');this.toggle.setAttribute('aria-expanded','false');account.before(this.toggle);
       this.root=document.createElement('div');this.root.id='mo-inventory';this.root.hidden=true;
-      this.root.innerHTML=`<section class="moi-dialog" role="dialog" aria-modal="true" aria-labelledby="moi-title"><header class="moi-head"><div><div class="moi-kicker">MO / ORBIT COLLECTION</div><h2 id="moi-title">Make your orbit yours.</h2><div class="moi-muted">Five complete sets. Bold spinning frames. Matching character skins.</div></div><button type="button" class="moi-close">Close ×</button></header><div class="moi-tools moi-players"><button type="button" data-player="1">Player 01</button><button type="button" data-player="2">Player 02</button></div><div class="moi-tools moi-modes"><button type="button" data-mode="mouse">Mouse motion</button><button type="button" data-mode="ring">Spinning ring</button><button type="button" data-mode="both">Both effects</button><button type="button" data-mode="still">Effects off</button></div><div class="moi-layout"><aside class="moi-live"><canvas width="320" height="320" aria-label="Selected ring preview"></canvas><strong id="moi-selected"></strong><div class="moi-muted">Live preview</div><label>Cell skin<select id="moi-body" aria-label="Cell skin" style="width:100%;margin-top:10px;background:#0b1a29;color:#e6f9ff;padding:10px;border:1px solid #94d7e442;border-radius:10px"><option value="standard">Original / ring set</option><option value="water">Water balloon</option><option value="thunder">Thunderstorm</option><option value="fire">Blazing Fire</option><option value="skeleton">Dancing Skeleton</option><option value="dragon">Cosmic Dragon</option><option value="ghost">Haunted Ghost</option><option value="molten">Molten Core</option><option value="madridwhite">Real Madrid · Royal White</option><option value="madridnight">Real Madrid · European Night</option></select></label><label id="moi-water-color-row">Water color<input aria-label="Water color" id="moi-water-color" type="color" value="#198fc3" style="height:38px;border:1px solid #94d7e442;border-radius:8px;padding:3px;background:#0b1a29;cursor:pointer"></label><label><input id="moi-skin" type="checkbox" style="width:auto"> Use matching set skin</label><label><input id="moi-white" type="checkbox" style="width:auto"> White skin when inactive</label><label>Rotation speed<input aria-label="Rotation speed" id="moi-speed" type="range" min="0" max="1.5" step="0.05"></label><label>Ring brightness<input aria-label="Ring brightness" id="moi-glow" type="range" min="0.2" max="1" step="0.05"></label></aside><div class="moi-grid"></div></div><footer class="moi-footer"><span>Saved automatically · separate choices for each player</span><span>Shared with updated MO users in your tag / party</span></footer></section>`;
+      this.root.innerHTML=`<section class="moi-dialog" role="dialog" aria-modal="true" aria-labelledby="moi-title"><header class="moi-head"><div><div class="moi-kicker">MO / ORBIT COLLECTION</div><h2 id="moi-title">Make your orbit yours.</h2><div class="moi-muted">Five complete sets. Bold spinning frames. Matching character skins.</div></div><button type="button" class="moi-close">Close ×</button></header><div class="moi-tools moi-players"><button type="button" data-player="1">Player 01</button><button type="button" data-player="2">Player 02</button></div><div class="moi-tools moi-modes"><button type="button" data-mode="mouse">Mouse motion</button><button type="button" data-mode="ring">Spinning ring</button><button type="button" data-mode="both">Both effects</button><button type="button" data-mode="still">Effects off</button></div><div class="moi-layout"><aside class="moi-live"><canvas width="320" height="320" aria-label="Selected ring preview"></canvas><strong id="moi-selected"></strong><div class="moi-muted">Live preview</div><label>CREST skin<select id="moi-body" aria-label="CREST skin" style="width:100%;margin-top:10px;background:#0b1a29;color:#e6f9ff;padding:10px;border:1px solid #94d7e442;border-radius:10px"><option value="standard">Matching ring set skin</option><option value="water">Water balloon</option><option value="thunder">Thunderstorm</option><option value="fire">Blazing Fire</option><option value="skeleton">Dancing Skeleton</option><option value="dragon">Cosmic Dragon</option><option value="ghost">Haunted Ghost</option><option value="molten">Molten Core</option><option value="madridwhite">Real Madrid · Royal White</option><option value="madridnight">Real Madrid · European Night</option></select></label><label id="moi-water-color-row">Water color<input aria-label="Water color" id="moi-water-color" type="color" value="#198fc3" style="height:38px;border:1px solid #94d7e442;border-radius:8px;padding:3px;background:#0b1a29;cursor:pointer"></label><label><input id="moi-white" type="checkbox" style="width:auto"> White skin when inactive</label><label>Rotation speed<input aria-label="Rotation speed" id="moi-speed" type="range" min="0" max="1.5" step="0.05"></label><label>Ring brightness<input aria-label="Ring brightness" id="moi-glow" type="range" min="0.2" max="1" step="0.05"></label></aside><div class="moi-grid"></div></div><footer class="moi-footer"><span>Saved automatically · separate choices for each player</span><span>Shared with updated MO users in your tag / party</span></footer></section>`;
       document.body.appendChild(this.root);
       this.cards=[];
       const grid=this.root.querySelector('.moi-grid');
@@ -3461,7 +3588,6 @@
       this.root.querySelector('#moi-water-color').addEventListener('input',e=>{if(!/^#[0-9a-f]{6}$/i.test(e.target.value))return;this.config(this.slot).waterColor=e.target.value;this.save()});
       this.root.querySelector('#moi-body').addEventListener('change',e=>{this.config(this.slot).skinType=['water','thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(e.target.value)?e.target.value:'standard';this.save()});
       this.root.querySelector('#moi-white').addEventListener('change',e=>{this.config(this.slot).whiteInactive=e.target.checked;this.save()});
-      this.root.querySelector('#moi-skin').addEventListener('change',e=>{this.config(this.slot).matchingSkin=e.target.checked;this.save()});
       this.toggle.addEventListener('click',()=>this.setOpen(this.root.hidden));
       this.root.querySelector('.moi-close').addEventListener('click',()=>this.setOpen(false));
       this.root.addEventListener('click',e=>{if(e.target===this.root)this.setOpen(false)});
@@ -3469,13 +3595,14 @@
       this.root.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{this.config(this.slot).mode=button.dataset.mode;this.save()}));
       for(const [id,key] of [['moi-speed','speed'],['moi-glow','glow']])this.root.querySelector('#'+id).addEventListener('input',e=>{this.config(this.slot)[key]=Number(e.target.value);this.save()});
       this.root.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();this.setOpen(false)}if(event.key==='Tab'){const controls=[...this.root.querySelectorAll('button,input,select')].filter(x=>x.getClientRects().length);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}});
+      MoSkinSource.init();
       this.refresh();
       MoCustomize.init(this);
     }
-    static refresh(){if(!this.root)return;this.previewAt=null;const c=this.config(this.slot);this.root.querySelectorAll('[data-player]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.player)===this.slot)));this.root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===c.mode)));this.cards.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ring===c.ring)));this.root.querySelector('#moi-water-color').value=c.waterColor;this.root.querySelector('#moi-water-color-row').hidden=c.skinType!=='water';this.root.querySelector('#moi-body').value=c.skinType;this.root.querySelector('#moi-skin').disabled=c.skinType!=='standard';this.root.querySelector('#moi-white').checked=c.whiteInactive;this.root.querySelector('#moi-skin').checked=c.matchingSkin;this.root.querySelector('#moi-speed').value=c.speed;this.root.querySelector('#moi-glow').value=c.glow;this.root.querySelector('#moi-selected').textContent=c.skinType==='water'?'Water balloon':c.skinType==='thunder'?'Thunderstorm':c.skinType==='fire'?'Blazing Fire':c.skinType==='madridwhite'?'Real Madrid · Royal White':c.skinType==='madridnight'?'Real Madrid · European Night':c.skinType==='dragon'?'Cosmic Dragon':c.skinType==='ghost'?'Haunted Ghost':c.skinType==='molten'?'Molten Core':c.skinType==='skeleton'?'Dancing Skeleton':this.styles.find(x=>x[0]===c.ring)[1]}
+    static refresh(){if(!this.root)return;this.previewAt=null;const c=this.config(this.slot);this.root.querySelectorAll('[data-player]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.player)===this.slot)));this.root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===c.mode)));this.cards.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ring===c.ring)));this.root.querySelector('#moi-water-color').value=c.waterColor;this.root.querySelector('#moi-water-color-row').hidden=c.skinType!=='water';this.root.querySelector('#moi-body').value=c.skinType;this.root.querySelector('#moi-white').checked=c.whiteInactive;this.root.querySelector('#moi-speed').value=c.speed;this.root.querySelector('#moi-glow').value=c.glow;this.root.querySelector('#moi-selected').textContent=c.skinType==='water'?'Water balloon':c.skinType==='thunder'?'Thunderstorm':c.skinType==='fire'?'Blazing Fire':c.skinType==='madridwhite'?'Real Madrid · Royal White':c.skinType==='madridnight'?'Real Madrid · European Night':c.skinType==='dragon'?'Cosmic Dragon':c.skinType==='ghost'?'Haunted Ghost':c.skinType==='molten'?'Molten Core':c.skinType==='skeleton'?'Dancing Skeleton':this.styles.find(x=>x[0]===c.ring)[1];MoSkinSource.refresh()}
     static setOpen(open){cancelAnimationFrame(this.frame);MoMotionTuning.stop();if(open){MoMenu.setAccount(false,false);this.slot=Player.typeID===2?2:1;this.refresh()}this.root.hidden=!open;this.toggle.setAttribute('aria-expanded',String(open));if(open){this.root.querySelector('.moi-close').focus();MoCustomize.show('inventory')}else{this.toggle.focus()}}
-    static animate(){if(this.root.hidden)return;const now=performance.now();if(this.previewAt!=null&&now-this.previewAt<1000/(MoPerformance.full()?30:15)){this.frame=requestAnimationFrame(()=>this.animate());return}this.previewAt=now;const c=this.config(this.slot),time=performance.now()/1000;for(const card of this.cards)this.preview(card.querySelector('canvas'),card.dataset.ring,c,time);if(c.skinType==='water'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoWaterSkin.paint(ctx,cv.width*.39,time,Math.sin(time)*.8,0,false,c.waterColor);ctx.restore()}else if(MoMadridSkin.types.includes(c.skinType)){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoMadridSkin.paint(ctx,cv.width*.39,time,c.skinType,false,c.speed,c.glow);ctx.restore()}else if(MoCreatureSkin.types.includes(c.skinType)){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoCreatureSkin.paint(ctx,cv.width*.39,time,c.skinType,false,c.speed,c.glow);ctx.restore()}else if(c.skinType==='skeleton'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoSkeletonSkin.paint(ctx,cv.width*.39,time,false,c.speed,c.glow);ctx.restore()}else if(c.skinType==='fire'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoFireSkin.paint(ctx,cv.width*.39,time);ctx.restore()}else if(c.skinType==='thunder'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoThunderSkin.paint(ctx,cv.width*.39,time);ctx.restore()}else this.preview(this.root.querySelector('.moi-live canvas'),c.ring,c,time);this.frame=requestAnimationFrame(()=>this.animate())}
-    static preview(canvas,id,c,time){const ctx=canvas.getContext('2d'),size=canvas.width,r=size*.39;ctx.clearRect(0,0,size,size);ctx.save();ctx.translate(size/2,size/2);ctx.fillStyle='#172d41';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();if(c.matchingSkin)ctx.drawImage(this.skin(id),-r,-r,r*2,r*2);else{ctx.fillStyle='#98c3d8';ctx.font='600 '+size*.13+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MO',0,0)}this.paint(ctx,id,r,time,c);ctx.restore()}
+    static animate(){if(this.root.hidden)return;const now=performance.now();if(this.previewAt!=null&&now-this.previewAt<1000/(MoPerformance.full()?30:15)){this.frame=requestAnimationFrame(()=>this.animate());return}this.previewAt=now;const c=this.config(this.slot),time=performance.now()/1000;for(const card of this.cards)this.preview(card.querySelector('canvas'),card.dataset.ring,c,time);if(c.skinSource==='url'){MoSkinSource.preview(this.root.querySelector('.moi-live canvas'),c,time)}else if(c.skinType==='water'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoWaterSkin.paint(ctx,cv.width*.39,time,Math.sin(time)*.8,0,false,c.waterColor);ctx.restore()}else if(MoMadridSkin.types.includes(c.skinType)){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoMadridSkin.paint(ctx,cv.width*.39,time,c.skinType,false,c.speed,c.glow);ctx.restore()}else if(MoCreatureSkin.types.includes(c.skinType)){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoCreatureSkin.paint(ctx,cv.width*.39,time,c.skinType,false,c.speed,c.glow);ctx.restore()}else if(c.skinType==='skeleton'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoSkeletonSkin.paint(ctx,cv.width*.39,time,false,c.speed,c.glow);ctx.restore()}else if(c.skinType==='fire'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoFireSkin.paint(ctx,cv.width*.39,time);ctx.restore()}else if(c.skinType==='thunder'){const cv=this.root.querySelector('.moi-live canvas'),ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.save();ctx.translate(cv.width/2,cv.height/2);MoThunderSkin.paint(ctx,cv.width*.39,time);ctx.restore()}else this.preview(this.root.querySelector('.moi-live canvas'),c.ring,c,time,true);this.frame=requestAnimationFrame(()=>this.animate())}
+    static preview(canvas,id,c,time,live=false){const ctx=canvas.getContext('2d'),size=canvas.width,r=size*.39;ctx.clearRect(0,0,size,size);ctx.save();ctx.translate(size/2,size/2);ctx.fillStyle='#172d41';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();if(c.matchingSkin)ctx.drawImage(this.skin(id),-r,-r,r*2,r*2);else{ctx.fillStyle='#98c3d8';ctx.font='600 '+size*.13+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MO',0,0)}if(!live||['ring','both'].includes(c.mode))this.paint(ctx,id,r,time,c);ctx.restore()}
     static sprite(id,layer){this.sprites=this.sprites||new Map();const key=id+layer;if(this.sprites.has(key))return this.sprites.get(key);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.translate(256,256);const palettes={aurora:['#9efff0','#38bfdd','#143d69'],solar:['#fff4ba','#ffb32d','#673a12'],eclipse:['#e1bcff','#ad57ff','#361554'],prism:['#ffadee','#65e8ff','#662764'],cipher:['#f3f8ff','#a9bfd7','#294456']};const colors=palettes[id]||palettes.aurora;ctx.lineJoin='round';ctx.lineCap='round';ctx.shadowColor=colors[1];ctx.shadowBlur=10;
       const tau=Math.PI*2,p=(r,a)=>[Math.cos(a)*r,Math.sin(a)*r];
       const arc=(r,a,b,w,color)=>{ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.arc(0,0,r,a,b);ctx.stroke()};
@@ -3524,12 +3651,12 @@
       c.beginPath();c.arc(0,0,251,0,Math.PI*2);c.strokeStyle=colors[0];c.lineWidth=6;c.stroke();
       this.skins.set(id,canvas);return canvas;
     }
-    static drawSkin(cell,origin,opacity){if(this.hiddenCosmetics)return;const v=MoSharedCosmetics.visual(cell);if(MoMadridSkin.types.includes(v?.c.skinType)&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoMadridSkin.draw(cell,origin,opacity,v.c.skinType,this.inactive(cell),v.c.speed,v.c.glow);if(MoCreatureSkin.types.includes(v?.c.skinType)&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoCreatureSkin.draw(cell,origin,opacity,v.c.skinType,this.inactive(cell),v.c.speed,v.c.glow);if(v?.c.skinType==='skeleton'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoSkeletonSkin.draw(cell,origin,opacity,this.inactive(cell),v.c.speed,v.c.glow);if(v?.c.skinType==='fire'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoFireSkin.draw(cell,origin,opacity,this.inactive(cell));if(v?.c.skinType==='thunder'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoThunderSkin.draw(cell,origin,opacity,this.inactive(cell));if(v?.c.skinType==='water'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoWaterSkin.draw(cell,origin,opacity,this.inactive(cell),v.c.waterColor);if(!v||cell.isVirus||cell.isFood||cell.isEjected||!['ring','both'].includes(v.c.mode)||!v.c.matchingSkin)return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.globalAlpha=Math.min(1,opacity);ctx.drawImage(this.skinFor(v.c.ring,this.inactive(cell)),x-r,y-r,r*2,r*2);ctx.restore()}
+    static drawSkin(cell,origin,opacity){if(this.hiddenCosmetics)return;const v=MoSharedCosmetics.visual(cell);if(MoMadridSkin.types.includes(v?.c.skinType)&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoMadridSkin.draw(cell,origin,opacity,v.c.skinType,this.inactive(cell),v.c.speed,v.c.glow);if(MoCreatureSkin.types.includes(v?.c.skinType)&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoCreatureSkin.draw(cell,origin,opacity,v.c.skinType,this.inactive(cell),v.c.speed,v.c.glow);if(v?.c.skinType==='skeleton'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoSkeletonSkin.draw(cell,origin,opacity,this.inactive(cell),v.c.speed,v.c.glow);if(v?.c.skinType==='fire'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoFireSkin.draw(cell,origin,opacity,this.inactive(cell));if(v?.c.skinType==='thunder'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoThunderSkin.draw(cell,origin,opacity,this.inactive(cell));if(v?.c.skinType==='water'&&!cell.isVirus&&!cell.isFood&&!cell.isEjected)return MoWaterSkin.draw(cell,origin,opacity,this.inactive(cell),v.c.waterColor);if(!v||cell.isVirus||cell.isFood||cell.isEjected||(!v.c.skinSource&&!['ring','both'].includes(v.c.mode))||!v.c.matchingSkin)return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.globalAlpha=Math.min(1,opacity);ctx.drawImage(this.skinFor(v.c.ring,this.inactive(cell)),x-r,y-r,r*2,r*2);ctx.restore()}
 
 
     static inactive(cell){const v=MoSharedCosmetics.visual(cell);return !!(v && v.inactive && v.c.whiteInactive)}
     static skinFor(id,white){if(!white)return this.skin(id);this.whiteSkins=this.whiteSkins||new Map();if(this.whiteSkins.has(id))return this.whiteSkins.get(id);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.drawImage(this.skin(id),0,0);const pixels=ctx.getImageData(0,0,512,512);for(let i=0;i<pixels.data.length;i+=4){const value=Math.round(250-(pixels.data[i]*.2126+pixels.data[i+1]*.7152+pixels.data[i+2]*.0722)*.55);pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=value}ctx.putImageData(pixels,0,0);this.whiteSkins.set(id,canvas);return canvas}
-    static drawInactive(cell,origin,opacity,source){if(this.hiddenCosmetics)return;const v=MoSharedCosmetics.visual(cell);if(['water','thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(v?.c.skinType))return;if(!v||!this.inactive(cell)||cell.isVirus||cell.isFood||cell.isEjected||(['ring','both'].includes(v.c.mode)&&v.c.matchingSkin))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);if(source){ctx.filter='grayscale(1) brightness(1.8)';ctx.drawImage(source,x-r,y-r,r*2,r*2);ctx.filter='none';ctx.globalAlpha*=.58}ctx.fillStyle='#fff';ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore()}
+    static drawInactive(cell,origin,opacity,source){if(this.hiddenCosmetics)return;const v=MoSharedCosmetics.visual(cell);if(['water','thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(v?.c.skinType))return;if(!v||!this.inactive(cell)||cell.isVirus||cell.isFood||cell.isEjected||(v.c.matchingSkin&&(v.c.skinSource==='crest'||['ring','both'].includes(v.c.mode))))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||opacity<=0)return;const ctx=Renderer.ctx;ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);if(source){ctx.filter='grayscale(1) brightness(1.8)';ctx.drawImage(source,x-r,y-r,r*2,r*2);ctx.filter='none';ctx.globalAlpha*=.58}ctx.fillStyle='#fff';ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore()}
     static paint(ctx,id,r,time,c){const reduced=Renderer.moReducedMotion||!MoPerformance.animated(),angle=reduced?0:time*c.speed*.55;for(let layer=0;layer<(MoPerformance.low()?1:2);layer++){ctx.save();ctx.rotate(layer?-angle*.65:angle);ctx.globalAlpha=c.glow*(layer?.7:1);ctx.drawImage(this.sprite(id,layer),-r,-r,r*2,r*2);ctx.restore()}}
     static draw(cell,origin,opacity){if(this.hiddenCosmetics)return;const v=MoSharedCosmetics.visual(cell);if(['water','thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(v?.c.skinType))return;if(!v||cell.isVirus||cell.isFood||cell.isEjected||!['ring','both'].includes(v.c.mode))return;const r=cell.animRadius+5,x=cell.animX-origin.x,y=cell.animY-origin.y;if(!(r>0)||![r,x,y,opacity].every(Number.isFinite)||r*Camera.viewport<18||opacity<=0)return;const ctx=Renderer.ctx,c=v.c;ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.clip();ctx.globalAlpha=Math.min(1,opacity);this.paint(ctx,c.ring,r,performance.now()/1000,{...c,glow:c.glow*Math.min(1,opacity)});ctx.restore()}
   }
@@ -3541,7 +3668,7 @@
       this.views={};this.tabs={};
       for(const [id,label] of [['inventory','Inventory'],['emotes','Emotes'],['gameplay','Gameplay'],['map','Map'],['performance','Performance']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.id='moc-tab-'+id;button.setAttribute('role','tab');button.setAttribute('aria-controls','moc-'+id);button.addEventListener('click',()=>this.show(id));tabs.appendChild(button);this.tabs[id]=button;const panel=document.createElement('section');panel.id='moc-'+id;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);this.views[id]=panel}
       const dialog=inventory.root.querySelector('.moi-dialog');dialog.querySelector('.moi-head').after(tabs);
-      for(const selector of ['.moi-players','.moi-modes','.moi-layout'])this.views.inventory.appendChild(dialog.querySelector(selector));
+      for(const selector of ['.moi-players','.moi-source','.moi-modes','.moi-layout'])this.views.inventory.appendChild(dialog.querySelector(selector));
       dialog.querySelector('.moi-footer').before(this.views.inventory,this.views.emotes,this.views.gameplay,this.views.map,this.views.performance);
       this.views.emotes.innerHTML='<div class="moi-muted" style="margin:20px 0">Choose up to five emotes for your gameplay button. Click a face to equip or remove it.</div><div class="moc-loadout" aria-label="Equipped emotes"></div><div class="moi-grid moc-emote-grid" style="margin-top:24px"></div><div class="moi-muted" style="margin-top:18px">Four new faces available · fifth slot ready for another face. Emotes cover your cell for 4 seconds and sync with updated MO users in your tag / party.</div>';
       const saved=Storage.get('cosmetics','emoteLoadout'),all=MoEmotes.library().map(x=>x.id);this.ids=Array.isArray(saved)?[...new Set(saved)].filter(id=>all.includes(id)).slice(0,5):all;
@@ -3554,10 +3681,10 @@
 
   class MoSharedCosmetics {
     static server(){return String(WsConnection.ip||'').split('?')[0].slice(0,180)}
-    static payload(){const configs=[1,2].map(slot=>{const c=MoInventory.config(slot);return [c.mode,c.ring,c.speed,c.glow,c.matchingSkin,c.whiteInactive,...(c.skinType==='water'?['water',c.waterColor]:['thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(c.skinType)?[c.skinType]:[])]});const emotes=[1,2].map(slot=>{const state=MoEmotes.states?.get(slot);return state&&state.until>performance.now()?[MoEmotes.choices[state.index].id,state.started,Math.ceil(state.until-performance.now())]:null});return 'MO1:'+encodeURIComponent(JSON.stringify([this.server(),Player.typeID,configs,emotes]))}
+    static payload(){const configs=[1,2].map(slot=>{const c=MoInventory.visualConfig(slot);return [c.mode,c.ring,c.speed,c.glow,c.matchingSkin,c.whiteInactive,...(c.skinType==='water'?['water',c.waterColor]:['thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(c.skinType)?[c.skinType]:[])]});const emotes=[1,2].map(slot=>{const state=MoEmotes.states?.get(slot);return state&&state.until>performance.now()?[MoEmotes.choices[state.index].id,state.started,Math.ceil(state.until-performance.now())]:null});return 'MO1:'+encodeURIComponent(JSON.stringify([this.server(),Player.typeID,configs,emotes]))}
     static read(player,text){if(typeof text!=='string'||!text.startsWith('MO1:')||text.length>1800){delete player.moVisual;return}try{const data=JSON.parse(decodeURIComponent(text.slice(4)));if(!Array.isArray(data)||data.length!==4||typeof data[0]!=='string'||data[0].length>180||![1,2].includes(data[1])||!Array.isArray(data[2])||data[2].length!==2||!Array.isArray(data[3])||data[3].length!==2)throw Error('shape');const configs=data[2].map(c=>{if(!Array.isArray(c)||![6,7,8].includes(c.length)||(c.length>=7&&!['water','thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(c[6]))||(c.length===8&&(c[6]!=='water'||!/^#[0-9a-f]{6}$/i.test(c[7])))||!['mouse','ring','both','still'].includes(c[0])||!['aurora','solar','eclipse','prism','cipher'].includes(c[1])||!Number.isFinite(c[2])||!Number.isFinite(c[3])||typeof c[4]!=='boolean'||typeof c[5]!=='boolean')throw Error('config');return {mode:c[0],ring:c[1],speed:Math.max(0,Math.min(1.5,c[2])),glow:Math.max(.2,Math.min(1,c[3])),matchingSkin:c[4],whiteInactive:c[5],skinType:['water','thunder','fire','skeleton','dragon','ghost','molten','madridwhite','madridnight'].includes(c[6])?c[6]:'standard',waterColor:c.length===8?c[7]:'#198fc3'}});const now=performance.now(),previous=player.moVisual;const emotes=data[3].map((e,i)=>{if(e===null)return null;if(!Array.isArray(e)||e.length!==3||!MoEmotes.library().some(face=>face.id===e[0])||!Number.isFinite(e[1])||!Number.isFinite(e[2])||e[2]<0||e[2]>4000)throw Error('emote');const old=previous?.emotes[i],until=now+e[2];return {index:MoEmotes.library().findIndex(face=>face.id===e[0]),sequence:e[1],until:old&&old.sequence===e[1]&&old.index===MoEmotes.library().findIndex(face=>face.id===e[0])?Math.min(old.until,until):until}});player.moVisual={server:data[0],active:data[1],configs,emotes,received:now};this.rebuild()}catch(_){delete player.moVisual;this.rebuild()}}
     static rebuild(){this.byCell=new Map();const now=performance.now();for(const p of RelayData.teamPlayers?.values()||[]){const v=p.moVisual;if(!v||!p.isAlive||v.server!==this.server()||now-v.received>16000)continue;for(const slot of [1,2]){const color=slot===1?p.colorHex:p.skin2Color;if(!/^#[0-9a-f]{6}$/i.test(color||''))continue;const nick=slot===1?p.nick:(p.nick2||p.nick);this.byCell.set(Renderer.skinKey(nick,color),{c:v.configs[slot-1],inactive:v.active!==slot,emote:v.emotes[slot-1],received:v.received})}}}
-    static visual(cell){if(cell.isMine)return {c:MoInventory.config(cell.cellType),inactive:Player.typeID!==cell.cellType,emote:MoEmotes.states?.get(cell.cellType)};const v=this.byCell?.get(Renderer.skinKey(cell.nick,cell.colorHex));return v&&performance.now()-v.received<=16000?v:null}
+    static visual(cell){if(cell.isMine)return {c:MoInventory.visualConfig(cell.cellType),inactive:Player.typeID!==cell.cellType,emote:MoEmotes.states?.get(cell.cellType)};const v=this.byCell?.get(Renderer.skinKey(cell.nick,cell.colorHex));return v&&performance.now()-v.received<=16000?v:null}
     static emote(cell){if(cell.isVirus||cell.isFood||cell.isEjected)return null;const state=this.visual(cell)?.emote;return state&&state.until>performance.now()&&MoEmotes.sprites?.has(state.index)?state:null}
     static publish(){try{if(RelayWs.isOpen())RelaySender.skin()}catch(error){console.warn('MO cosmetic sharing unavailable',error)}}
     static tick(){this.rebuild();if(!RelayWs.isOpen())return;const now=performance.now(),key=JSON.stringify([this.server(),Player.typeID,MoInventory.config(1),MoInventory.config(2),[...MoEmotes.states?.entries()||[]].map(([slot,s])=>[slot,s.index,s.started,s.until>now])]);if(key!==this.lastKey||now-(this.lastSent||0)>=5000){this.lastKey=key;this.lastSent=now;this.publish()}}
@@ -9054,9 +9181,10 @@
           );
         }
         let gk = Renderer.code2Url(Renderer.getImgurCode(aeq.skin || "")).includes("XXXXXXX") ? aeq.skin : aeq.arbSkin;
-        const dk = wx && jy && this.getCustomSkin(this.skinKey(aeq.nick, aeq.colorHex));
+        const crestSkin = aeq.isMine && !MoInventory.hiddenCosmetics && MoInventory.config(aeq.cellType).skinSource === "crest";
+        const dk = wx && jy && !crestSkin && this.getCustomSkin(this.skinKey(aeq.nick, aeq.colorHex));
         const akw =
-          arb && !dk && gk && this.knownSkins.hasOwnProperty(gk.replace(/free\/|.png/, "")) && this.get3rbSkin(gk);
+          arb && !crestSkin && !dk && gk && this.knownSkins.hasOwnProperty(gk.replace(/free\/|.png/, "")) && this.get3rbSkin(gk);
         if (dk) {
           amh.drawImage(
             dk,
